@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Camera, Loader2, Plus, Image as ImageIcon } from "lucide-react";
+import { 
+  X, Camera, Loader2, Plus, Image as ImageIcon, 
+  Link as LinkIcon, Trash2 
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { updateProfile } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
+import { getInitials } from "@/lib/utils";
 
 interface EditProfileModalProps {
   open: boolean;
@@ -46,6 +50,7 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // Profile States
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [bioLink, setBioLink] = useState(profile?.bio_link || "");
@@ -55,6 +60,12 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
   const [newSkill, setNewSkill] = useState("");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
   const [coverUrl, setCoverUrl] = useState(profile?.cover_url || "");
+  
+  // Spotlight Links State
+  const [spotlightLinks, setSpotlightLinks] = useState<any[]>(profile?.spotlight_links || []);
+  const [newLinkTitle, setNewLinkTitle] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -62,16 +73,9 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
     setUploadingAvatar(true);
     const { url, error } = await uploadFile("avatars", file, user.id);
     setUploadingAvatar(false);
-
-    if (error) {
-      toast.error("Failed to upload avatar");
-      return;
-    }
-
     if (url) {
       setAvatarUrl(url);
       toast.success("Avatar uploaded!");
@@ -81,16 +85,9 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
     setUploadingCover(true);
     const { url, error } = await uploadFile("covers", file, user.id);
     setUploadingCover(false);
-
-    if (error) {
-      toast.error("Failed to upload cover");
-      return;
-    }
-
     if (url) {
       setCoverUrl(url);
       toast.success("Cover uploaded!");
@@ -104,13 +101,16 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
     }
   };
 
-  const removeSkill = (skill: string) => {
-    setSkills(skills.filter((s) => s !== skill));
+  const addSpotlightLink = () => {
+    if (newLinkTitle.trim() && newLinkUrl.trim()) {
+      setSpotlightLinks([...spotlightLinks, { title: newLinkTitle.trim(), url: newLinkUrl.trim() }]);
+      setNewLinkTitle("");
+      setNewLinkUrl("");
+    }
   };
 
   const handleSubmit = async () => {
     if (!user) return;
-
     setLoading(true);
     const { error } = await updateProfile(user.id, {
       full_name: fullName.trim() || undefined,
@@ -121,6 +121,7 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
       skills: skills.length > 0 ? skills : undefined,
       avatar_url: avatarUrl || undefined,
       cover_url: coverUrl || undefined,
+      spotlight_links: spotlightLinks,
     });
     setLoading(false);
 
@@ -133,203 +134,94 @@ export function EditProfileModal({ open, onOpenChange, onProfileUpdated }: EditP
     }
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return "AU";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-[2.5rem] border-none glass-card p-6 scrollbar-hide">
         <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
+          <DialogTitle className="font-black uppercase italic tracking-tighter text-2xl">
+            Edit Profile
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 mt-4">
           {/* Cover Image */}
           <div>
-            <Label className="text-sm text-muted-foreground">Cover Image</Label>
+            <Label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Cover Image</Label>
             <div
               onClick={() => coverInputRef.current?.click()}
-              className="relative h-24 mt-2 rounded-xl bg-gradient-primary overflow-hidden cursor-pointer group"
+              className="relative h-24 mt-2 rounded-2xl bg-secondary/30 overflow-hidden cursor-pointer group border border-white/5"
             >
               {coverUrl ? (
                 <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
-                  <ImageIcon className="h-8 w-8 text-primary-foreground/50" />
+                  <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
                 </div>
               )}
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                {uploadingCover ? (
-                  <Loader2 className="h-6 w-6 text-white animate-spin" />
-                ) : (
-                  <Camera className="h-6 w-6 text-white" />
-                )}
+                {uploadingCover ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <Camera className="h-6 w-6 text-white" />}
               </div>
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleCoverUpload}
-                className="hidden"
-              />
+              <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
             </div>
           </div>
 
           {/* Avatar */}
           <div className="flex items-center gap-4">
-            <div
-              onClick={() => avatarInputRef.current?.click()}
-              className="relative cursor-pointer group"
-            >
-              <Avatar className="h-20 w-20 ring-4 ring-background">
+            <div onClick={() => avatarInputRef.current?.click()} className="relative cursor-pointer group">
+              <Avatar className="h-20 w-20 ring-4 ring-background shadow-xl">
                 <AvatarImage src={avatarUrl} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl font-bold">
+                <AvatarFallback className="bg-gradient-primary text-white text-xl font-bold">
                   {getInitials(fullName || profile?.full_name)}
                 </AvatarFallback>
               </Avatar>
               <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                {uploadingAvatar ? (
-                  <Loader2 className="h-5 w-5 text-white animate-spin" />
-                ) : (
-                  <Camera className="h-5 w-5 text-white" />
-                )}
+                {uploadingAvatar ? <Loader2 className="h-5 w-5 text-white animate-spin" /> : <Camera className="h-5 w-5 text-white" />}
               </div>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
+              <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
             </div>
             <div>
-              <p className="font-medium">Profile Photo</p>
-              <p className="text-sm text-muted-foreground">Click to change</p>
+              <p className="font-black uppercase italic text-sm">Profile Photo</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase">Tap to change</p>
             </div>
           </div>
 
-          {/* Full Name */}
-          <div>
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your full name"
-              className="mt-1.5"
-            />
-          </div>
-
-          {/* Bio */}
-          <div>
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
-              maxLength={160}
-              className="mt-1.5 min-h-[80px]"
-            />
-            <p className="text-xs text-muted-foreground mt-1">{bio.length}/160</p>
-          </div>
-
-          {/* Bio Link */}
-          <div>
-            <Label htmlFor="bioLink">Website/Link</Label>
-            <Input
-              id="bioLink"
-              value={bioLink}
-              onChange={(e) => setBioLink(e.target.value)}
-              placeholder="https://yourwebsite.com"
-              className="mt-1.5"
-            />
-          </div>
-
-          {/* Department */}
-          <div>
-            <Label>Department</Label>
-            <Select value={department} onValueChange={setDepartment}>
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept} value={dept}>
-                    {dept}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Year */}
-          <div>
-            <Label>Year</Label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Select year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={y}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Skills */}
-          <div>
-            <Label>Skills (max 10)</Label>
-            <div className="flex gap-2 mt-1.5">
-              <Input
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                placeholder="Add a skill"
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
-              />
-              <Button type="button" onClick={addSkill} size="icon" variant="secondary">
-                <Plus className="h-4 w-4" />
-              </Button>
+          {/* Basic Info */}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Full Name</Label>
+              <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="bg-secondary/30 border-none h-12 rounded-xl" />
             </div>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {skills.map((skill) => (
-                <motion.span
-                  key={skill}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium flex items-center gap-1"
-                >
-                  {skill}
-                  <button
-                    onClick={() => removeSkill(skill)}
-                    className="hover:text-destructive transition-colors"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </motion.span>
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-40">Bio</Label>
+              <Textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={160} className="bg-secondary/30 border-none rounded-xl min-h-[80px]" />
+            </div>
+          </div>
+
+          {/* Spotlight Links */}
+          <div className="pt-6 border-t border-white/5 space-y-4">
+            <Label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 px-1">University Spotlight</Label>
+            <div className="space-y-2">
+              <Input placeholder="Link Title (e.g. Portfolio)" value={newLinkTitle} onChange={(e) => setNewLinkTitle(e.target.value)} className="bg-secondary/30 border-none h-11 rounded-xl" />
+              <div className="flex gap-2">
+                <Input placeholder="URL (https://...)" value={newLinkUrl} onChange={(e) => setNewLinkUrl(e.target.value)} className="bg-secondary/30 border-none h-11 rounded-xl" />
+                <Button onClick={addSpotlightLink} size="icon" className="h-11 w-11 rounded-xl shadow-lg"><Plus className="h-4 w-4" /></Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {spotlightLinks.map((link, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-primary/5 rounded-2xl border border-primary/10">
+                  <div className="flex items-center gap-3">
+                    <LinkIcon className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-black uppercase italic">{link.title}</span>
+                  </div>
+                  <button onClick={() => setSpotlightLinks(spotlightLinks.filter((_, i) => i !== idx))} className="text-destructive p-1"><Trash2 className="h-4 w-4" /></button>
+                </div>
               ))}
             </div>
           </div>
 
-          {/* Submit */}
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full bg-gradient-primary hover:opacity-90"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Save Changes
+          <Button onClick={handleSubmit} disabled={loading} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-gradient-primary shadow-xl shadow-primary/20">
+            {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : "Save Changes"}
           </Button>
         </div>
       </DialogContent>

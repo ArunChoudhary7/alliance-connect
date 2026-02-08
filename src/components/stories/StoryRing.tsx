@@ -25,56 +25,57 @@ export function StoryRing({
 }: StoryRingProps) {
   
   // Size mappings
-  const sizeClasses = {
-    sm: "w-10 h-10",
-    md: "w-16 h-16",
-    lg: "w-20 h-20"
+  const sizeClasses = { 
+    sm: "w-10 h-10", 
+    md: "w-16 h-16", 
+    lg: "w-20 h-20" 
   };
-
-  const avatarSize = {
+  
+  const avatarSize = { 
     sm: "w-[34px] h-[34px]", 
     md: "w-[58px] h-[58px]", 
     lg: "w-[74px] h-[74px]" 
   };
 
-  // --- SAFETY CHECK WITH SKELETON ---
-  // If user data is missing/loading, render a gray circle (Skeleton) instead of disappearing
+  // --- SKELETON RECOVERY ---
+  // Restored the actual UI for when the user is undefined
   if (!user) {
     return (
       <div className={`relative flex flex-col items-center gap-1 ${className}`}>
-        <div className={`${sizeClasses[size]} rounded-full bg-secondary/50 animate-pulse border-2 border-transparent`} />
+        <div className={`${sizeClasses[size]} rounded-full bg-secondary/50 animate-pulse`} />
         {size !== "sm" && (
-          <div className="h-3 w-12 bg-secondary/50 rounded animate-pulse" />
+          <div className="h-2 w-10 bg-secondary/30 rounded animate-pulse mt-1" />
         )}
       </div>
     );
   }
 
-  // Border Styles
+  // UPDATED: More vibrant Instagram-accurate gradient for Unseen stories
   const ringClass = hasStory
     ? isSeen
-      ? "bg-border" 
-      : "bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500" 
-    : "";
+      ? "p-[1px] border-2 border-muted-foreground/30" // DULL / VIEWED
+      : "p-[2px] bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]" // VIBRANT / UNVIEWED
+    : "p-[1px] border border-transparent";
 
   return (
     <div className={`relative flex flex-col items-center gap-1 ${className}`}>
       <motion.button
-        whileTap={{ scale: 0.95 }}
+        whileTap={{ scale: 0.92 }}
         onClick={onClick}
-        className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center p-[2px] ${ringClass} transition-all`}
+        className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center ${ringClass} transition-all duration-500`}
       >
         <div className="bg-background rounded-full p-[2px] w-full h-full flex items-center justify-center">
           <Avatar className={`object-cover ${avatarSize[size]}`}>
             <AvatarImage src={user.avatar_url || ""} alt={user.username || ""} />
-            <AvatarFallback>{getInitials(user.full_name)}</AvatarFallback>
+            <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
+              {getInitials(user.full_name)}
+            </AvatarFallback>
           </Avatar>
         </div>
       </motion.button>
       
-      {/* Username */}
       {size !== "sm" && (
-        <span className="text-xs text-center truncate w-full max-w-[70px]">
+        <span className={`text-[10px] font-bold text-center truncate w-full max-w-[70px] ${isSeen ? 'text-muted-foreground/60' : 'text-foreground'}`}>
           {user.username || "User"}
         </span>
       )}

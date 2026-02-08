@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search as SearchIcon, Loader2, Users } from "lucide-react";
+import { Search as SearchIcon, Loader2, Users, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { searchUsers } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client"; // Direct import for better control
 import { Link } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useEffect } from "react";
 
 interface UserResult {
   id: string;
@@ -26,14 +25,23 @@ export default function Search() {
 
   useEffect(() => {
     const search = async () => {
-      if (debouncedQuery.length < 2) {
+      if (debouncedQuery.trim().length < 2) {
         setResults([]);
         return;
       }
 
       setLoading(true);
-      const { data } = await searchUsers(debouncedQuery);
-      if (data) {
+      
+      // FIXED: Using .ilike for partial matching on both username and full_name
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, department, total_aura')
+        .or(`username.ilike.%${debouncedQuery}%,full_name.ilike.%${debouncedQuery}%`)
+        .limit(10);
+
+      if (error) {
+        console.error("Search error:", error);
+      } else {
         setResults(data as UserResult[]);
       }
       setLoading(false);
@@ -57,10 +65,10 @@ export default function Search() {
         >
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Search users by name or username..."
+            placeholder="Search name or @username..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="pl-12 h-12 rounded-2xl bg-secondary/50 border-border/50 focus:border-primary"
+            className="pl-12 h-14 rounded-2xl bg-secondary/30 border-white/5 focus:border-primary/50 text-base"
           />
           {loading && (
             <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-primary" />
@@ -68,44 +76,48 @@ export default function Search() {
         </motion.div>
 
         {/* Results */}
-        <div className="mt-6 space-y-2">
+        <div className="mt-6 space-y-3">
           {results.length === 0 && debouncedQuery.length >= 2 && !loading && (
-            <div className="text-center py-10">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No users found</p>
+            <div className="text-center py-10 opacity-40">
+              <Users className="h-12 w-12 mx-auto mb-3" />
+              <p className="text-sm font-bold uppercase tracking-widest">No users found</p>
             </div>
           )}
 
           {results.map((user, index) => (
             <motion.div
               key={user.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
             >
               <Link
                 to={`/profile/${user.username}`}
-                className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors"
+                className="flex items-center gap-4 p-4 rounded-[1.5rem] bg-secondary/20 border border-white/5 hover:bg-secondary/40 transition-all group"
               >
-                <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                <Avatar className="h-12 w-12 border border-white/10 group-hover:scale-105 transition-transform">
                   <AvatarImage src={user.avatar_url || ""} />
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold">
-                    {getInitials(user.full_name)}
+                  <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                    {getInitials(user.full_name || user.username)}
                   </AvatarFallback>
                 </Avatar>
+                
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{user.full_name}</p>
-                  <p className="text-sm text-muted-foreground truncate">
-                    @{user.username}
-                    {user.department && ` • ${user.department}`}
+                  <p className="font-bold truncate text-sm uppercase tracking-tight">
+                    {user.full_name || user.username}
+                  </p>
+                  <p className="text-[10px] font-bold text-muted-foreground truncate uppercase tracking-widest opacity-60">
+                    @{user.username} {user.department && `• ${user.department}`}
                   </p>
                 </div>
-                {user.total_aura && user.total_aura > 0 && (
-                  <div className="text-right">
-                    <p className="text-sm font-semibold gradient-text">{user.total_aura}</p>
-                    <p className="text-xs text-muted-foreground">Aura</p>
+
+                <div className="text-right">
+                  <div className="flex items-center gap-1 justify-end">
+                    <span className="text-sm font-black text-primary">{user.total_aura || 0}</span>
+                    <Star className="h-3 w-3 text-primary fill-primary" />
                   </div>
-                )}
+                  <p className="text-[8px] font-black uppercase tracking-tighter opacity-30">Aura</p>
+                </div>
               </Link>
             </motion.div>
           ))}
@@ -118,12 +130,12 @@ export default function Search() {
             animate={{ opacity: 1 }}
             className="text-center py-20"
           >
-            <div className="w-16 h-16 rounded-full bg-gradient-primary mx-auto mb-4 flex items-center justify-center">
-              <SearchIcon className="h-8 w-8 text-primary-foreground" />
+            <div className="w-16 h-16 rounded-3xl bg-primary/10 mx-auto mb-4 flex items-center justify-center border border-primary/20">
+              <SearchIcon className="h-8 w-8 text-primary" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">Find your classmates</h3>
-            <p className="text-muted-foreground text-sm">
-              Search by name or username
+            <h3 className="text-sm font-black uppercase tracking-widest mb-1">Find your squad</h3>
+            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tighter opacity-40">
+              Search by name, username or department
             </p>
           </motion.div>
         )}

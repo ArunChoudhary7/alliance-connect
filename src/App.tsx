@@ -7,11 +7,14 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { ThemeProvider } from "@/theme/themeProvider";
 
+// Unified Page Imports
+import MessMenuPage from "./pages/MessMenuPage"; 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Profile from "./pages/Profile";
 import Search from "./pages/Search";
+import Explore from "./pages/Explore";
 import Create from "./pages/Create";
 import Activity from "./pages/Activity";
 import Messages from "./pages/Messages";
@@ -23,13 +26,13 @@ import Internships from "./pages/Internships";
 import LostFound from "./pages/LostFound";
 import Marketplace from "./pages/Marketplace";
 import StudyGroups from "./pages/StudyGroups";
-import Polls from "./pages/Polls"; // Ensure no curly braces around Polls
+import Polls from "./pages/Polls"; 
 import Settings from "./pages/Settings";
-import Explore from "./pages/Explore";
 import Reels from "./pages/Reels";
 import Saved from "./pages/Saved";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import Leaderboard from "./pages/Leaderboard"; // Redirecting leaderboard to Explore or your Rank page
 
 const queryClient = new QueryClient();
 
@@ -48,7 +51,6 @@ export default function App() {
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/onboarding" element={<Onboarding />} />
                   <Route path="/admin" element={<Admin />} />
-
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/profile/:username" element={<Profile />} />
                   <Route path="/search" element={<Search />} />
@@ -56,12 +58,10 @@ export default function App() {
                   <Route path="/create" element={<Create />} />
                   <Route path="/activity" element={<Activity />} />
                   <Route path="/messages" element={<Messages />} />
-                  
-                  {/* Fixed Routes */}
+                  <Route path="/mess-menu" element={<MessMenuPage />} />
                   <Route path="/secret-room" element={<SecretRoom />} />
                   <Route path="/polls" element={<Polls />} />
                   <Route path="/lost-found" element={<LostFound />} />
-                  
                   <Route path="/circles" element={<Circles />} />
                   <Route path="/circles/:id" element={<CircleDetail />} />
                   <Route path="/events" element={<Events />} />
@@ -71,7 +71,7 @@ export default function App() {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/reels" element={<Reels />} />
                   <Route path="/saved" element={<Saved />} />
-
+                 <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </SettingsProvider>
