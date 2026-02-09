@@ -1,76 +1,151 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Image, Type, Loader2, X, Camera, Palette, 
-  Smile, AtSign, Hash, MapPin, Music, Sparkles,
-  Bold, Italic, AlignCenter, RotateCcw
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { Image as ImageIcon, Type, Loader2, X, Camera, AtSign, Search, ZoomIn, Clock, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface CreateStoryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
+  reshareStoryId?: string; 
+  reshareMediaUrl?: string;
+  reshareMediaType?: string;
+  reshareUser?: { username: string; avatarUrl: string | null }; // Passed from viewer
 }
 
 const BACKGROUND_GRADIENTS = [
   'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-  'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-  'linear-gradient(135deg, #fc466b 0%, #3f5efb 100%)',
   '#1a1a2e',
-  '#16213e',
-  '#0f3460',
-  '#e94560',
   '#000000',
+  'linear-gradient(to top, #30cfd0 0%, #330867 100%)',
+  'linear-gradient(to top, #5f72bd 0%, #9b23ea 100%)'
 ];
 
-const FONT_STYLES = [
-  { name: 'Modern', className: 'font-sans' },
-  { name: 'Classic', className: 'font-serif' },
-  { name: 'Playful', className: 'font-mono' },
-];
-
-const STICKERS = ['🔥', '❤️', '😍', '🎉', '✨', '💯', '🙌', '👏', '💪', '🎵', '📍', '⭐'];
-
-export function CreateStoryModal({ open, onOpenChange, onCreated }: CreateStoryModalProps) {
+export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId, reshareMediaUrl, reshareMediaType, reshareUser }: CreateStoryModalProps) {
   const { user } = useAuth();
   const [storyType, setStoryType] = useState<'text' | 'media' | 'camera'>('text');
   const [content, setContent] = useState('');
   const [backgroundStyle, setBackgroundStyle] = useState(BACKGROUND_GRADIENTS[0]);
+  
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [fontSize, setFontSize] = useState([24]);
-  const [fontStyle, setFontStyle] = useState(FONT_STYLES[0]);
-  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('center');
-  const [showStickers, setShowStickers] = useState(false);
-  const [selectedStickers, setSelectedStickers] = useState<string[]>([]);
-  const [textOverlay, setTextOverlay] = useState('');
+  const [scale, setScale] = useState([1]);
+  const [duration, setDuration] = useState([5]); 
+
+  const [showMentionSearch, setShowMentionSearch] = useState(false);
   const [showTextOverlay, setShowTextOverlay] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [storyDuration, setStoryDuration] = useState([15]); // Duration in seconds (15-25)
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [mentionedUsers, setMentionedUsers] = useState<any[]>([]); 
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- INIT RESHARE ---
+  useEffect(() => {
+    if (reshareMediaUrl && open) {
+      setMediaPreview(reshareMediaUrl);
+      setStoryType('media');
+      setScale([0.85]); // Default card look
+      setBackgroundStyle(BACKGROUND_GRADIENTS[5]); // Nice default background
+    }
+  }, [reshareMediaUrl, open]);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) { streamRef.current.getTracks().forEach(track => track.stop()); streamRef.current = null; }
+  }, []);
+
+  useEffect(() => { if (!open) stopCamera(); }, [open, stopCamera]);
+
+  const startCamera = async () => {
+    try {
+      stopCamera(); setStoryType('camera');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } }, audio: false });
+      streamRef.current = stream;
+      setTimeout(() => { if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.setAttribute("playsinline", "true"); videoRef.current.muted = true; videoRef.current.play().catch(console.error); } }, 200);
+    } catch (error) { toast.error("Camera access denied."); }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d')?.drawImage(video, 0, 0);
+      canvas.toBlob((blob) => {
+        if (blob) {
+          setMediaFile(new File([blob], "capture.jpg", { type: "image/jpeg" }));
+          setMediaPreview(URL.createObjectURL(blob));
+          stopCamera(); setStoryType('media');
+        }
+      }, 'image/jpeg', 0.9);
+    }
+  };
+
+  const handleSearchUsers = async (query: string) => {
+    setMentionQuery(query);
+    if (query.length < 1) { setSearchResults([]); return; }
+    const { data } = await supabase.from('profiles').select('user_id, username, avatar_url').ilike('username', `%${query}%`).limit(5);
+    setSearchResults(data || []);
+  };
+
+  const addMention = (user: any) => {
+    if (!mentionedUsers.find(u => u.user_id === user.user_id)) {
+      setMentionedUsers([...mentionedUsers, { ...user, x: 0, y: 0 }]);
+    }
+    setShowMentionSearch(false); setMentionQuery(""); setSearchResults([]);
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      let mediaUrl = reshareMediaUrl || null;
+      let type = 'text';
+
+      if (mediaFile) {
+        const { url, error } = await uploadFile('stories', mediaFile, user.id);
+        if (error) throw error;
+        mediaUrl = url;
+        type = mediaFile.type.startsWith('video') ? 'video' : 'image';
+      } else if (reshareMediaUrl) {
+        type = reshareMediaType || 'image'; 
+      }
+
+      const { error } = await supabase.from('stories').insert({
+        user_id: user.id,
+        content: content || null,
+        media_url: mediaUrl,
+        media_type: storyType === 'text' ? 'text' : type,
+        background_color: (storyType === 'text' || reshareStoryId) ? backgroundStyle : null, 
+        mentions: mentionedUsers.map(u => u.user_id),
+        original_story_id: reshareStoryId || null,
+        duration: duration[0]
+      });
+
+      if (error) throw error;
+      toast.success(reshareStoryId ? 'Story reshared!' : 'Story shared!');
+      onCreated(); onOpenChange(false);
+    } catch (e) { toast.error('Failed to post'); } finally { setLoading(false); }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setMediaFile(file);
@@ -79,449 +154,121 @@ export function CreateStoryModal({ open, onOpenChange, onCreated }: CreateStoryM
     }
   };
 
-  const startCamera = async () => {
-    try {
-      // Explicitly request mobile camera constraints
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false 
-      });
-      
-      setCameraStream(stream);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        // Mobile browsers require an explicit play call to show the stream
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(e => console.error("Mobile video play failed:", e));
-        };
-      }
-      setStoryType('camera');
-    } catch (error) {
-      console.error("Camera access error:", error);
-      toast.error('Could not access camera. Ensure you are on HTTPS and gave permission.');
-    }
-  };
-
-  const stopCamera = useCallback(() => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-  }, [cameraStream]);
-
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-        setCapturedImage(dataUrl);
-        stopCamera();
-      }
-    }
-  };
-
-  const addSticker = (sticker: string) => {
-    setSelectedStickers(prev => [...prev, sticker]);
-  };
-
   const handleClose = () => {
-    stopCamera();
-    resetForm();
-    onOpenChange(false);
-  };
-
-  const resetForm = () => {
-    setContent('');
-    setMediaFile(null);
-    setMediaPreview(null);
-    setCapturedImage(null);
-    setSelectedStickers([]);
-    setTextOverlay('');
-    setShowTextOverlay(false);
-    setStoryType('text');
-    setStoryDuration([15]);
-  };
-
-  const handleSubmit = async () => {
-    if (!user) return;
-    
-    if (storyType === 'text' && !content.trim()) {
-      toast.error('Please enter some text for your story');
-      return;
-    }
-    
-    if (storyType === 'media' && !mediaFile) {
-      toast.error('Please select an image or video');
-      return;
-    }
-
-    if (storyType === 'camera' && !capturedImage) {
-      toast.error('Please capture a photo');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      let mediaUrl = null;
-      let mediaType = null;
-
-      if (mediaFile) {
-        const { url, error } = await uploadFile('stories', mediaFile, user.id);
-        if (error) throw error;
-        mediaUrl = url;
-        mediaType = mediaFile.type.startsWith('video/') ? 'video' : 'image';
-      } else if (capturedImage) {
-        // Convert data URL to blob and upload
-        const response = await fetch(capturedImage);
-        const blob = await response.blob();
-        const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
-        const { url, error } = await uploadFile('stories', file, user.id);
-        if (error) throw error;
-        mediaUrl = url;
-        mediaType = 'image';
-      }
-
-      const { error } = await supabase.from('stories').insert({
-        user_id: user.id,
-        content: storyType === 'text' ? content : (textOverlay || null),
-        media_url: mediaUrl,
-        media_type: storyType === 'text' ? 'text' : mediaType,
-        background_color: storyType === 'text' ? backgroundStyle : null,
-        duration: storyDuration[0],
-      });
-
-      if (error) throw error;
-
-      toast.success('Story created!');
-      resetForm();
-      onCreated();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create story');
-    } finally {
-      setLoading(false);
-    }
+    stopCamera(); setContent(''); setMediaFile(null); setMediaPreview(null); setMentionedUsers([]); setStoryType('text'); onOpenChange(false);
   };
 
   if (!open) return null;
 
-  const content_modal = (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/95 flex flex-col"
-      style={{ zIndex: 99999 }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/10">
-        <Button variant="ghost" size="icon" onClick={handleClose} className="text-white">
-          <X className="h-6 w-6" />
-        </Button>
-        <h2 className="text-white font-semibold text-lg">Create Moment</h2>
-        <Button 
-          onClick={handleSubmit} 
-          disabled={loading}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Share'}
-        </Button>
+  return createPortal(
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 bg-black z-[99999] flex flex-col">
+      <div className="flex justify-between items-center p-4 z-20 absolute top-0 left-0 right-0 bg-gradient-to-b from-black/50 to-transparent">
+        <Button variant="ghost" className="text-white" onClick={handleClose}><X /></Button>
+        <div className="flex gap-4">
+           {/* Color Picker */}
+           {(storyType === 'text' || reshareStoryId) && (
+              <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
+                <PopoverTrigger asChild><Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60"><Palette className="h-5 w-5" /></Button></PopoverTrigger>
+                <PopoverContent className="w-auto p-2 bg-black/90 border-white/20 grid grid-cols-3 gap-2">
+                   {BACKGROUND_GRADIENTS.map((bg, i) => (
+                      <button key={i} className="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white" style={{ background: bg }} onClick={() => setBackgroundStyle(bg)} />
+                   ))}
+                </PopoverContent>
+              </Popover>
+           )}
+           {/* Text Tool */}
+           {(storyType !== 'text') && <Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60" onClick={() => setShowTextOverlay(!showTextOverlay)}><Type className="h-5 w-5" /></Button>}
+           {/* Mention Tool */}
+           {(storyType !== 'camera') && <Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60" onClick={() => setShowMentionSearch(true)}><AtSign className="h-5 w-5" /></Button>}
+        </div>
+        <Button onClick={handleSubmit} disabled={loading} className="bg-white text-black font-bold rounded-full px-6">{loading ? <Loader2 className="animate-spin" /> : 'Share'}</Button>
       </div>
 
-      {/* Type selector */}
-      <div className="flex gap-2 p-4 border-b border-white/10">
-        <Button
-          variant={storyType === 'text' ? 'default' : 'outline'}
-          onClick={() => { setStoryType('text'); stopCamera(); }}
-          className="flex-1"
-          size="sm"
-        >
-          <Type className="h-4 w-4 mr-2" />
-          Text
-        </Button>
-        <Button
-          variant={storyType === 'media' ? 'default' : 'outline'}
-          onClick={() => { fileInputRef.current?.click(); stopCamera(); }}
-          className="flex-1"
-          size="sm"
-        >
-          <Image className="h-4 w-4 mr-2" />
-          Gallery
-        </Button>
-        <Button
-          variant={storyType === 'camera' ? 'default' : 'outline'}
-          onClick={startCamera}
-          className="flex-1"
-          size="sm"
-        >
-          <Camera className="h-4 w-4 mr-2" />
-          Camera
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-      </div>
-
-      {/* Preview area */}
-      <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-        <div className="relative w-full max-w-sm aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl">
-          {storyType === 'text' ? (
-            <motion.div
-              className="w-full h-full flex flex-col items-center justify-center p-6"
-              style={{ background: backgroundStyle }}
-            >
-              <div className={`w-full text-white ${fontStyle.className}`} style={{ fontSize: `${fontSize[0]}px`, textAlign }}>
-                {content || 'Start typing...'}
-              </div>
-              {/* Stickers */}
-              {selectedStickers.map((sticker, idx) => (
-                <motion.div
-                  key={idx}
-                  drag
-                  dragMomentum={false}
-                  className="absolute text-4xl cursor-move"
-                  style={{ top: `${30 + idx * 10}%`, left: `${20 + idx * 15}%` }}
-                >
-                  {sticker}
-                </motion.div>
+      {showMentionSearch && (
+        <div className="absolute inset-0 bg-black/95 z-50 flex flex-col pt-20 px-4 animate-in fade-in duration-200">
+           <div className="flex items-center gap-3 border-b border-white/20 pb-4 mb-4">
+              <Search className="h-5 w-5 text-white/50" />
+              <Input autoFocus placeholder="Search..." className="bg-transparent border-none text-white text-xl focus-visible:ring-0 placeholder:text-white/30 p-0" value={mentionQuery} onChange={(e) => handleSearchUsers(e.target.value)} />
+              <Button variant="ghost" className="text-white font-bold" onClick={() => setShowMentionSearch(false)}>Cancel</Button>
+           </div>
+           <div className="flex-1 overflow-y-auto space-y-2">
+              {searchResults.length === 0 && mentionQuery.length > 1 && <p className="text-center text-white/30 mt-10">No users found.</p>}
+              {searchResults.map(u => (
+                 <button key={u.user_id} onClick={() => addMention(u)} className="flex items-center gap-4 w-full p-3 hover:bg-white/10 rounded-2xl transition-colors text-left">
+                   <Avatar className="h-12 w-12 border border-white/10"><AvatarImage src={u.avatar_url} /><AvatarFallback>{u.username?.[0]}</AvatarFallback></Avatar>
+                   <div><p className="text-white font-bold text-base">@{u.username}</p><p className="text-white/40 text-xs">Tap to mention</p></div>
+                 </button>
               ))}
-            </motion.div>
-          ) : storyType === 'camera' ? (
-            <div className="w-full h-full bg-black flex items-center justify-center">
-              {capturedImage ? (
-                <div className="relative w-full h-full">
-                  <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => { setCapturedImage(null); startCamera(); }}
-                    className="absolute bottom-4 left-1/2 -translate-x-1/2"
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Retake
-                  </Button>
-                </div>
-              ) : cameraStream ? (
-                <div className="relative w-full h-full">
-                <video
-              ref={videoRef}
-               autoPlay
-              playsInline  // CRITICAL: Stops mobile from going to a black screen
-                muted
-    className="w-full h-full object-cover scale-x-[-1]"
-          />
-                  {/* Camera capture button - prominent and visible */}
-                  <button
-                    onClick={capturePhoto}
-                    className="absolute bottom-8 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border-4 border-white shadow-2xl active:scale-95 transition-transform z-10"
-                  >
-                    <div className="w-14 h-14 rounded-full bg-white" />
-                  </button>
-                </div>
-              ) : (
-                <div className="text-white/50 flex flex-col items-center gap-2">
-                  <Camera className="h-12 w-12" />
-                  <span>Camera loading...</span>
-                </div>
-              )}
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-          ) : (
-            <div className="w-full h-full bg-black flex items-center justify-center">
-              {mediaPreview ? (
-                <div className="relative w-full h-full">
-                  {mediaFile?.type.startsWith('video/') ? (
-                    <video src={mediaPreview} className="w-full h-full object-contain" controls />
-                  ) : (
-                    <img src={mediaPreview} alt="Preview" className="w-full h-full object-contain" />
-                  )}
-                  {/* Text overlay on media */}
-                  {showTextOverlay && (
-                    <motion.div
-                      drag
-                      dragMomentum={false}
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/50 px-4 py-2 rounded-lg cursor-move"
-                    >
-                      <p className="text-white text-xl font-bold text-center">{textOverlay || 'Add text...'}</p>
-                    </motion.div>
-                  )}
-                  {/* Stickers on media */}
-                  {selectedStickers.map((sticker, idx) => (
-                    <motion.div
-                      key={idx}
-                      drag
-                      dragMomentum={false}
-                      className="absolute text-4xl cursor-move"
-                      style={{ top: `${30 + idx * 10}%`, left: `${20 + idx * 15}%` }}
-                    >
-                      {sticker}
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <label className="cursor-pointer flex flex-col items-center gap-2 text-white/50">
-                  <Image className="h-16 w-16" />
-                  <span>Tap to select</span>
-                </label>
-              )}
-            </div>
-          )}
+           </div>
         </div>
-      </div>
+      )}
 
-      {/* Tools */}
-      <div className="p-4 border-t border-white/10 space-y-4 max-h-[40vh] overflow-y-auto">
-        {/* Duration slider - always visible */}
-        <div className="flex items-center gap-4">
-          <span className="text-white/70 text-sm w-20">Duration</span>
-          <Slider
-            value={storyDuration}
-            onValueChange={setStoryDuration}
-            min={5}
-            max={25}
-            step={5}
-            className="flex-1"
-          />
-          <span className="text-white text-sm w-10">{storyDuration[0]}s</span>
-        </div>
-
+      {/* CANVAS */}
+      <div 
+        className="flex-1 relative flex items-center justify-center overflow-hidden"
+        style={{ background: (storyType === 'text' || reshareStoryId) ? backgroundStyle : 'black' }}
+      >
         {storyType === 'text' && (
-          <>
-            {/* Text input */}
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="What's on your mind?"
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/50 min-h-[60px]"
-              maxLength={280}
-            />
-
-            {/* Font size */}
-            <div className="flex items-center gap-4">
-              <span className="text-white/70 text-sm w-20">Size</span>
-              <Slider
-                value={fontSize}
-                onValueChange={setFontSize}
-                min={16}
-                max={48}
-                step={2}
-                className="flex-1"
-              />
-            </div>
-
-            {/* Text alignment */}
-            <div className="flex items-center gap-2">
-              <span className="text-white/70 text-sm w-20">Align</span>
-              <div className="flex gap-1">
-                {(['left', 'center', 'right'] as const).map((align) => (
-                  <Button
-                    key={align}
-                    variant={textAlign === align ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setTextAlign(align)}
-                    className="text-white"
-                  >
-                    <AlignCenter className="h-4 w-4" />
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Background colors */}
-            <div className="space-y-2">
-              <Label className="text-white/70 text-sm">Background</Label>
-              <div className="flex gap-2 flex-wrap">
-                {BACKGROUND_GRADIENTS.map((bg, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setBackgroundStyle(bg)}
-                    className={`w-8 h-8 rounded-full transition-transform ${
-                      backgroundStyle === bg ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : ''
-                    }`}
-                    style={{ background: bg }}
-                  />
-                ))}
-              </div>
-            </div>
-          </>
+          <Textarea value={content} onChange={(e) => setContent(e.target.value)} className="bg-transparent border-none text-white text-4xl font-bold text-center placeholder:text-white/50 focus-visible:ring-0 resize-none z-10 w-full" placeholder="Type something..." />
         )}
 
-        {(storyType === 'media' || storyType === 'camera') && mediaPreview && (
-          <>
-            {/* Add text overlay */}
-            <div className="flex gap-2">
-              <Button
-                variant={showTextOverlay ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowTextOverlay(!showTextOverlay)}
-                className="text-white"
-              >
-                <Type className="h-4 w-4 mr-2" />
-                Add Text
-              </Button>
-              <Button
-                variant={showStickers ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowStickers(!showStickers)}
-                className="text-white"
-              >
-                <Smile className="h-4 w-4 mr-2" />
-                Stickers
-              </Button>
-            </div>
+        {/* MEDIA / RESHARE CARD */}
+        {storyType === 'media' && mediaPreview && (
+          <div className="relative w-full h-full flex items-center justify-center">
+            
+            {/* Draggable Media Layer */}
+            <motion.div 
+              drag 
+              dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }} 
+              style={{ scale: scale[0] }} 
+              className={`relative ${reshareStoryId ? 'rounded-xl overflow-hidden shadow-2xl bg-black border border-white/10' : ''}`} // Card styling
+            >
+              {/* INSTAGRAM STYLE HEADER FOR RESHARE */}
+              {reshareStoryId && reshareUser && (
+                 <div className="absolute top-0 left-0 right-0 p-3 flex items-center gap-2 bg-gradient-to-b from-black/60 to-transparent z-10">
+                    <Avatar className="h-6 w-6 ring-1 ring-white/50"><AvatarImage src={reshareUser.avatarUrl || ""} /><AvatarFallback>{reshareUser.username[0]}</AvatarFallback></Avatar>
+                    <span className="text-white font-bold text-xs drop-shadow-md">{reshareUser.username}</span>
+                 </div>
+              )}
 
-            {showTextOverlay && (
-              <Input
-                value={textOverlay}
-                onChange={(e) => setTextOverlay(e.target.value)}
-                placeholder="Add text overlay..."
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-              />
-            )}
+              {(mediaFile?.type.startsWith('video') || reshareMediaType === 'video') ? (
+                 <video src={mediaPreview} className="max-w-none h-[75vh] object-cover rounded-none" autoPlay loop muted playsInline />
+              ) : (
+                 <img src={mediaPreview} className="max-w-none h-[75vh] object-cover rounded-none" alt="Preview" />
+              )}
+            </motion.div>
 
-            {showStickers && (
-              <div className="flex gap-2 flex-wrap">
-                {STICKERS.map((sticker) => (
-                  <button
-                    key={sticker}
-                    onClick={() => addSticker(sticker)}
-                    className="text-2xl p-2 hover:bg-white/10 rounded-lg transition-colors"
-                  >
-                    {sticker}
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
+            {(showTextOverlay || content) && <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"><Textarea value={content} onChange={(e) => setContent(e.target.value)} className="bg-transparent border-none text-white text-3xl font-bold text-center pointer-events-auto resize-none focus-visible:ring-0 shadow-black drop-shadow-lg" placeholder="Tap to add caption..." /></div>}
+          </div>
         )}
 
-        {storyType === 'media' && !mediaPreview && (
-          <Button
-            variant="outline"
-            className="w-full text-white border-white/20"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Image className="h-4 w-4 mr-2" />
-            Select from Gallery
-          </Button>
-        )}
+        {storyType === 'camera' && <div className="relative w-full h-full bg-black"><video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" /><canvas ref={canvasRef} className="hidden" /><button onClick={capturePhoto} className="absolute bottom-12 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-white bg-white/20 active:scale-90 transition-transform z-20" /></div>}
+
+        {mentionedUsers.map((u, i) => (
+          <motion.div key={u.user_id} drag dragMomentum={false} className="absolute top-1/2 left-1/2 z-30 cursor-move" initial={{ scale: 0 }} animate={{ scale: 1 }}>
+             <div className="bg-white px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 transform -rotate-2 border-2 border-white">
+                <span className="bg-gradient-to-tr from-purple-500 to-pink-500 text-transparent bg-clip-text font-black text-xl">@</span><span className="font-bold text-black text-lg uppercase tracking-tight">{u.username}</span>
+                <button onClick={() => setMentionedUsers(p => p.filter(m => m.user_id !== u.user_id))} className="bg-neutral-200 rounded-full p-1 ml-2 hover:bg-red-100"><X className="h-3 w-3 text-black" /></button>
+             </div>
+          </motion.div>
+        ))}
       </div>
-    </motion.div>
-  );
 
-  return createPortal(content_modal, document.body);
+      {storyType === 'media' && !showMentionSearch && (
+        <div className="absolute bottom-24 left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-2xl p-4 space-y-4 border border-white/10 animate-in slide-in-from-bottom-10">
+           <div className="flex items-center gap-4"><ZoomIn className="text-white h-5 w-5" /><Slider value={scale} onValueChange={setScale} min={0.5} max={1.5} step={0.05} className="flex-1 py-4" /></div>
+           {!mediaFile?.type.startsWith('video') && reshareMediaType !== 'video' && <div className="flex items-center gap-4"><Clock className="text-white h-5 w-5" /><Slider value={duration} onValueChange={setDuration} min={3} max={15} step={1} className="flex-1 py-4" /><span className="text-white text-xs font-bold w-8">{duration}s</span></div>}
+        </div>
+      )}
+
+      {storyType !== 'camera' && !mediaFile && (
+        <div className="p-6 bg-black flex justify-center gap-6 z-10">
+          <Button variant={storyType === 'text' ? "default" : "ghost"} className="rounded-full" onClick={() => setStoryType('text')}><Type className="mr-2 h-4 w-4" /> Text</Button>
+          <Button variant="ghost" className="rounded-full text-white" onClick={startCamera}><Camera className="mr-2 h-4 w-4" /> Camera</Button>
+          <Button variant="ghost" className="rounded-full text-white" onClick={() => fileInputRef.current?.click()}><ImageIcon className="mr-2 h-4 w-4" /> Gallery</Button>
+          <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/*" onChange={handleFileSelect} />
+        </div>
+      )}
+    </motion.div>, document.body
+  );
 }

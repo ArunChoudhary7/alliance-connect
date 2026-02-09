@@ -3,19 +3,21 @@ import { motion } from "framer-motion";
 import { X, Upload, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { analyzeMenuWithGemini } from "@/lib/gemini";
 
 export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
-  const [uploading, setUploading] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+  const [status, setStatus] = useState<"idle" | "uploading" | "analyzing" | "saving">("idle");
 
   const handleUpload = async (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
 
     try {
-      setUploading(true);
+      setStatus("uploading");
+      
+      // 1. Upload to Supabase (Unique Name)
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      const fileName = `menu-${Date.now()}.${fileExt}`;
       const filePath = `menu-images/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -28,37 +30,36 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
         .from('campus_assets')
         .getPublicUrl(filePath);
 
-      setIsScanning(true);
-      // SIMULATING AI ANALYSIS TIME
-      await new Promise(r => setTimeout(r, 3500)); 
+      // 2. Analyze (Will use Backup if AI fails)
+      setStatus("analyzing");
+      const parsedData = await analyzeMenuWithGemini(file);
+      console.log("Saving Data:", parsedData);
 
-      // MOCK PARSER LOGIC: In a real app, you'd send publicUrl to an AI API here
-      const parsedData = {
-        breakfast: ["Special Dosa", "Coconut Chutney", "Sambar", "Egg", "Milk/Coffee"],
-        lunch: ["Hyderabadi Biryani", "Mirchi Salan", "Curd Rice", "Salad", "Sweet"],
-        snacks: ["Samosa", "Chai"],
-        dinner: ["Butter Paneer", "Tandoori Roti", "Jeera Rice", "Dal Makhani"]
-      };
+      // 3. Save to DB (Upsert to fix missing row error)
+      setStatus("saving");
 
       const { error: dbError } = await supabase
         .from('mess_menu')
-        .update({ 
+        .upsert({ 
+          day_name: 'Today',
           image_url: publicUrl,
-          ...parsedData, // This spreads the BF, Lunch, etc. into the DB
+          breakfast: parsedData.breakfast || [],
+          lunch: parsedData.lunch || [],
+          snacks: parsedData.snacks || [],
+          dinner: parsedData.dinner || [],
           updated_at: new Date()
-        })
-        .eq('day_name', 'Today');
+        }, { onConflict: 'day_name' });
 
       if (dbError) throw dbError;
 
-      toast.success("Menu Analyzed & Updated!");
+      toast.success("Menu Updated Successfully!");
       onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error("Upload Failed: Check Admin Permissions");
+      console.error(err);
+      toast.error("Update Failed. Check console.");
     } finally {
-      setUploading(false);
-      setIsScanning(false);
+      setStatus("idle");
     }
   };
 
@@ -67,32 +68,30 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={onClose} />
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative w-full max-w-md glass-card p-8 rounded-[3rem] border-white/10 overflow-hidden shadow-2xl">
+      <motion.div className="relative w-full max-w-md glass-card p-8 rounded-[3rem] border-white/10 overflow-hidden shadow-2xl">
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-            <h2 className="text-xl font-black uppercase tracking-tight italic">AI Menu Analyze</h2>
+            <h2 className="text-xl font-black uppercase italic gradient-text">Update Menu</h2>
           </div>
-          <button onClick={onClose} className="p-2 text-muted-foreground hover:text-white transition-colors"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} className="p-2 text-muted-foreground hover:text-white"><X className="h-5 w-5" /></button>
         </div>
         
-        <div className="relative aspect-square rounded-[2.5rem] bg-secondary/20 border-2 border-dashed border-white/10 flex flex-col items-center justify-center overflow-hidden">
-          {isScanning ? (
-            <div className="flex flex-col items-center gap-4 text-center px-6">
-              <motion.div animate={{ y: [-20, 320, -20] }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute top-0 left-0 right-0 h-1 bg-primary shadow-[0_0_20px_hsl(var(--primary))] z-10" />
-              <Loader2 className="h-10 w-10 text-primary animate-spin" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary leading-tight">AI is dividing menu into sections...</p>
+        <div className="relative aspect-square rounded-[2.5rem] bg-secondary/20 border-2 border-dashed border-white/10 flex flex-col items-center justify-center">
+          {status !== "idle" ? (
+            <div className="text-center px-6">
+              <Loader2 className="h-10 w-10 text-primary animate-spin mx-auto mb-4" />
+              <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">
+                {status === "uploading" && "Uploading Image..."}
+                {status === "analyzing" && "Analyzing Menu..."}
+                {status === "saving" && "Saving Data..."}
+              </p>
             </div>
           ) : (
-            <label className="cursor-pointer flex flex-col items-center gap-4 p-10 text-center w-full h-full justify-center">
-              <div className="p-6 bg-primary/10 rounded-full text-primary shadow-xl shadow-primary/20 transition-transform group-hover:scale-110">
-                <Upload className="h-8 w-8" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold uppercase italic">Upload Menu</p>
-                <p className="text-[9px] opacity-40 uppercase font-bold tracking-widest leading-relaxed">AI will automatically detect<br/>BF, Lunch, Snacks & Dinner</p>
-              </div>
-              <input type="file" className="hidden" onChange={handleUpload} disabled={uploading} accept="image/*" />
+            <label className="cursor-pointer flex flex-col items-center gap-4 w-full h-full justify-center group hover:bg-secondary/30 transition-colors">
+              <Upload className="h-8 w-8 text-primary group-hover:scale-110 transition-transform" />
+              <span className="text-sm font-bold uppercase opacity-50">Upload Menu Photo</span>
+              <input type="file" className="hidden" onChange={handleUpload} accept="image/*" />
             </label>
           )}
         </div>

@@ -1,46 +1,40 @@
 import { useState, useRef } from "react";
-import { Image, Video, Camera, X, Send, Loader2 } from "lucide-react";
+import { Image, Video, Camera, X, Send, Loader2, Sparkles, Ghost, Timer, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { createPost } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { getInitials } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
   const { user, profile } = useAuth();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<{ file: File; preview: string; type: 'image' | 'video' }[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   
+  // STEALTH STATE
+  const [isStealth, setIsStealth] = useState(false);
+  const [duration, setDuration] = useState(24); // Default 24h
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
     const newFiles = files.map(file => ({
       file,
       preview: URL.createObjectURL(file),
       type: file.type.startsWith('video/') ? 'video' as const : 'image' as const
     }));
-
     setSelectedFiles(prev => [...prev, ...newFiles]);
-    e.target.value = ''; 
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => {
-      const updated = [...prev];
-      URL.revokeObjectURL(updated[index].preview);
-      updated.splice(index, 1);
-      return updated;
-    });
+    setIsExpanded(true);
   };
 
   const handleSubmit = async () => {
@@ -51,84 +45,122 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
       let videoUrl: string | null = null;
 
       for (const item of selectedFiles) {
-        // FIXED: Using 'videos' bucket now that it is defined in storage.ts
         const bucket = item.type === 'video' ? 'videos' : 'posts';
-        const { url, error } = await uploadFile(bucket, item.file, user.id);
-        
-        if (error) throw error;
+        const { url } = await uploadFile(bucket, item.file, user.id);
         if (url) {
           if (item.type === 'video') videoUrl = url;
           else imageUrls.push(url);
         }
       }
 
+      // Calculate Custom Expiration
+      const expiresAt = isStealth 
+        ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString() 
+        : null;
+
       const { error } = await createPost({
         user_id: user.id,
         content: content.trim(),
         images: imageUrls.length > 0 ? imageUrls : null,
-        video_url: videoUrl 
+        video_url: videoUrl,
+        expires_at: expiresAt,
+        is_stealth: isStealth
       });
 
       if (error) throw error;
-      toast.success("Post created!");
+      toast.success(isStealth ? `Stealth active for ${duration}h` : "Post created!");
       setContent("");
       setSelectedFiles([]);
+      setIsExpanded(false);
+      setIsStealth(false);
       onPostCreated();
-    } catch (error) {
-      toast.error("Failed to post.");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) { 
+      console.error(error);
+      toast.error("Failed to post. Check DB columns."); 
+    } finally { 
+      setIsSubmitting(false); 
     }
   };
 
-  return (
-    <Card className="glass-card border-none overflow-hidden mb-6">
-      <CardContent className="p-4">
-        <div className="flex gap-4">
-          <Avatar className="h-10 w-10 shrink-0">
-            <AvatarImage src={profile?.avatar_url || ""} />
-            <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-4">
-            <Textarea 
-              placeholder="What's on your mind?" 
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="min-h-[100px] bg-transparent border-none focus-visible:ring-0 resize-none p-0 text-sm"
-            />
-            {selectedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedFiles.map((item, i) => (
-                  <div key={i} className="relative h-20 w-20 rounded-lg overflow-hidden group">
-                    {item.type === 'image' ? (
-                      <img src={item.preview} className="h-full w-full object-cover" />
-                    ) : (
-                      <video src={item.preview} className="h-full w-full object-cover" />
-                    )}
-                    <button onClick={() => removeFile(i)} className="absolute top-1 right-1 p-1 bg-black/50 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-between pt-2 border-t border-border/50">
-              <div className="flex gap-1">
-                <input type="file" ref={fileInputRef} onChange={handleFileSelect} multiple className="hidden" accept="image/*" />
-                <input type="file" ref={videoInputRef} onChange={handleFileSelect} className="hidden" accept="video/*" />
-                <input type="file" ref={cameraInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" capture="environment" />
+  if (!user || !profile) return null;
 
-                <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} className="text-muted-foreground hover:text-primary"><Image className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()} className="text-muted-foreground hover:text-primary"><Video className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" onClick={() => cameraInputRef.current?.click()} className="text-muted-foreground hover:text-primary"><Camera className="h-5 w-5" /></Button>
+  return (
+    <div className={cn(
+      "super-card mb-8 transition-all duration-500",
+      isStealth ? "ring-2 ring-red-500/20 bg-red-950/5" : ""
+    )}>
+      <div className={cn(
+        "absolute top-0 right-0 p-6 opacity-20 pointer-events-none transition-colors",
+        isStealth ? "text-red-500" : "text-primary"
+      )}>
+        {isStealth ? <Ghost className="w-10 h-10 animate-pulse" /> : <Sparkles className="w-10 h-10" />}
+      </div>
+
+      <div className="flex gap-4">
+        <Avatar className="h-12 w-12 border-2 border-white/10 shrink-0">
+          <AvatarImage src={profile.avatar_url || ""} />
+          <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
+        </Avatar>
+        
+        <div className="flex-1 space-y-4">
+          <Input 
+            placeholder={isStealth ? "Whisper something secret..." : "What's on your mind?"}
+            className={cn("super-input h-14 text-lg", isStealth && "text-red-100 placeholder:text-red-500/30")}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            onFocus={() => setIsExpanded(true)}
+          />
+
+          {isExpanded && (
+            <div className="flex items-center justify-between pt-2 animate-in slide-in-from-top-2">
+              <div className="flex gap-1 items-center">
+                <Button variant="ghost" size="icon" className="text-green-400" onClick={() => fileInputRef.current?.click()}><Image className="h-5 w-5" /></Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple accept="image/*" />
+                
+                <div className="w-[1px] h-6 bg-white/10 mx-2" />
+
+                {/* STEALTH TOGGLE + DURATION */}
+                <div className="flex items-center bg-white/5 rounded-xl px-1">
+                  <Button 
+                    onClick={() => setIsStealth(!isStealth)}
+                    variant="ghost" 
+                    className={cn("rounded-lg px-3 h-9 gap-2 transition-all", isStealth ? "text-red-500" : "text-white/40")}
+                  >
+                    <Timer className={cn("h-4 w-4", isStealth && "animate-spin")} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Stealth</span>
+                  </Button>
+                  
+                  {isStealth && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-9 px-2 text-[10px] font-bold text-red-500/60 hover:text-red-500">
+                          {duration}H <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-black/90 border-white/10 text-white">
+                        <DropdownMenuItem onClick={() => setDuration(1)}>1 Hour</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDuration(12)}>12 Hours</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setDuration(24)}>24 Hours</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </div>
-              <Button onClick={handleSubmit} disabled={isSubmitting} className="rounded-full px-6 bg-gradient-primary">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+              
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isSubmitting} 
+                className={cn(
+                  "rounded-full px-6 font-bold transition-all shadow-lg",
+                  isStealth ? "bg-red-600 text-white shadow-red-500/20" : "bg-white text-black"
+                )}
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <>{isStealth ? 'Burn' : 'Post'} <Send className="w-4 h-4 ml-2" /></>}
               </Button>
             </div>
-          </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -1,8 +1,14 @@
 import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
+
 export default {
   darkMode: ["class"],
-  content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
+  content: [
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+  ],
   prefix: "",
   theme: {
     container: {
@@ -93,16 +99,18 @@ export default {
           to: { transform: "scale(1)", opacity: "1" },
         },
         "pulse-glow": {
-          "0%, 100%": { 
-            boxShadow: "0 0 20px -5px hsl(var(--primary) / 0.4)" 
-          },
-          "50%": { 
-            boxShadow: "0 0 30px -3px hsl(var(--primary) / 0.6)" 
-          },
+          "0%, 100%": { boxShadow: "0 0 20px -5px hsl(var(--primary) / 0.4)" },
+          "50%": { boxShadow: "0 0 30px -3px hsl(var(--primary) / 0.6)" },
         },
         "spin-slow": {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
+        },
+        // --- FIXED AURORA ANIMATION SYNTAX ---
+        "aurora-shift": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
         },
       },
       animation: {
@@ -114,6 +122,7 @@ export default {
         "scale-in": "scale-in 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "spin-slow": "spin-slow 8s linear infinite",
+        "aurora": "aurora-shift 15s ease infinite alternate", // Registered here
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",

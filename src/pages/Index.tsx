@@ -1,52 +1,59 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Feed } from "@/components/feed/Feed";
 import { useAuth } from "@/hooks/useAuth";
 import { CampusCarousel } from "@/components/feed/CampusCarousel";
 import { StoriesBar } from "@/components/stories/StoriesBar";
+import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 
 export default function Index() {
   const { user, loading } = useAuth();
 
-  // Premium Loading State
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-        <div className="relative">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}
-            className="w-14 h-14 rounded-full border-t-4 border-primary border-b-transparent shadow-[0_0_15px_rgba(var(--primary),0.5)]"
-          />
-        </div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-primary animate-pulse">
-          Connecting to Alliance...
-        </p>
-      </div>
-    );
-  }
-
   return (
     <AppLayout>
-      {/* Container: We remove restricted horizontal padding to let the 
-         Carousel swipe freely to the screen edges.
-      */}
       <div className="max-w-2xl mx-auto w-full pb-20">
         
         {/* Stories - Padded for clean alignment */}
-        <div className="px-4 mb-6 mt-2">
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="px-4 mb-6 mt-2"
+        >
           <StoriesBar />
-        </div>
+        </motion.div>
 
-        {/* COMMAND CENTER 
-           This component handles its own internal horizontal padding 
-           to ensure the 'Swipe' feel is native and smooth.
-        */}
-        <CampusCarousel />
+        {/* Command Center - Native swipe feel */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <CampusCarousel />
+        </motion.div>
 
-        {/* Feed - Padded to match the rest of the UI */}
-        <div className="px-4 space-y-6">
-          <Feed />
+        {/* Feed Section with Layout Transitions */}
+        <div className="px-4 mt-8 space-y-6">
+          <AnimatePresence mode="popLayout">
+            {loading ? (
+              <motion.div
+                key="skeleton-loader"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <FeedSkeleton />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="main-feed"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Feed />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </AppLayout>

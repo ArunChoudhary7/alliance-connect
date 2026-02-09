@@ -1,74 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { motion, PanInfo } from "framer-motion";
-import { 
-  X, Eye, Trash2, MoreVertical, 
-  Heart, Send, Volume2, VolumeX,
-  Pause, Play, Users
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { X, Trash2, MoreVertical, Heart, Eye, Share2, ChevronRight, ChevronLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogTitle, AlertDialogFooter, AlertDialogHeader } from "@/components/ui/alert-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-
-// --- Types ---
-interface Story {
-  id: string;
-  user_id: string;
-  content: string | null;
-  media_url: string | null;
-  media_type: string | null;
-  background_color: string | null;
-  expires_at: string;
-  created_at: string;
-  view_count: number;
-  duration?: number;
-}
-
-interface StoryViewerData {
-  id: string;
-  viewer_id: string;
-  viewed_at: string;
-  has_liked?: boolean;
-  profile?: {
-    username: string | null;
-    avatar_url: string | null;
-  };
-}
-
-interface UserWithStories {
-  userId: string;
-  username: string;
-  avatarUrl: string | null;
-  stories: Story[];
-}
+import { CreateStoryModal } from "./CreateStoryModal";
 
 interface StoryViewerProps {
-  users: UserWithStories[];
+  users: any[];
   initialUserIndex: number;
   onClose: () => void;
   onRefresh: () => void;
@@ -76,427 +23,188 @@ interface StoryViewerProps {
 
 export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: StoryViewerProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   
-  // --- State ---
-  const [userIndex, setUserIndex] = useState(() => {
-    if (users.length === 0) return 0;
-    return Math.min(Math.max(initialUserIndex, 0), users.length - 1);
-  });
+  const [userIndex, setUserIndex] = useState(initialUserIndex);
   const [storyIndex, setStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Interaction State
-  const [replyText, setReplyText] = useState('');
   const [liked, setLiked] = useState(false);
-  
-  // Viewer Sheet State
+  const [showHeartAnim, setShowHeartAnim] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showViewers, setShowViewers] = useState(false);
-  const [viewers, setViewers] = useState<StoryViewerData[]>([]);
+  const [viewers, setViewers] = useState<any[]>([]);
+  const [showReshare, setShowReshare] = useState(false);
+  const [mentionedUsers, setMentionedUsers] = useState<any[]>([]);
+  const [replyText, setReplyText] = useState('');
   const [realtimeViewCount, setRealtimeViewCount] = useState(0);
-  
-  // Media State
-  const [isMuted, setIsMuted] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Derived
   const currentUser = users[userIndex];
   const currentStory = currentUser?.stories[storyIndex];
   const isOwnStory = currentStory?.user_id === user?.id;
+  const isMentioned = currentStory?.mentions?.includes(user?.id || '');
 
-  // --- Helpers ---
-
-  // Dynamic Duration
-  const getDuration = () => {
-    if (currentStory?.media_type === 'video' && videoDuration) {
-      return videoDuration * 1000;
-    }
-    return (currentStory?.duration || 5) * 1000; 
-  };
-  const STORY_DURATION = getDuration();
-
-  // Reset logic when switching users
   useEffect(() => {
-    if (users.length === 0) { onClose(); return; }
-    const clamped = Math.min(Math.max(initialUserIndex, 0), users.length - 1);
-    setUserIndex(clamped);
-    setStoryIndex(0);
-    setProgress(0);
-    setVideoDuration(null);
-    setLiked(false);
-    setReplyText('');
-  }, [initialUserIndex, users.length]);
+    if (!currentUser) { onClose(); return; }
+    setStoryIndex(0); setProgress(0); setLiked(false);
+    setRealtimeViewCount(currentStory?.view_count || 0);
+  }, [userIndex]);
 
-  // Check if current user liked the story
   useEffect(() => {
     if (!currentStory || !user) return;
-    const checkLikeStatus = async () => {
-      const { data } = await supabase
-        .from('story_likes')
-        .select('id')
-        .eq('story_id', currentStory.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-      setLiked(!!data);
-    };
-    checkLikeStatus();
+    supabase.from('story_likes').select('id').eq('story_id', currentStory.id).eq('user_id', user.id).maybeSingle().then(({ data }) => setLiked(!!data));
+    if (currentStory.mentions?.length) {
+      supabase.from('profiles').select('user_id, username').in('user_id', currentStory.mentions).then(({ data }) => setMentionedUsers(data || []));
+    } else setMentionedUsers([]);
+    if (!isOwnStory) supabase.rpc('increment_story_view', { p_story_id: currentStory.id, p_viewer_id: user.id });
   }, [currentStory, user]);
 
-  // Record View 
   useEffect(() => {
-    if (!currentStory || !user || isOwnStory) return;
-    const recordView = async () => {
-      await supabase.from('story_views').upsert(
-        { story_id: currentStory.id, viewer_id: user.id },
-        { onConflict: 'story_id, viewer_id', ignoreDuplicates: true }
-      );
-    };
-    recordView();
-  }, [currentStory?.id, user?.id, isOwnStory]);
-
-  // --- Navigation ---
-  const goToNextUser = useCallback(() => {
-    if (userIndex < users.length - 1) { 
-        setUserIndex(prev => prev + 1); 
-        setStoryIndex(0); 
-        setProgress(0); 
-        setVideoDuration(null);
-        setLiked(false);
-    } else { onClose(); }
-  }, [userIndex, users.length, onClose]);
-
-  const goToNextStory = useCallback(() => {
-    const cu = users[userIndex];
-    if (!cu || (cu.stories?.length ?? 0) === 0) { onClose(); return; }
-    if (storyIndex < (cu.stories.length - 1)) { 
-        setStoryIndex(prev => prev + 1); 
-        setProgress(0); 
-        setVideoDuration(null);
-        setLiked(false);
-    } else { goToNextUser(); }
-  }, [users, userIndex, storyIndex, goToNextUser, onClose]);
-
-  const goToPrevStory = useCallback(() => {
-    if (storyIndex > 0) { 
-        setStoryIndex(prev => prev - 1); 
-        setProgress(0); 
-        setVideoDuration(null);
-        setLiked(false);
-    } else if (userIndex > 0) {
-      const prevUser = users[userIndex - 1];
-      setUserIndex(prev => prev - 1);
-      setStoryIndex(Math.max(0, (prevUser.stories?.length ?? 0) - 1));
-      setProgress(0);
-      setVideoDuration(null);
-      setLiked(false);
-    }
-  }, [storyIndex, userIndex, users]);
-
-  // --- Timer ---
-  useEffect(() => {
-    if (isPaused || !currentUser || !currentStory) return;
-    if (currentStory.media_type === 'video' && !videoDuration) return;
-
+    if (isPaused || !currentStory) return;
+    const duration = currentStory.media_type === 'video' ? (videoDuration ? videoDuration * 1000 : 15000) : (currentStory.duration || 5) * 1000;
     const interval = setInterval(() => {
-      setProgress(prev => { 
-        if (prev >= 100) { 
-          goToNextStory(); 
-          return 0; 
-        } 
-        return prev + (100 / (STORY_DURATION / 100)); 
-      });
+      setProgress(prev => { if (prev >= 100) { handleNext(); return 0; } return prev + (100 / (duration / 100)); });
     }, 100);
     return () => clearInterval(interval);
-  }, [isPaused, goToNextStory, currentUser?.userId, currentStory?.id, videoDuration, STORY_DURATION]);
+  }, [isPaused, currentStory, videoDuration]);
 
+  const handleNext = () => {
+    if (storyIndex < currentUser.stories.length - 1) { setStoryIndex(p => p + 1); setProgress(0); }
+    else if (userIndex < users.length - 1) setUserIndex(p => p + 1);
+    else onClose();
+  };
 
-  // --- Actions ---
+  const handlePrev = () => {
+    if (storyIndex > 0) { setStoryIndex(p => p - 1); setProgress(0); }
+    else if (userIndex > 0) setUserIndex(p => p - 1);
+  };
 
   const handleLike = async () => {
-    if (!currentStory || !user) return;
-    const newStatus = !liked;
-    setLiked(newStatus); // Optimistic UI update
-
-    if (newStatus) {
-      await supabase.from('story_likes').insert({ user_id: user.id, story_id: currentStory.id });
-    } else {
-      await supabase.from('story_likes').delete().eq('user_id', user.id).eq('story_id', currentStory.id);
-    }
+    setLiked(!liked); setShowHeartAnim(true); setTimeout(() => setShowHeartAnim(false), 800);
+    if (!liked) await supabase.from('story_likes').insert({ user_id: user?.id, story_id: currentStory.id });
+    else await supabase.from('story_likes').delete().eq('user_id', user?.id).eq('story_id', currentStory.id);
   };
 
-  // --- FIXED REPLY FUNCTION WITH THUMBNAIL ATTACHMENT ---
-  const handleSendReply = async () => {
-    if (!replyText.trim() || !currentStory || !user || !currentUser) return;
-    
-    setIsPaused(true);
-    const text = replyText;
-    setReplyText(''); // Clear input immediately
-    
-    try {
-      // 1. Check if conversation exists
-      let convoId = null;
-      
-      const { data: existingConvo } = await supabase.from('conversations')
-        .select('id')
-        .or(`and(participant_1.eq.${user.id},participant_2.eq.${currentUser.userId}),and(participant_1.eq.${currentUser.userId},participant_2.eq.${user.id})`)
-        .maybeSingle();
-
-      if (existingConvo) {
-        convoId = existingConvo.id;
-      } else {
-        // 2. Create if not exists
-        const { data: newConvo, error: createError } = await supabase.from('conversations')
-          .insert({ participant_1: user.id, participant_2: currentUser.userId })
-          .select()
-          .single();
-        
-        if (createError) throw createError;
-        convoId = newConvo.id;
-      }
-
-      // 3. Send Message WITH MEDIA ATTACHMENT
-      // We pass the story's media_url as the message's media_url so it shows as a thumbnail
-      const { error: msgError } = await supabase.from('direct_messages').insert({
-        conversation_id: convoId,
-        sender_id: user.id,
-        content: `Replied to your story: ${text}`, // Context
-        story_id: currentStory.id,
-        // ATTACH THE THUMBNAIL HERE:
-        media_url: currentStory.media_url || null, 
-        message_type: currentStory.media_type || 'text'
-      });
-
-      if (msgError) throw msgError;
-
-      // 4. Update Conversation Timestamp
-      await supabase.from('conversations')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', convoId);
-      
-      toast.success("Reply sent!");
-
-    } catch (error: any) {
-      console.error(error);
-      toast.error("Failed to send reply");
-      setReplyText(text); // Restore text on fail
-    } finally {
-      setIsPaused(false);
-    }
+  const handleDelete = async () => {
+    await supabase.from('stories').delete().eq('id', currentStory.id);
+    toast.success("Story deleted");
+    onRefresh(); onClose();
   };
 
-  const fetchViewersData = async () => {
-    if (!currentStory) return;
-    
-    // 1. Fetch Views
-    const { data: viewsData, error } = await supabase
-      .from('story_views')
-      .select(`id, viewer_id, viewed_at`)
-      .eq('story_id', currentStory.id)
-      .order('viewed_at', { ascending: false });
-
-    // 2. Fetch Likes for this story
-    const { data: likesData } = await supabase
-      .from('story_likes')
-      .select('user_id')
-      .eq('story_id', currentStory.id);
-
-    const likerIds = new Set(likesData?.map(l => l.user_id));
-
-    if (!error && viewsData) {
-      setRealtimeViewCount(viewsData.length);
-      const viewerIds = viewsData.map(v => v.viewer_id);
-      
-      // 3. Fetch Profiles
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, username, avatar_url')
-        .in('user_id', viewerIds);
-        
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-      
-      setViewers(viewsData.map(v => ({ 
-        ...v, 
-        profile: profileMap.get(v.viewer_id),
-        has_liked: likerIds.has(v.viewer_id) 
-      })));
-    }
-  };
-
-  const handleDeleteStory = async () => {
-    if (!currentStory || !user) return;
-    setIsDeleting(true);
-    try {
-      const { error } = await supabase.from('stories').delete().eq('id', currentStory.id).eq('user_id', user.id);
-      if (error) throw error;
-      toast.success('Moment deleted');
-      const currentStoryCount = currentUser?.stories?.length ?? 0;
-      if (currentStoryCount <= 1) {
-        if (users.length <= 1) onClose(); else goToNextUser();
-      } else {
-        if (storyIndex > 0) setStoryIndex(prev => prev - 1);
-        setProgress(0);
-      }
-      onRefresh();
-    } catch (error: any) { toast.error(error.message || 'Failed to delete'); } 
-    finally { setIsDeleting(false); setShowDeleteDialog(false); }
-  };
-
-  const handleDragEnd = (event: any, info: PanInfo) => {
-    const threshold = 50;
-    if (info.offset.x > threshold) goToPrevStory(); else if (info.offset.x < -threshold) goToNextStory(); else if (info.offset.y > threshold * 2) onClose();
+  const fetchViewers = async () => {
+    setIsPaused(true); setShowViewers(true);
+    const { data } = await supabase.from('story_views').select(`viewed_at, profiles(username, avatar_url, full_name)`).eq('story_id', currentStory.id).order('viewed_at', { ascending: false });
+    if (data) { setViewers(data.map((v: any) => ({ ...v.profiles, viewed_at: v.viewed_at }))); setRealtimeViewCount(data.length); }
   };
 
   if (!currentUser || !currentStory) return null;
 
-  const content = (
-    <motion.div ref={containerRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black flex items-center justify-center" style={{ zIndex: 99999 }}>
-      
-      {/* --- Top Controls --- */}
-      <div className="absolute top-4 right-4 z-30 flex items-center gap-2">
-        {isOwnStory && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><button className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"><MoreVertical className="h-5 w-5" /></button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover border border-border z-[100000]"><DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete Moment</DropdownMenuItem></DropdownMenuContent>
-          </DropdownMenu>
-        )}
-        <button onClick={onClose} className="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"><X className="h-5 w-5" /></button>
-      </div>
+  return createPortal(
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 bg-black/95 z-[99999] flex items-center justify-center backdrop-blur-sm">
+      <button onClick={handlePrev} className="hidden md:flex absolute left-4 text-white/50 hover:text-white p-4"><ChevronLeft className="w-12 h-12" /></button>
+      <button onClick={handleNext} className="hidden md:flex absolute right-4 text-white/50 hover:text-white p-4"><ChevronRight className="w-12 h-12" /></button>
 
-      <button onClick={() => setIsPaused(p => !p)} className="absolute top-4 left-1/2 -translate-x-1/2 z-30 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors">{isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}</button>
-
-      {/* --- Main Story Card --- */}
-      <motion.div 
-        drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.2} onDragEnd={handleDragEnd} 
-        onMouseDown={() => setIsPaused(true)} onMouseUp={() => setIsPaused(false)} 
-        onTouchStart={() => setIsPaused(true)} onTouchEnd={() => setIsPaused(false)} 
-        className="relative w-full max-w-md h-full max-h-[90vh] mx-auto touch-pan-y"
-      >
-        
-        {/* Progress Bars */}
-        <div className="absolute top-2 left-2 right-2 flex gap-1 z-20">
-          {currentUser.stories.map((_, idx) => (
-            <div key={idx} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-              <motion.div 
-                className="h-full bg-white" 
-                initial={{ width: idx < storyIndex ? '100%' : '0%' }} 
-                animate={{ width: idx < storyIndex ? '100%' : idx === storyIndex ? `${progress}%` : '0%' }} 
-                transition={{ duration: 0.1 }} 
-              />
+      <motion.div className="relative w-full md:max-w-[420px] h-full md:h-[85vh] bg-black md:rounded-[32px] overflow-hidden shadow-2xl border border-white/10" onMouseDown={() => setIsPaused(true)} onMouseUp={() => setIsPaused(false)}>
+        <div className="absolute top-3 left-3 right-3 flex gap-1.5 z-30">
+          {currentUser.stories.map((_: any, i: number) => (
+            <div key={i} className="flex-1 h-[3px] bg-white/20 rounded-full overflow-hidden">
+              <motion.div className="h-full bg-white shadow-[0_0_10px_white]" initial={{ width: i < storyIndex ? '100%' : '0%' }} animate={{ width: i < storyIndex ? '100%' : i === storyIndex ? `${progress}%` : '0%' }} transition={{ duration: 0.1, ease: "linear" }} />
             </div>
           ))}
         </div>
 
-        {/* Header Info */}
-        <div className="absolute top-8 left-3 right-3 flex items-center gap-3 z-20">
-          <Avatar className="h-10 w-10 ring-2 ring-white/50"><AvatarImage src={currentUser.avatarUrl || undefined} /><AvatarFallback className="bg-primary text-primary-foreground">{currentUser.username.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
-          <div className="flex-1 min-w-0"><p className="text-white font-semibold text-sm truncate">{currentUser.username}</p><p className="text-white/60 text-xs">{formatDistanceToNow(new Date(currentStory.created_at), { addSuffix: true })}</p></div>
-          {currentStory.media_type === 'video' && <button onClick={() => setIsMuted(!isMuted)} className="p-2 rounded-full bg-black/30 text-white">{isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}</button>}
+        <div className="absolute top-8 left-4 right-4 flex items-start justify-between z-50 pointer-events-none">
+          <div className="flex items-center gap-3 pointer-events-auto cursor-pointer" onClick={() => { onClose(); navigate(`/profile/${currentUser.username}`); }}>
+            <Avatar className="h-9 w-9 ring-2 ring-white/30"><AvatarImage src={currentUser.avatarUrl} /><AvatarFallback>{currentUser.username[0]}</AvatarFallback></Avatar>
+            <div><p className="text-white font-bold text-sm shadow-black drop-shadow-md">{currentUser.username}</p><p className="text-white/70 text-[10px]">{formatDistanceToNow(new Date(currentStory.created_at))} ago</p></div>
+          </div>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {isOwnStory && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><button className="p-2 text-white/90 bg-black/20 rounded-full backdrop-blur-sm hover:bg-black/40"><MoreVertical className="w-5 h-5" /></button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-neutral-900 border-neutral-800 text-white z-[60]"><DropdownMenuItem onClick={() => { setIsPaused(true); setShowDeleteDialog(true); }} className="text-red-500 cursor-pointer"><Trash2 className="w-4 h-4 mr-2" /> Delete Story</DropdownMenuItem></DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <button onClick={onClose} className="p-2 text-white/90 bg-black/20 rounded-full backdrop-blur-sm hover:bg-black/40"><X className="w-6 h-6" /></button>
+          </div>
         </div>
 
-        {/* Media Content */}
-        <motion.div key={currentStory.id} initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="w-full h-full rounded-xl overflow-hidden" style={{ backgroundColor: currentStory.media_url ? 'black' : (currentStory.background_color || '#6366f1') }}>
+        <div className="w-full h-full flex items-center justify-center bg-neutral-900">
           {currentStory.media_url ? (
-            currentStory.media_type === 'video' ? (
-                <video ref={videoRef} src={currentStory.media_url} className="w-full h-full object-contain" autoPlay muted={isMuted} onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)} playsInline />
-            ) : (
-                <img src={currentStory.media_url} alt="Story" className="w-full h-full object-contain" />
-            )
+            currentStory.media_type === 'video' ? 
+              <video ref={videoRef} src={currentStory.media_url} className="w-full h-full object-cover" autoPlay muted playsInline onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)} /> :
+              <img src={currentStory.media_url} className="w-full h-full object-cover" alt="story" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center p-8"><p className="text-white text-2xl md:text-3xl font-bold text-center leading-relaxed">{currentStory.content}</p></div>
+            <div className="w-full h-full flex items-center justify-center p-8 text-center" style={{ background: currentStory.background_color || '#222' }}>
+              <p className="text-white font-bold text-2xl leading-relaxed">{currentStory.content}</p>
+            </div>
           )}
-        </motion.div>
+          {currentStory.content && currentStory.media_url && <div className="absolute bottom-32 bg-black/50 px-4 py-2 rounded-xl text-white font-medium backdrop-blur-md z-20 text-center max-w-[90%]">{currentStory.content}</div>}
+          
+          {mentionedUsers.map((u, i) => (
+            <div key={i} onClick={(e) => { e.stopPropagation(); onClose(); navigate(`/profile/${u.username}`); }} className="absolute top-1/2 left-1/2 bg-white text-black px-4 py-1.5 rounded-lg shadow-xl flex items-center gap-1 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer active:scale-95 transition-transform z-40">
+               <span className="text-purple-600 font-black">@</span><span className="font-bold text-sm uppercase">{u.username}</span>
+            </div>
+          ))}
+        </div>
 
-        {/* --- Bottom Interactions --- */}
-        <div className="absolute bottom-4 left-3 right-3 z-30">
+        <div className="absolute inset-y-0 left-0 w-1/3 z-10" onClick={handlePrev} />
+        <div className="absolute inset-y-0 right-0 w-1/3 z-10" onClick={handleNext} />
+
+        <div className="absolute bottom-0 left-0 right-0 p-4 pb-6 bg-gradient-to-t from-black/90 to-transparent z-30 flex items-center gap-3">
           {isOwnStory ? (
-            <button 
-                onClick={() => { fetchViewersData(); setShowViewers(true); setIsPaused(true); }} 
-                className="flex items-center gap-2 px-4 py-3 rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 transition-all mx-auto w-full justify-center border border-white/10"
-            >
-                <Users className="h-5 w-5" />
-                <span className="font-bold">{realtimeViewCount > 0 ? `${realtimeViewCount} Viewers` : 'No views yet'}</span>
+            <button onClick={fetchViewers} className="flex items-center gap-2 px-4 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-white w-full justify-center active:scale-95 transition-transform">
+              <Eye className="w-4 h-4" /><span className="font-bold text-sm">{realtimeViewCount > 0 ? `${realtimeViewCount} Viewers` : 'No views'}</span>
             </button>
           ) : (
-            <div className="flex items-center gap-3">
-              <Input 
-                value={replyText} 
-                onChange={(e) => setReplyText(e.target.value)} 
-                onKeyDown={(e) => e.key === 'Enter' && handleSendReply()}
-                placeholder={`Reply to ${currentUser.username}...`} 
-                className="bg-black/40 backdrop-blur-md border-white/20 text-white rounded-full h-12 pl-5 focus:border-white/50 focus:bg-black/60 transition-all placeholder:text-white/50 flex-1" 
-                onFocus={() => setIsPaused(true)} 
-                onBlur={() => setIsPaused(false)} 
-              />
-              
-              {/* Send (only if typing) */}
-              {replyText.trim().length > 0 && (
-                <button 
-                  onClick={handleSendReply}
-                  className="p-3 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-90 transition-all animate-in zoom-in"
-                >
-                  <Send className="h-5 w-5" />
+            <div className="flex items-center gap-3 w-full">
+              {isMentioned && (
+                <button onClick={() => { setIsPaused(true); setShowReshare(true); }} className="px-4 py-2 bg-white text-black rounded-full font-bold text-xs flex items-center gap-2 shadow-lg active:scale-95 transition-transform whitespace-nowrap">
+                   <Share2 className="w-4 h-4" /> Add to your story
                 </button>
               )}
-
-              {/* Like Button */}
-              <button 
-                onClick={handleLike}
-                className="p-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white active:scale-90 transition-transform hover:bg-white/10"
-              >
-                <Heart className={`h-6 w-6 transition-colors ${liked ? "fill-purple-500 text-purple-500" : "text-white"}`} />
-              </button>
+              <Input value={replyText} onChange={(e) => setReplyText(e.target.value)} placeholder={`Reply...`} className="flex-1 bg-white/10 border-white/10 text-white rounded-full h-12 px-5 backdrop-blur-md focus:bg-white/20" onFocus={() => setIsPaused(true)} onBlur={() => setIsPaused(false)} />
+              <div className="relative">
+                <AnimatePresence>{showHeartAnim && <motion.div initial={{ opacity: 0, scale: 0.5, y: 0 }} animate={{ opacity: 1, scale: 1.5, y: -50 }} exit={{ opacity: 0 }} className="absolute -top-10 left-0 pointer-events-none"><Heart className="w-10 h-10 fill-purple-500 text-purple-500" /></motion.div>}</AnimatePresence>
+                <button onClick={handleLike} className="p-3 rounded-full hover:bg-white/10 active:scale-90 transition-transform"><Heart className={`w-8 h-8 transition-colors ${liked ? "fill-purple-500 text-purple-500" : "text-white"}`} /></button>
+              </div>
             </div>
           )}
         </div>
-
-        {/* Tap Zones */}
-        <button onClick={goToPrevStory} className="absolute left-0 top-20 bottom-24 w-1/4 z-10 opacity-0">Prev</button>
-        <button onClick={goToNextStory} className="absolute right-0 top-20 bottom-24 w-1/4 z-10 opacity-0">Next</button>
       </motion.div>
 
-      {/* --- Viewers Sheet --- */}
-      <Sheet open={showViewers} onOpenChange={(open) => { setShowViewers(open); if (!open) setIsPaused(false); }}>
-        <SheetContent side="bottom" className="h-[60vh] rounded-t-3xl border-t border-border">
-          <SheetHeader><SheetTitle className="flex items-center gap-2"><Eye className="h-5 w-5" /> Story Insights</SheetTitle></SheetHeader>
-          <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(60vh-100px)]">
-            {viewers.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No views yet.</p>
-            ) : (
-                viewers.map((viewer) => (
-                <div key={viewer.id} className="flex items-center justify-between p-3 rounded-2xl bg-secondary/10 hover:bg-secondary/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border border-border"><AvatarImage src={viewer.profile?.avatar_url || undefined} /><AvatarFallback>{viewer.profile?.username?.slice(0, 2).toUpperCase() || '??'}</AvatarFallback></Avatar>
-                        <div>
-                            <p className="font-bold text-sm">{viewer.profile?.username || 'Unknown'}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">{formatDistanceToNow(new Date(viewer.viewed_at), { addSuffix: true })}</p>
-                        </div>
-                    </div>
-                    {viewer.has_liked && (
-                        <div className="p-2 bg-purple-500/10 rounded-full">
-                            <Heart className="h-4 w-4 fill-purple-500 text-purple-500" />
-                        </div>
-                    )}
-                </div>
-                ))
-            )}
-          </div>
+      <Sheet open={showViewers} onOpenChange={(o) => { setShowViewers(o); if(!o) setIsPaused(false); }}>
+        <SheetContent side="bottom" className="h-[60vh] rounded-t-[32px] bg-neutral-900 border-none p-0 text-white z-[100000]">
+           <div className="flex justify-center p-3"><div className="w-10 h-1 bg-white/20 rounded-full" /></div>
+           <div className="px-6 pb-4 border-b border-white/5"><h2 className="text-white font-bold text-lg flex items-center gap-2"><Eye className="w-5 h-5 text-purple-500" /> {viewers.length} Views</h2></div>
+           <div className="overflow-y-auto h-full px-4 pb-20 pt-2 space-y-2">
+              {viewers.length === 0 && <p className="text-center text-white/30 py-10">No views yet.</p>}
+              {viewers.map((v, i) => (
+                 <div key={i} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-2xl transition-colors">
+                    <div className="flex items-center gap-3"><Avatar className="w-10 h-10 border border-white/10"><AvatarImage src={v.avatar_url} /><AvatarFallback>{v.username?.[0]}</AvatarFallback></Avatar><div><p className="text-white font-bold text-sm">{v.username}</p><p className="text-white/40 text-xs">{v.full_name}</p></div></div>
+                    <span className="text-white/30 text-[10px]">{formatDistanceToNow(new Date(v.viewed_at))} ago</span>
+                 </div>
+              ))}
+           </div>
         </SheetContent>
       </Sheet>
 
-      {/* --- Delete Dialog --- */}
+      <CreateStoryModal 
+         open={showReshare} 
+         onOpenChange={(o) => { setShowReshare(o); if(!o) setIsPaused(false); }} 
+         onCreated={() => { setShowReshare(false); toast.success("Shared!"); }} 
+         reshareStoryId={currentStory?.id} 
+         reshareMediaUrl={currentStory?.media_url} 
+         reshareMediaType={currentStory?.media_type}
+         reshareUser={currentUser} // PASSES USER INFO FOR CARD
+      />
+      
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-background border border-border z-[100001]">
-          <AlertDialogHeader><AlertDialogTitle>Delete Moment</AlertDialogTitle><AlertDialogDescription>Are you sure?</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDeleteStory} disabled={isDeleting} className="bg-destructive text-destructive-foreground">Delete</AlertDialogAction></AlertDialogFooter>
-        </AlertDialogContent>
+        <AlertDialogContent className="bg-neutral-900 border-white/10 text-white rounded-3xl z-[100001]"><AlertDialogHeader><AlertDialogTitle>Delete Story?</AlertDialogTitle></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel className="bg-white/10 border-none text-white hover:bg-white/20">Cancel</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-red-500 text-white hover:bg-red-600">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
       </AlertDialog>
-    </motion.div>
+    </motion.div>, document.body
   );
-
-  return createPortal(content, document.body);
 }

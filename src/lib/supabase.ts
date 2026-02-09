@@ -6,7 +6,7 @@ export function isValidAllianceEmail(email: string): boolean {
   return email.toLowerCase().endsWith(ALLOWED_DOMAIN);
 }
 
-// --- AUTH FUNCTIONS (FIXES AUTHFORM.TSX ERRORS) ---
+// --- AUTH FUNCTIONS ---
 export async function signUp(email: string, password: string) {
   if (!isValidAllianceEmail(email)) {
     return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
@@ -58,7 +58,7 @@ export async function isFollowing(followerId: string, followingId: string) {
   const { data, error } = await supabase.from("follows").select("id").eq("follower_id", followerId).eq("following_id", followingId).maybeSingle();
   return { isFollowing: !!data, error };
 }
-export const checkIsFollowing = isFollowing; // Alias for compatibility
+export const checkIsFollowing = isFollowing; 
 
 export async function getFollowerCount(userId: string) {
   return await supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId);
@@ -69,7 +69,15 @@ export async function getFollowingCount(userId: string) {
 }
 
 // --- POSTS & FEED ---
-export async function createPost(post: { user_id: string; content?: string; images?: string[] | null; video_url?: string | null }) {
+// --- POSTS & FEED (UPDATED FOR STEALTH MODE) ---
+export async function createPost(post: { 
+  user_id: string; 
+  content?: string; 
+  images?: string[] | null; 
+  video_url?: string | null;
+  expires_at?: string | null; // Added this
+  is_stealth?: boolean;       // Added this
+}) {
   return await supabase.from("posts").insert([post]).select().single();
 }
 
@@ -97,9 +105,24 @@ export async function getSavedPosts(userId: string) {
   return { data: postsData || [], error: null };
 }
 
-// --- COMMENTS & AURA ---
+// --- COMMENTS & AURA (FIXED JOIN SYNTAX) ---
 export async function getComments(postId: string) {
-  return await supabase.from("comments").select("*, profiles(full_name, avatar_url)").eq("post_id", postId).order("created_at", { ascending: true });
+  return await supabase
+    .from("comments")
+    .select(`
+      id,
+      content,
+      created_at,
+      post_id,
+      user_id,
+      profiles:user_id (
+        username,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq("post_id", postId)
+    .order("created_at", { ascending: true });
 }
 
 export async function createComment(comment: { user_id: string; post_id: string; content: string, parent_id?: string }) {
