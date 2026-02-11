@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { MessageCircle } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ConversationList } from "@/components/messages/ConversationList";
 import { ChatView } from "@/components/messages/ChatView";
@@ -9,7 +7,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-// We use 'export default' here to match line 17 of your App.tsx
 export default function Messages() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -46,15 +43,17 @@ export default function Messages() {
 
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] flex border border-border/50 rounded-2xl overflow-hidden bg-background/50">
+      {/* FIXED: Removed 'fixed inset-0'. Now uses standard height so your bottom nav stays visible. */}
+      <div className="w-full h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-background">
+        
         {(!isMobile || !selectedConversation) && (
-          <div className={`${isMobile ? 'w-full' : 'w-80'} border-r border-border/50 flex flex-col`}>
-            <div className="p-4 border-b border-border/50"><h1 className="text-xl font-bold">Messages</h1></div>
+          <div className={`${isMobile ? 'w-full' : 'w-96'} border-r border-white/5 flex flex-col bg-background h-full`}>
             <ConversationList key={refreshKey} onSelectConversation={handleSelectConversation} selectedId={selectedConversation?.id} />
           </div>
         )}
+
         {selectedConversation && (
-          <div className="flex-1">
+          <div className="flex-1 bg-background relative h-full">
             <ChatView 
               conversationId={selectedConversation.id} 
               otherUser={selectedConversation.other_user} 
@@ -63,6 +62,7 @@ export default function Messages() {
             />
           </div>
         )}
+        
       </div>
     </AppLayout>
   );

@@ -1,43 +1,61 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// FIXED: Added 'videos' to the BucketName type
 export type BucketName = 'avatars' | 'covers' | 'posts' | 'stories' | 'marketplace' | 'events' | 'circles' | 'lost-found' | 'chat' | 'videos';
 
+// CLOUDINARY CONFIG
+const CLOUD_NAME = "dq9kqhji0";
+const UPLOAD_PRESET = "alliance_preset";
+
 /**
- * Helper: Compress image using Browser Canvas API
+ * Helper: Hyper-optimized image compression for mobile feeds.
  */
 async function compressImage(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) return file;
-  if (file.size < 1024 * 1024 || file.type === 'image/gif') return file;
+  if (!file.type.startsWith('image/') || file.type === 'image/gif') return file;
+  if (file.size < 200 * 1024) return file;
 
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
+    
     img.onload = () => {
       URL.revokeObjectURL(url);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return resolve(file);
 
-      const MAX_SIZE = 1920;
-      let width = img.width, height = img.height;
-      if (width > height) { if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } } 
-      else { if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } }
+      const MAX_SIZE = 1080; 
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) { 
+          if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } 
+      } else { 
+          if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; } 
+      }
 
       canvas.width = width;
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
+      
       canvas.toBlob((blob) => {
         if (!blob) return resolve(file);
-        resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg', lastModified: Date.now() }));
-      }, 'image/jpeg', 0.8);
+        const fileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+        const compressedFile = new File([blob], fileName, { 
+            type: 'image/webp', 
+            lastModified: Date.now() 
+        });
+        resolve(compressedFile);
+      }, 'image/webp', 0.75);
     };
+    
+    img.onerror = () => resolve(file);
     img.src = url;
   });
 }
 
 /**
- * Upload a single file to a specific bucket
+ * Uploads to Cloudinary instead of Supabase Storage.
+ * Saves your 1GB Supabase limit!
  */
 export async function uploadFile(
   bucket: BucketName,
@@ -45,29 +63,40 @@ export async function uploadFile(
   userId: string
 ): Promise<{ url: string | null; error: Error | null }> {
   try {
+    // 1. Compress if it's an image
     const processedFile = await compressImage(file);
-    const fileExt = processedFile.name.split('.').pop();
-    const fileName = `${userId}/${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, processedFile, {
-        cacheControl: '3600',
-        upsert: false
-      });
+    // 2. Prepare Cloudinary Form Data
+    const formData = new FormData();
+    formData.append('file', processedFile);
+    formData.append('upload_preset', UPLOAD_PRESET);
+    // Optional: Use 'bucket' as a tag to organize files in Cloudinary
+    formData.append('tags', bucket); 
 
-    if (uploadError) return { url: null, error: uploadError as any };
+    // 3. Upload to Cloudinary
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    return { url: data.publicUrl, error: null };
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Cloudinary upload failed');
+    }
+
+    const data = await response.json();
+
+    // 4. Return the secure URL
+    return { url: data.secure_url, error: null };
   } catch (error) {
+    console.error("Upload Error:", error);
     return { url: null, error: error as Error };
   }
 }
 
-/**
- * NEW: Upload multiple files at once (Used by Circles)
- */
 export async function uploadMultipleFiles(
   bucket: BucketName,
   files: File[],
@@ -84,20 +113,18 @@ export async function uploadMultipleFiles(
 }
 
 /**
- * Delete a file from storage
+ * Note: Deleting from Cloudinary requires a 'Signed' request or an API key.
+ * For an MVP, we can keep the files there or implement a Supabase Edge Function later.
  */
 export async function deleteFile(
   bucket: BucketName,
   filePath: string
 ): Promise<{ error: Error | null }> {
-  const { error } = await supabase.storage.from(bucket).remove([filePath]);
-  return { error: error as any };
+  console.warn("Delete requested for:", filePath, " - Implement signed delete if needed.");
+  return { error: null };
 }
 
-/**
- * Get public URL helper
- */
 export function getPublicUrl(bucket: BucketName, path: string): string {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+  // Since Cloudinary URLs are absolute, we just return the path if it's already a URL
+  return path;
 }

@@ -1,119 +1,190 @@
 import { useState, useEffect, useCallback } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, X, SmilePlus, Reply as ReplyIcon, Trash2, MoreHorizontal } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { createComment, getComments } from "@/lib/supabase";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { getInitials } from "@/lib/utils";
+import { getInitials, cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export function PostComments({ postId, open, onOpenChange, postOwnerId }: any) {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [comments, setComments] = useState<any[]>([]);
   const [content, setContent] = useState("");
+  const [replyTo, setReplyTo] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const quickEmojis = ["🔥", "❤️", "😂", "😮", "🙌", "💯", "✨", "🫡"];
 
   const fetchComments = useCallback(async () => {
     if (!postId) return;
     setLoading(true);
-    try {
-      const { data, error } = await getComments(postId);
-      if (error) {
-        console.error("Error fetching comments:", error);
-        return;
-      }
-      if (data) {
-        const sanitizedComments = data.map((c: any) => ({
-          ...c,
-          profiles: c.profiles || { full_name: 'AU User', username: 'user', avatar_url: null }
-        }));
-        setComments(sanitizedComments);
-      }
-    } finally {
-      setLoading(false);
+    const { data, error } = await getComments(postId);
+    if (!error && data) {
+      setComments(data.map((c: any) => ({ 
+        ...c, 
+        profiles: c.profiles || { full_name: 'Unknown User', username: 'user' } 
+      })));
     }
+    setLoading(false);
   }, [postId]);
 
   useEffect(() => {
     if (open && postId) {
       fetchComments();
-      const channel = supabase
-        .channel(`comments_realtime_${postId}`) 
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, () => fetchComments())
+      const channel = supabase.channel(`comments_${postId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${postId}` }, fetchComments)
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     }
   }, [postId, open, fetchComments]);
 
-  const handleSubmit = async () => {
-    if (!user || !content.trim() || submitting) return;
-    setSubmitting(true);
+const handleSubmit = async (emoji?: string) => {
+  const txt = emoji || content;
+  if (!user || !postId || !txt.trim() || submitting) return;
+
+  setSubmitting(true);
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .insert({
+        user_id: user.id,
+        post_id: postId,
+        content: txt.trim(),
+        parent_id: replyTo?.id ?? null,
+      })
+      .select(`
+        *,
+        profiles:user_id (
+          username,
+          full_name,
+          avatar_url
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    // Update state & UI
+    setComments(prev => [...prev, data]);
+    setContent("");
+    setReplyTo(null);
+    toast.success("Commented");
+    
+  } catch (e: any) {
+    console.error("Comment Error:", e);
+    toast.error(e.message || "Failed to post");
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+  const handleDelete = async (commentId: string) => {
     try {
-      const { error } = await createComment({ 
-        user_id: user.id, 
-        post_id: postId, 
-        content: content.trim() 
-      });
-      if (!error) {
-        setContent("");
-        fetchComments();
-        if (postOwnerId && postOwnerId !== user.id) {
-          await supabase.from("notifications").insert({ 
-            user_id: postOwnerId, 
-            actor_id: user.id,
-            type: "comment", 
-            entity_id: postId,
-            content: `${profile?.full_name || 'Someone'} commented on your post`
-          });
-        }
-      }
-    } catch (err) {
-      console.error("Comment submit error:", err);
-    } finally {
-      setSubmitting(false);
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+      setComments(prev => prev.filter(c => c.id !== commentId));
+      toast.success("Comment Removed");
+    } catch (e) {
+      toast.error("Failed to delete");
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md flex flex-col h-[80vh] bg-black/95 border-white/10 backdrop-blur-xl">
-        <DialogHeader><DialogTitle className="text-white font-bold">Comments</DialogTitle></DialogHeader>
-        <div className="flex-1 overflow-y-auto py-4 space-y-4 scrollbar-hide">
-          {loading && comments.length === 0 ? (
-            <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="z-[1100] h-[85vh] rounded-t-[3rem] border-t border-white/10 bg-black/90 backdrop-blur-3xl p-0 flex flex-col outline-none shadow-2xl">
+        <SheetHeader className="p-6 border-b border-white/5">
+          <SheetTitle className="text-center font-black uppercase italic tracking-tighter text-xl theme-text">Comments</SheetTitle>
+        </SheetHeader>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+          {loading ? (
+            <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary opacity-50" /></div>
           ) : comments.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-10">No comments yet. Be the first!</p>
+            <div className="text-center opacity-20 py-20 flex flex-col items-center">
+              <SmilePlus className="mb-4 h-12 w-12" />
+              <p className="font-black uppercase text-xs tracking-widest">Zero replies detected</p>
+            </div>
           ) : (
-            comments.map((c: any) => (
-              <div key={c.id} className="flex gap-3 animate-in fade-in slide-in-from-bottom-2">
-                <Avatar className="h-8 w-8 shrink-0 border border-white/10">
+            comments.map((c) => (
+              <div key={c.id} className={cn("flex gap-4 group", c.parent_id && "ml-10 border-l border-white/5 pl-4")}>
+                <Avatar className="h-9 w-9 border border-white/10">
                   <AvatarImage src={c.profiles?.avatar_url} />
-                  <AvatarFallback className="bg-secondary text-[10px]">{getInitials(c.profiles?.full_name)}</AvatarFallback>
+                  <AvatarFallback className="theme-bg">{getInitials(c.profiles?.full_name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 space-y-1">
-                  <div className="bg-white/5 border border-white/5 p-3 rounded-2xl text-sm">
-                    <p className="font-bold text-xs text-primary mb-1">@{c.profiles?.username || 'user'}</p>
-                    <p className="text-white/90 leading-snug">{c.content}</p>
+                  <div className="flex items-start justify-between bg-white/5 p-4 rounded-3xl rounded-tl-none border border-white/5">
+                    <div className="flex-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest theme-text mb-1">@{c.profiles?.username}</p>
+                      <p className="text-sm text-white/90 leading-relaxed font-medium">{c.content}</p>
+                    </div>
+                    {/* DELETE/OPTIONS (INSTA STYLE) */}
+                    {(user?.id === c.user_id || user?.id === postOwnerId) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 ml-2">
+                            <MoreHorizontal className="h-4 w-4 opacity-50" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-black/95 border-white/10 rounded-xl">
+                          <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-red-500 font-bold uppercase text-[10px]">
+                            <Trash2 className="h-3 w-3 mr-2" /> Delete Comment
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
-                  <p className="text-[10px] text-white/40 px-2 font-medium">
-                    {c.created_at ? formatDistanceToNow(new Date(c.created_at), { addSuffix: true }) : ''}
-                  </p>
+                  <div className="flex gap-4 px-2 text-[10px] font-black uppercase tracking-widest opacity-30 mt-1">
+                    <span>{formatDistanceToNow(new Date(c.created_at))}</span>
+                    <button onClick={() => setReplyTo({ id: c.id, username: c.profiles?.username })} className="hover:text-primary">Reply</button>
+                  </div>
                 </div>
               </div>
             ))
           )}
         </div>
-        <div className="flex gap-2 pt-4 border-t border-white/10">
-          <Input value={content} onChange={e => setContent(e.target.value)} placeholder="Write a comment..." className="bg-white/5 border-white/10 text-white rounded-full h-11 px-4" onKeyDown={(e) => e.key === 'Enter' && handleSubmit()} />
-          <Button onClick={handleSubmit} disabled={submitting || !content.trim()} size="icon" className="rounded-full h-11 w-11 bg-primary hover:bg-primary/90 shrink-0">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
+
+        {/* INPUT DOCK */}
+        <div className="p-6 bg-black/60 border-t border-white/5 pb-10 space-y-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          {replyTo && (
+            <div className="flex items-center justify-between bg-primary/10 border border-primary/20 px-4 py-2 rounded-2xl">
+              <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <ReplyIcon className="h-3 w-3" /> Replying to @{replyTo.username}
+              </p>
+              <button onClick={() => setReplyTo(null)} className="opacity-50 hover:opacity-100 p-1"><X className="h-4 w-4" /></button>
+            </div>
+          )}
+
+          <div className="flex gap-3 justify-center overflow-x-auto no-scrollbar">
+            {quickEmojis.map(e => (
+              <button key={e} onClick={() => handleSubmit(e)} className="text-2xl hover:scale-125 transition-transform active:scale-90">{e}</button>
+            ))}
+          </div>
+
+          <div className="flex gap-2 relative">
+            <Input 
+              value={content} 
+              onChange={e => setContent(e.target.value)} 
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+              placeholder={replyTo ? `Add a reply...` : "Add a comment..."} 
+              className="rounded-2xl border-white/10 bg-white/5 h-14 pr-14 text-sm placeholder:opacity-20" 
+            />
+            <Button 
+              onClick={() => handleSubmit()} 
+              disabled={submitting || !content.trim()} 
+              className="absolute right-2 top-2 h-10 w-10 rounded-xl theme-bg shadow-lg shadow-primary/20"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

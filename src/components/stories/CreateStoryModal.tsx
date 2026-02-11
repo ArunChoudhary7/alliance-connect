@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface CreateStoryModalProps {
   open: boolean;
@@ -20,7 +21,7 @@ interface CreateStoryModalProps {
   reshareStoryId?: string; 
   reshareMediaUrl?: string;
   reshareMediaType?: string;
-  reshareUser?: { username: string; avatarUrl: string | null }; // Passed from viewer
+  reshareUser?: { username: string; avatarUrl: string | null };
 }
 
 const BACKGROUND_GRADIENTS = [
@@ -56,15 +57,24 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- LOGIC: MASTER MEDIA RESOLVER ---
+  const isVideo = mediaFile?.type.startsWith('video') || reshareMediaType === 'video';
+  const isReshare = !!reshareStoryId;
+
   // --- INIT RESHARE ---
   useEffect(() => {
-    if (reshareMediaUrl && open) {
-      setMediaPreview(reshareMediaUrl);
-      setStoryType('media');
-      setScale([0.85]); // Default card look
-      setBackgroundStyle(BACKGROUND_GRADIENTS[5]); // Nice default background
+    if (open && isReshare) {
+      if (reshareMediaUrl) {
+        setMediaPreview(reshareMediaUrl);
+        setStoryType('media');
+      } else {
+        // If it's a text reshare, it stays as 'text' type but uses the card logic
+        setStoryType('text');
+      }
+      setScale([0.85]); 
+      setBackgroundStyle(BACKGROUND_GRADIENTS[5]); 
     }
-  }, [reshareMediaUrl, open]);
+  }, [reshareMediaUrl, open, isReshare]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) { streamRef.current.getTracks().forEach(track => track.stop()); streamRef.current = null; }
@@ -161,12 +171,13 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
   if (!open) return null;
 
   return createPortal(
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 bg-black z-[99999] flex flex-col">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 bg-black z-[99999] flex flex-col overflow-hidden">
+      
+      {/* HEADER TOOLS */}
       <div className="flex justify-between items-center p-4 z-20 absolute top-0 left-0 right-0 bg-gradient-to-b from-black/50 to-transparent">
         <Button variant="ghost" className="text-white" onClick={handleClose}><X /></Button>
         <div className="flex gap-4">
-           {/* Color Picker */}
-           {(storyType === 'text' || reshareStoryId) && (
+           {(storyType === 'text' || isReshare) && (
               <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
                 <PopoverTrigger asChild><Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60"><Palette className="h-5 w-5" /></Button></PopoverTrigger>
                 <PopoverContent className="w-auto p-2 bg-black/90 border-white/20 grid grid-cols-3 gap-2">
@@ -176,9 +187,7 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
                 </PopoverContent>
               </Popover>
            )}
-           {/* Text Tool */}
            {(storyType !== 'text') && <Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60" onClick={() => setShowTextOverlay(!showTextOverlay)}><Type className="h-5 w-5" /></Button>}
-           {/* Mention Tool */}
            {(storyType !== 'camera') && <Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60" onClick={() => setShowMentionSearch(true)}><AtSign className="h-5 w-5" /></Button>}
         </div>
         <Button onClick={handleSubmit} disabled={loading} className="bg-white text-black font-bold rounded-full px-6">{loading ? <Loader2 className="animate-spin" /> : 'Share'}</Button>
@@ -203,65 +212,91 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
         </div>
       )}
 
-      {/* CANVAS */}
+      {/* --- MASTER CANVAS --- */}
       <div 
-        className="flex-1 relative flex items-center justify-center overflow-hidden"
-        style={{ background: (storyType === 'text' || reshareStoryId) ? backgroundStyle : 'black' }}
+        className="flex-1 relative flex items-center justify-center"
+        style={{ background: (storyType === 'text' || isReshare) ? backgroundStyle : 'black' }}
       >
-        {storyType === 'text' && (
+        {/* TEXT MODE (Non-Reshare) */}
+        {storyType === 'text' && !isReshare && (
           <Textarea value={content} onChange={(e) => setContent(e.target.value)} className="bg-transparent border-none text-white text-4xl font-bold text-center placeholder:text-white/50 focus-visible:ring-0 resize-none z-10 w-full" placeholder="Type something..." />
         )}
 
-        {/* MEDIA / RESHARE CARD */}
-        {storyType === 'media' && mediaPreview && (
+        {/* MEDIA / RESHARE CENTERED CARD */}
+        {(mediaPreview || isReshare) && storyType !== 'camera' && (
           <div className="relative w-full h-full flex items-center justify-center">
             
-            {/* Draggable Media Layer */}
             <motion.div 
               drag 
               dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }} 
               style={{ scale: scale[0] }} 
-              className={`relative ${reshareStoryId ? 'rounded-xl overflow-hidden shadow-2xl bg-black border border-white/10' : ''}`} // Card styling
+              className={cn(
+                "relative flex items-center justify-center bg-black transition-all duration-500",
+                isReshare ? "w-[85%] h-[60%] rounded-[28px] overflow-hidden border border-white/10 shadow-2xl" : "w-full h-full"
+              )}
             >
-              {/* INSTAGRAM STYLE HEADER FOR RESHARE */}
-              {reshareStoryId && reshareUser && (
-                 <div className="absolute top-0 left-0 right-0 p-3 flex items-center gap-2 bg-gradient-to-b from-black/60 to-transparent z-10">
-                    <Avatar className="h-6 w-6 ring-1 ring-white/50"><AvatarImage src={reshareUser.avatarUrl || ""} /><AvatarFallback>{reshareUser.username[0]}</AvatarFallback></Avatar>
-                    <span className="text-white font-bold text-xs drop-shadow-md">{reshareUser.username}</span>
+              {/* Attribution badge for reshare */}
+              {isReshare && reshareUser && (
+                 <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/10 z-[115]">
+                    <Avatar className="h-4 w-4 ring-1 ring-white/20"><AvatarImage src={reshareUser.avatarUrl || ""} /><AvatarFallback>{reshareUser.username[0]}</AvatarFallback></Avatar>
+                    <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">@{reshareUser.username}</span>
                  </div>
               )}
 
-              {(mediaFile?.type.startsWith('video') || reshareMediaType === 'video') ? (
-                 <video src={mediaPreview} className="max-w-none h-[75vh] object-cover rounded-none" autoPlay loop muted playsInline />
+              {mediaPreview ? (
+                 isVideo ? (
+                    <video src={mediaPreview} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+                 ) : (
+                    <img src={mediaPreview} className="w-full h-full object-cover" alt="Preview" />
+                 )
               ) : (
-                 <img src={mediaPreview} className="max-w-none h-[75vh] object-cover rounded-none" alt="Preview" />
+                /* TEXT-ONLY RESHARE CARD */
+                <div className="w-full h-full flex items-center justify-center p-10 text-center" style={{ background: backgroundStyle }}>
+                  <p className="text-white font-bold text-2xl leading-relaxed">Shared Content</p>
+                </div>
               )}
             </motion.div>
 
-            {(showTextOverlay || content) && <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none"><Textarea value={content} onChange={(e) => setContent(e.target.value)} className="bg-transparent border-none text-white text-3xl font-bold text-center pointer-events-auto resize-none focus-visible:ring-0 shadow-black drop-shadow-lg" placeholder="Tap to add caption..." /></div>}
+            {/* Caption Overlay */}
+            {(showTextOverlay || content) && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                <Textarea value={content} onChange={(e) => setContent(e.target.value)} className="bg-transparent border-none text-white text-3xl font-bold text-center pointer-events-auto resize-none focus-visible:ring-0 shadow-black drop-shadow-lg" placeholder="Tap to add caption..." />
+              </div>
+            )}
           </div>
         )}
 
-        {storyType === 'camera' && <div className="relative w-full h-full bg-black"><video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" /><canvas ref={canvasRef} className="hidden" /><button onClick={capturePhoto} className="absolute bottom-12 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-white bg-white/20 active:scale-90 transition-transform z-20" /></div>}
+        {/* CAMERA MODE */}
+        {storyType === 'camera' && (
+          <div className="relative w-full h-full bg-black">
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
+            <canvas ref={canvasRef} className="hidden" />
+            <button onClick={capturePhoto} className="absolute bottom-12 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-white bg-white/20 active:scale-90 transition-transform z-20" />
+          </div>
+        )}
 
+        {/* DRAGGABLE MENTIONS */}
         {mentionedUsers.map((u, i) => (
           <motion.div key={u.user_id} drag dragMomentum={false} className="absolute top-1/2 left-1/2 z-30 cursor-move" initial={{ scale: 0 }} animate={{ scale: 1 }}>
              <div className="bg-white px-4 py-2 rounded-xl shadow-2xl flex items-center gap-2 transform -rotate-2 border-2 border-white">
-                <span className="bg-gradient-to-tr from-purple-500 to-pink-500 text-transparent bg-clip-text font-black text-xl">@</span><span className="font-bold text-black text-lg uppercase tracking-tight">{u.username}</span>
+                <span className="bg-gradient-to-tr from-purple-500 to-pink-500 text-transparent bg-clip-text font-black text-xl">@</span>
+                <span className="font-bold text-black text-lg uppercase tracking-tight">{u.username}</span>
                 <button onClick={() => setMentionedUsers(p => p.filter(m => m.user_id !== u.user_id))} className="bg-neutral-200 rounded-full p-1 ml-2 hover:bg-red-100"><X className="h-3 w-3 text-black" /></button>
              </div>
           </motion.div>
         ))}
       </div>
 
-      {storyType === 'media' && !showMentionSearch && (
+      {/* EDIT TOOLS PANEL */}
+      {(storyType === 'media' || isReshare) && !showMentionSearch && (
         <div className="absolute bottom-24 left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-2xl p-4 space-y-4 border border-white/10 animate-in slide-in-from-bottom-10">
            <div className="flex items-center gap-4"><ZoomIn className="text-white h-5 w-5" /><Slider value={scale} onValueChange={setScale} min={0.5} max={1.5} step={0.05} className="flex-1 py-4" /></div>
-           {!mediaFile?.type.startsWith('video') && reshareMediaType !== 'video' && <div className="flex items-center gap-4"><Clock className="text-white h-5 w-5" /><Slider value={duration} onValueChange={setDuration} min={3} max={15} step={1} className="flex-1 py-4" /><span className="text-white text-xs font-bold w-8">{duration}s</span></div>}
+           {!isVideo && <div className="flex items-center gap-4"><Clock className="text-white h-5 w-5" /><Slider value={duration} onValueChange={setDuration} min={3} max={15} step={1} className="flex-1 py-4" /><span className="text-white text-xs font-bold w-8">{duration}s</span></div>}
         </div>
       )}
 
-      {storyType !== 'camera' && !mediaFile && (
+      {/* FOOTER SWITCHER */}
+      {storyType !== 'camera' && !mediaFile && !isReshare && (
         <div className="p-6 bg-black flex justify-center gap-6 z-10">
           <Button variant={storyType === 'text' ? "default" : "ghost"} className="rounded-full" onClick={() => setStoryType('text')}><Type className="mr-2 h-4 w-4" /> Text</Button>
           <Button variant="ghost" className="rounded-full text-white" onClick={startCamera}><Camera className="mr-2 h-4 w-4" /> Camera</Button>

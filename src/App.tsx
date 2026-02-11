@@ -33,7 +33,7 @@ import Saved from "./pages/Saved";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import Leaderboard from "./pages/Leaderboard"; // Redirecting leaderboard to Explore or your Rank page
-
+import PostDetails from "./pages/PostDetails";
 const queryClient = new QueryClient();
 
 export default function App() {
@@ -72,6 +72,7 @@ export default function App() {
                   <Route path="/reels" element={<Reels />} />
                   <Route path="/saved" element={<Saved />} />
                  <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/post/:id" element={<PostDetails />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </SettingsProvider>

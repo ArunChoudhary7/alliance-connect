@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Image, Video, Camera, X, Send, Loader2, Sparkles, Ghost, Timer, ChevronDown } from "lucide-react";
+import { Image, X, Send, Loader2, Sparkles, Ghost, Timer, ChevronDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { createPost } from "@/lib/supabase";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
-import { getInitials } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { getInitials, cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
@@ -18,13 +17,10 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
   const [selectedFiles, setSelectedFiles] = useState<{ file: File; preview: string; type: 'image' | 'video' }[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // STEALTH STATE
   const [isStealth, setIsStealth] = useState(false);
-  const [duration, setDuration] = useState(24); // Default 24h
+  const [duration, setDuration] = useState(24);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -53,7 +49,6 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
         }
       }
 
-      // Calculate Custom Expiration
       const expiresAt = isStealth 
         ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString() 
         : null;
@@ -76,7 +71,7 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
       onPostCreated();
     } catch (error) { 
       console.error(error);
-      toast.error("Failed to post. Check DB columns."); 
+      toast.error("Failed to post."); 
     } finally { 
       setIsSubmitting(false); 
     }
@@ -90,14 +85,14 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
       isStealth ? "ring-2 ring-red-500/20 bg-red-950/5" : ""
     )}>
       <div className={cn(
-        "absolute top-0 right-0 p-6 opacity-20 pointer-events-none transition-colors",
+        "absolute top-0 right-0 p-6 opacity-20 pointer-events-none transition-colors hidden md:block",
         isStealth ? "text-red-500" : "text-primary"
       )}>
         {isStealth ? <Ghost className="w-10 h-10 animate-pulse" /> : <Sparkles className="w-10 h-10" />}
       </div>
 
-      <div className="flex gap-4">
-        <Avatar className="h-12 w-12 border-2 border-white/10 shrink-0">
+      <div className="flex gap-3 md:gap-4">
+        <Avatar className="h-10 w-10 md:h-12 md:w-12 border-2 border-white/10 shrink-0">
           <AvatarImage src={profile.avatar_url || ""} />
           <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
         </Avatar>
@@ -105,26 +100,27 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
         <div className="flex-1 space-y-4">
           <Input 
             placeholder={isStealth ? "Whisper something secret..." : "What's on your mind?"}
-            className={cn("super-input h-14 text-lg", isStealth && "text-red-100 placeholder:text-red-500/30")}
+            className={cn("super-input h-12 md:h-14 text-base md:text-lg", isStealth && "text-red-100 placeholder:text-red-500/30")}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setIsExpanded(true)}
           />
 
           {isExpanded && (
-            <div className="flex items-center justify-between pt-2 animate-in slide-in-from-top-2">
-              <div className="flex gap-1 items-center">
-                <Button variant="ghost" size="icon" className="text-green-400" onClick={() => fileInputRef.current?.click()}><Image className="h-5 w-5" /></Button>
-                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple accept="image/*" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between pt-2 animate-in slide-in-from-top-2 gap-3">
+              <div className="flex gap-2 items-center flex-wrap">
+                <Button variant="ghost" size="icon" className="text-green-400 h-9 w-9" onClick={() => fileInputRef.current?.click()}>
+                  <Image className="h-5 w-5" />
+                </Button>
+                <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple accept="image/*,video/*" />
                 
-                <div className="w-[1px] h-6 bg-white/10 mx-2" />
+                <div className="hidden md:block w-[1px] h-6 bg-white/10 mx-2" />
 
-                {/* STEALTH TOGGLE + DURATION */}
                 <div className="flex items-center bg-white/5 rounded-xl px-1">
                   <Button 
                     onClick={() => setIsStealth(!isStealth)}
                     variant="ghost" 
-                    className={cn("rounded-lg px-3 h-9 gap-2 transition-all", isStealth ? "text-red-500" : "text-white/40")}
+                    className={cn("rounded-lg px-2 md:px-3 h-9 gap-2 transition-all", isStealth ? "text-red-500" : "text-white/40")}
                   >
                     <Timer className={cn("h-4 w-4", isStealth && "animate-spin")} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Stealth</span>
@@ -151,7 +147,7 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
                 onClick={handleSubmit} 
                 disabled={isSubmitting} 
                 className={cn(
-                  "rounded-full px-6 font-bold transition-all shadow-lg",
+                  "rounded-full h-10 px-6 font-bold transition-all shadow-lg w-full md:w-auto",
                   isStealth ? "bg-red-600 text-white shadow-red-500/20" : "bg-white text-black"
                 )}
               >
