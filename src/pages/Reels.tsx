@@ -22,7 +22,7 @@ export default function Reels() {
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [likedReels, setLikedReels] = useState<Set<string>>(new Set());
-  
+
   const [showComments, setShowComments] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedReel, setSelectedReel] = useState<any>(null);
@@ -82,7 +82,7 @@ export default function Reels() {
         if (entry.isIntersecting) {
           setCurrentIndex(reels.findIndex(r => r.id === reelId));
           video.muted = isMuted;
-          if (!isPaused) video.play().catch(() => {});
+          if (!isPaused) video.play().catch(() => { });
         } else {
           video.pause();
           video.currentTime = 0;
@@ -99,7 +99,7 @@ export default function Reels() {
 
   const handleAura = async (reelId: string, x?: number, y?: number) => {
     if (!user) return toast.error("Sign in to give Aura");
-    
+
     if (x && y) {
       setShowHeart({ id: Math.random().toString(), x, y });
       setTimeout(() => setShowHeart(null), 800);
@@ -117,6 +117,16 @@ export default function Reels() {
     } else {
       await supabase.from("auras").insert({ user_id: user.id, post_id: reelId });
     }
+
+    setReels(prev => prev.map(r => {
+      if (r.id === reelId) {
+        return {
+          ...r,
+          aura_count: (r.aura_count || 0) + (isLiked ? -1 : 1)
+        };
+      }
+      return r;
+    }));
   };
 
   if (reels.length === 0) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-white" /></div>;
@@ -146,7 +156,7 @@ export default function Reels() {
             />
             {/* Sidebar & Info Logic */}
             <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-40">
-               <div className="flex flex-col items-center gap-1">
+              <div className="flex flex-col items-center gap-1">
                 <Button onClick={() => handleAura(reel.id)} variant="ghost" className={cn("h-12 w-12 rounded-full bg-black/40 backdrop-blur-lg border border-white/10", likedReels.has(reel.id) && "bg-red-500/20")}>
                   <Heart className={cn("h-7 w-7", likedReels.has(reel.id) ? "text-red-500 fill-current" : "text-white")} />
                 </Button>
@@ -177,12 +187,24 @@ export default function Reels() {
       </div>
 
       <AnimatePresence>
-        {showHeart && <motion.div key={showHeart.id} initial={{scale:0}} animate={{scale:1.5}} exit={{scale:2, opacity:0, y:-80}} className="fixed z-[100] pointer-events-none" style={{left:showHeart.x-50, top:showHeart.y-50}}><Heart className="w-24 h-24 text-red-500 fill-current" /></motion.div>}
+        {showHeart && <motion.div key={showHeart.id} initial={{ scale: 0 }} animate={{ scale: 1.5 }} exit={{ scale: 2, opacity: 0, y: -80 }} className="fixed z-[100] pointer-events-none" style={{ left: showHeart.x - 50, top: showHeart.y - 50 }}><Heart className="w-24 h-24 text-red-500 fill-current" /></motion.div>}
       </AnimatePresence>
 
       {selectedReel && (
         <div className="z-[1000]">
-          <PostComments postId={selectedReel.id} open={showComments} onOpenChange={setShowComments} postOwnerId={selectedReel.user_id} />
+          <PostComments
+            postId={selectedReel.id}
+            open={showComments}
+            onOpenChange={setShowComments}
+            postOwnerId={selectedReel.user_id}
+            onCommentAdded={() => {
+              setReels(prev => prev.map(r =>
+                r.id === selectedReel.id
+                  ? { ...r, comments_count: (r.comments_count || 0) + 1 }
+                  : r
+              ));
+            }}
+          />
           <ShareModal post={selectedReel} open={showShareModal} onOpenChange={setShowShareModal} />
         </div>
       )}

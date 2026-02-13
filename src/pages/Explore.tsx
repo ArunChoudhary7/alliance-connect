@@ -94,14 +94,14 @@ export default function Explore() {
             {searchQuery.length > 0 && (
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-16 left-0 right-0 p-2 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-2xl space-y-1 max-h-[400px] overflow-y-auto scrollbar-hide">
                 {isSearching ? <div className="p-8 flex justify-center"><Loader2 className="animate-spin theme-text" /></div> : searchResults.length > 0 ? searchResults.map((user) => (
-                    <Link key={user.user_id} to={`/profile/${user.username}`} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10 border border-white/10"><AvatarImage src={user.avatar_url} /><AvatarFallback>{getInitials(user.full_name)}</AvatarFallback></Avatar>
-                        <div className="flex flex-col"><span className="text-sm font-black italic uppercase tracking-tighter leading-none">{user.full_name}</span><span className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1">@{user.username}</span></div>
-                      </div>
-                      <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 theme-text transition-all" />
-                    </Link>
-                  )) : <div className="p-8 text-center"><p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 italic">No signals found</p></div>}
+                  <Link key={user.user_id} to={`/profile/${user.username}`} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border border-white/10"><AvatarImage src={user.avatar_url} /><AvatarFallback>{getInitials(user.full_name)}</AvatarFallback></Avatar>
+                      <div className="flex flex-col"><span className="text-sm font-black italic uppercase tracking-tighter leading-none">{user.full_name}</span><span className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1">@{user.username}</span></div>
+                    </div>
+                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 theme-text transition-all" />
+                  </Link>
+                )) : <div className="p-8 text-center"><p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 italic">No signals found</p></div>}
               </motion.div>
             )}
           </AnimatePresence>
@@ -128,25 +128,27 @@ export default function Explore() {
           </TabsContent>
 
           <TabsContent value="reels">
-             <div className="grid grid-cols-2 gap-2">
-                {reels.map(r => (
-                  <Link key={r.id} to={`/reels?start=${r.id}`} className="aspect-[9/16] relative rounded-2xl overflow-hidden bg-white/5 group">
-                    <video src={r.video_url || ""} className="w-full h-full object-cover opacity-80" muted />
-                    <div className="absolute bottom-3 left-3 flex items-center gap-1 text-white font-black italic text-xs drop-shadow-lg"><Star className="h-3 w-3 fill-primary text-primary" /> {r.aura_count}</div>
-                  </Link>
-                ))}
-             </div>
+            <div className="grid grid-cols-2 gap-2">
+              {reels.map(r => (
+                <Link key={r.id} to={`/reels?start=${r.id}`} className="aspect-[9/16] relative rounded-2xl overflow-hidden bg-white/5 group">
+                  <video src={r.video_url || ""} className="w-full h-full object-cover opacity-80" muted />
+                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-white font-black italic text-xs drop-shadow-lg"><Star className="h-3 w-3 fill-primary text-primary" /> {r.aura_count}</div>
+                </Link>
+              ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="stars" className="space-y-3">
-             {leaderboard.map((u) => (
-               <motion.div key={u.user_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-[2rem] flex items-center gap-4 border border-white/5 shadow-xl transition-colors backdrop-blur-sm ${u.campus_rank <= 3 ? 'bg-primary/5' : 'bg-white/5'}`}>
-                 <div className="w-10 flex justify-center">{getRankIcon(u.campus_rank)}</div>
-                 <Avatar className="h-12 w-12 border-2 border-background shadow-lg"><AvatarImage src={u.avatar_url} /><AvatarFallback className="font-black bg-white/10 uppercase">{u.username?.[0]}</AvatarFallback></Avatar>
-                 <div className="flex-1"><h4 className="font-black uppercase italic tracking-tighter text-sm">{u.full_name}</h4><p className="text-[9px] font-black uppercase theme-text tracking-widest mt-1">{u.department || 'Alliance Student'}</p></div>
-                 <div className="text-right"><div className="flex items-center gap-1 justify-end font-black italic text-lg leading-none"><Star className="h-4 w-4 theme-text fill-current" /> {u.total_aura}</div></div>
-               </motion.div>
-             ))}
+            {leaderboard.map((u, i) => (
+              <Link key={u.user_id || i} to={`/profile/${u.username}`} className="block">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-[2rem] flex items-center gap-4 border border-white/5 shadow-xl transition-colors backdrop-blur-sm ${u.campus_rank <= 3 ? 'bg-primary/5' : 'bg-white/5'} hover:bg-white/10`}>
+                  <div className="w-10 flex justify-center">{getRankIcon(u.campus_rank)}</div>
+                  <Avatar className="h-12 w-12 border-2 border-background shadow-lg"><AvatarImage src={u.avatar_url} /><AvatarFallback className="font-black bg-white/10 uppercase">{u.username?.[0]}</AvatarFallback></Avatar>
+                  <div className="flex-1"><h4 className="font-black uppercase italic tracking-tighter text-sm text-foreground">{u.full_name}</h4><p className="text-[9px] font-black uppercase theme-text tracking-widest mt-1">{u.department || 'Alliance Student'}</p></div>
+                  <div className="text-right"><div className="flex items-center gap-1 justify-end font-black italic text-lg leading-none text-foreground"><Star className="h-4 w-4 theme-text fill-current" /> {u.total_aura}</div></div>
+                </motion.div>
+              </Link>
+            ))}
           </TabsContent>
         </Tabs>
       </div>

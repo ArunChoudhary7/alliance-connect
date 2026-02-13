@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Tesseract from "tesseract.js";
 
 export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
   const [status, setStatus] = useState<"idle" | "uploading" | "saving">("idle");
@@ -41,12 +42,67 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
 
       // Save the URL so we can use it in the final save
       (window as any).lastUploadedMenuUrl = publicUrl;
-      toast.success("Photo uploaded! Now confirm the items.");
-      setStatus("idle");
+      toast.success("Photo uploaded! Scanning menu...");
+
+      // Run lightweight on-device OCR to auto-fill meals (free AI helper)
+      try {
+        const imageUrlForOcr = URL.createObjectURL(file);
+        const { data } = await Tesseract.recognize(imageUrlForOcr, "eng");
+        const rawText = data.text || "";
+        const nextFormState = autoSplitMenuText(rawText);
+        setFormData(nextFormState);
+        toast.success("Menu detected! Review and tweak items if needed.");
+      } catch (ocrError) {
+        console.warn("OCR failed, falling back to manual input", ocrError);
+        toast.error("Couldn't auto-read the menu. You can still type items manually.");
+      } finally {
+        setStatus("idle");
+      }
     } catch (err: any) {
       toast.error("Upload failed");
       setStatus("idle");
     }
+  };
+
+  const autoSplitMenuText = (text: string) => {
+    const lower = text.toLowerCase();
+    const sections = ["breakfast", "lunch", "snacks", "snack", "dinner"];
+
+    const indices: { [key: string]: number } = {};
+    sections.forEach((section) => {
+      const idx = lower.indexOf(section);
+      if (idx !== -1) indices[section] = idx;
+    });
+
+    const sorted = Object.entries(indices).sort((a, b) => a[1] - b[1]);
+
+    const getSlice = (label: string) => {
+      const currentIdx = sorted.find(([name]) => name === label)?.[1];
+      if (currentIdx === undefined) return "";
+      const nextEntry = sorted.find(([_, idx]) => idx > currentIdx);
+      const start = currentIdx + label.length;
+      const end = nextEntry ? nextEntry[1] : text.length;
+      return text.slice(start, end);
+    };
+
+    const parseItems = (chunk: string) =>
+      chunk
+        .split(/\r?\n|,/)
+        .map((i) => i.replace(/[-•:]/g, "").trim())
+        .filter((i) => i.length > 1);
+
+    const breakfastChunk = getSlice("breakfast");
+    const lunchChunk = getSlice("lunch");
+    // Prefer "snacks" but fall back to singular "snack"
+    const snacksChunk = getSlice(indices["snacks"] !== undefined ? "snacks" : "snack");
+    const dinnerChunk = getSlice("dinner");
+
+    return {
+      breakfast: parseItems(breakfastChunk).join(", "),
+      lunch: parseItems(lunchChunk).join(", "),
+      snacks: parseItems(snacksChunk).join(", "),
+      dinner: parseItems(dinnerChunk).join(", "),
+    };
   };
 
   const saveMenu = async () => {
@@ -119,6 +175,7 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
                   name={meal}
                   placeholder="Item 1, Item 2, Item 3..."
                   className="bg-white/5 border-white/5 h-11 rounded-xl text-sm"
+                  value={(formData as any)[meal]}
                   onChange={handleInputChange}
                 />
               </div>

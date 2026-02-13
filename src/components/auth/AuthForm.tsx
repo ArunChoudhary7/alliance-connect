@@ -12,7 +12,7 @@ import { ForgotPasswordModal } from "./ForgotPasswordModal";
 const authSchema = z.object({
   email: z.string().email("Invalid email address").refine(
     (email) => isValidAllianceEmail(email),
-    `Only ${ALLOWED_DOMAIN} emails are allowed`
+    `Only ${ALLOWED_DOMAIN} emails (and authorized admin emails) are allowed`
   ),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -65,7 +65,7 @@ export function AuthForm() {
             setError(error.message);
           }
         } else if (data?.user) {
-          setSuccess("Check your email for the verification link!");
+          setSuccess("Auconnect sent you verification link! Please check your email.");
         }
       }
     } catch (err) {
@@ -83,14 +83,23 @@ export function AuthForm() {
     >
       <div className="glass-card p-8 rounded-2xl">
         <div className="text-center mb-8">
-          <motion.div 
+          <motion.div
             className="inline-block mb-4"
             whileHover={{ scale: 1.05 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-primary blur-xl opacity-50 rounded-full" />
-              <div className="relative w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mx-auto">
-                <span className="text-2xl font-bold text-primary-foreground">AU</span>
+              <div className="absolute inset-0 bg-gradient-primary blur-3xl opacity-20 rounded-full" />
+              <img
+                src="/auconnect.png"
+                alt="AUConnect Logo"
+                className="relative w-32 h-32 object-contain mx-auto drop-shadow-2xl"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <div className="hidden relative w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center mx-auto shadow-xl ring-4 ring-white/10">
+                <span className="text-4xl font-bold text-white drop-shadow-md">AU</span>
               </div>
             </div>
           </motion.div>
@@ -98,8 +107,8 @@ export function AuthForm() {
             {isLogin ? "Welcome Back" : "Join AUConnect"}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {isLogin 
-              ? "Sign in to continue to your campus network" 
+            {isLogin
+              ? "Sign in to continue to your campus network"
               : "Create your account with Alliance University email"}
           </p>
         </div>
@@ -130,7 +139,12 @@ export function AuthForm() {
         </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-2"
+          >
             <Label htmlFor="email" className="text-sm font-medium">
               Email
             </Label>
@@ -146,9 +160,14 @@ export function AuthForm() {
                 required
               />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-2"
+          >
             <Label htmlFor="password" className="text-sm font-medium">
               Password
             </Label>
@@ -176,21 +195,27 @@ export function AuthForm() {
                 )}
               </button>
             </div>
-          </div>
+          </motion.div>
 
-          <Button
-            type="submit"
-            disabled={loading}
-            className="w-full h-12 rounded-xl bg-gradient-primary hover:opacity-90 transition-opacity font-semibold text-primary-foreground shadow-glow"
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
           >
-            {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : isLogin ? (
-              "Sign In"
-            ) : (
-              "Create Account"
-            )}
-          </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 rounded-xl bg-gradient-primary hover:opacity-90 transition-opacity font-semibold text-primary-foreground shadow-glow"
+            >
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isLogin ? (
+                "Sign In"
+              ) : (
+                "Create Account"
+              )}
+            </Button>
+          </motion.div>
         </form>
 
         <div className="mt-6 text-center space-y-3">
@@ -235,7 +260,7 @@ export function AuthForm() {
 
         <div className="mt-6 pt-6 border-t border-border/50">
           <p className="text-xs text-center text-muted-foreground">
-            🔒 Only <span className="text-primary font-medium">{ALLOWED_DOMAIN}</span> emails are allowed
+            🔒 Only <span className="text-primary font-medium">{ALLOWED_DOMAIN}</span> emails (and admin) are allowed
           </p>
         </div>
       </div>

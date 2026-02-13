@@ -34,40 +34,57 @@ export default function MessMenuPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto px-4 pb-24">
-        <div className="flex justify-between items-center mb-8 mt-4">
+      <div className="max-w-3xl mx-auto px-4 pb-24">
+        <div className="flex justify-between items-center mb-6 mt-4">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black uppercase tracking-tighter gradient-text leading-none">Daily Mess</h1>
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-30 italic">Alliance Food Court</p>
+            <h1 className="text-3xl font-black uppercase tracking-tighter gradient-text leading-none">Mess Compass</h1>
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-40 italic">
+              Today&apos;s fuel for {profile?.username || "campus"}
+            </p>
           </div>
           {isAdmin && (
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowUpload(true)} className="p-3 bg-primary/10 rounded-2xl text-primary">
-              <Upload className="h-5 w-5" />
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowUpload(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-2xl text-primary text-[10px] font-black uppercase tracking-widest"
+            >
+              <Upload className="h-4 w-4" />
+              Update Menu
             </motion.button>
           )}
         </div>
 
-        {/* IMAGE PREVIEW CARD */}
-        {menu?.image_url ? (
-          <motion.div 
-            onClick={() => setShowFullMenu(true)}
-            className="mb-8 w-full flex items-center justify-between p-5 rounded-[2.5rem] bg-gradient-to-br from-primary/20 to-secondary/10 border border-primary/20 cursor-pointer shadow-xl"
-          >
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/20 rounded-2xl"><Maximize2 className="h-6 w-6 text-primary" /></div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary leading-none mb-1">Official Source</p>
-                <h3 className="text-sm font-black uppercase tracking-tight">View Full Menu Image</h3>
+        {/* TODAY SUMMARY + IMAGE PREVIEW */}
+        <div className="grid gap-4 mb-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
+
+
+          {menu?.image_url ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => setShowFullMenu(true)}
+              className="w-full flex items-center justify-between p-4 rounded-[2rem] bg-secondary/20 border border-secondary/40 cursor-pointer shadow-md"
+            >
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-secondary/40 rounded-2xl">
+                  <Maximize2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Official Menu</p>
+                  <h3 className="text-xs font-bold uppercase tracking-tight">Tap to view full image</h3>
+                </div>
               </div>
+              <ArrowRight className="h-4 w-4 opacity-50" />
+            </motion.div>
+          ) : (
+            <div className="p-4 rounded-[2rem] bg-secondary/10 border border-white/5 flex items-center gap-3 opacity-80">
+              <AlertTriangle className="h-5 w-5 text-yellow-400" />
+              <span className="text-[11px] font-bold uppercase tracking-widest">
+                No menu uploaded for today
+              </span>
             </div>
-            <ArrowRight className="h-4 w-4 opacity-50" />
-          </motion.div>
-        ) : (
-          <div className="mb-8 p-6 rounded-[2.5rem] bg-secondary/10 border border-white/5 flex items-center gap-3 opacity-50">
-             <AlertTriangle className="h-5 w-5" />
-             <span className="text-xs font-bold uppercase">No Menu Uploaded Yet</span>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* MEAL SECTIONS */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,7 +102,9 @@ export default function MessMenuPage() {
                     </Badge>
                   ))
                 ) : (
-                  <span className="text-[9px] opacity-20 uppercase font-bold italic">Checking...</span>
+                  <span className="text-[9px] opacity-40 uppercase font-bold italic">
+                    {menu?.image_url ? "Tap Image for Details" : "Not updated"}
+                  </span>
                 )}
               </div>
             </motion.div>
@@ -96,16 +115,16 @@ export default function MessMenuPage() {
       {/* FULL SCREEN IMAGE OVERLAY */}
       <AnimatePresence>
         {showFullMenu && menu?.image_url && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[3000] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md"
             onClick={() => setShowFullMenu(false)}
           >
             <button className="absolute top-8 right-8 p-3 bg-white/10 rounded-full text-white"><X className="h-6 w-6" /></button>
-            <img 
-              src={menu.image_url} 
-              className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl" 
-              onClick={(e) => e.stopPropagation()} 
+            <img
+              src={menu.image_url}
+              className="max-w-full max-h-[85vh] rounded-xl object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
             />
           </motion.div>
         )}

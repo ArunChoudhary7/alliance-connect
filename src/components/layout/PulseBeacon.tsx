@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { 
-  Radio, Zap, MapPin, Clock, ShieldAlert, Sparkles, Briefcase, 
+import {
+  Radio, Zap, MapPin, Clock, ShieldAlert, Sparkles, Briefcase,
   Send, Plus, X, Activity, SignalHigh, Trash2, Edit3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,13 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-export function PulseBeacon() {
+export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
   const { profile } = useAuth();
   const [signals, setSignals] = useState<any[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
   const [isTransmitting, setIsTransmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  
+  const [isLoading, setIsLoading] = useState(false);
+
   const [newSignal, setNewSignal] = useState({
     title: "",
     content: "",
@@ -29,23 +30,35 @@ export function PulseBeacon() {
   });
 
   const fetchSignals = async () => {
-    const { data } = await supabase
-      .from('pulse_signals')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) {
-      setSignals(data);
-      if (data.length > 0) {
-        const lastSignalDate = new Date(data[0].created_at).getTime();
-        const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-        setHasUnread(lastSignalDate > oneDayAgo);
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('pulse_signals')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Pulse fetch failed", error);
+        return;
       }
+
+      if (data) {
+        setSignals(data);
+        if (data.length > 0) {
+          const lastSignalDate = new Date(data[0].created_at).getTime();
+          const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+          setHasUnread(lastSignalDate > oneDayAgo);
+        } else {
+          setHasUnread(false);
+        }
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  useEffect(() => { 
-    fetchSignals(); 
+  useEffect(() => {
+    fetchSignals();
     const channel = supabase.channel('pulse-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pulse_signals' }, () => {
         fetchSignals();
@@ -57,10 +70,10 @@ export function PulseBeacon() {
 
   const handleTransmit = async () => {
     if (!newSignal.title || !newSignal.content) return toast.error("Transmission Data Incomplete");
-    
+
     const payload = {
       ...newSignal,
-      priority: newSignal.category === 'urgent' 
+      priority: newSignal.category === 'urgent'
     };
 
     let error;
@@ -128,36 +141,49 @@ export function PulseBeacon() {
   };
 
   const latestCategory = signals[0]?.category?.toLowerCase() || 'general';
+  const latestTitle = signals[0]?.title || "Campus quiet. No signals yet.";
 
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <div className="relative cursor-pointer group flex items-center justify-center h-16 w-16" onClick={() => setHasUnread(false)}>
-          <div className="absolute h-8 w-8 rounded-full bg-primary/5 blur-xl animate-pulse" />
-          <AnimatePresence>
-            {hasUnread && (
-              <>
-                <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: [1, 2.2], opacity: [0.3, 0] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className={cn(
-                    "absolute h-10 w-10 rounded-full blur-md",
-                    latestCategory === 'urgent' ? 'bg-red-500' : 'bg-primary'
-                  )}
-                />
-              </>
-            )}
-          </AnimatePresence>
-          <div className={cn(
-            "relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all duration-700",
-            hasUnread 
-              ? "bg-black border-primary text-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.4)]" 
-              : "bg-black/40 border-white/10 text-white/40"
-          )}>
-            <SignalHigh className={cn("w-6 h-6", hasUnread ? "animate-pulse" : "opacity-50")} />
+        {trigger || (
+          <div className="relative cursor-pointer group flex items-center justify-center h-16 w-40 gap-3" onClick={() => setHasUnread(false)}>
+            <div className="absolute h-8 w-8 rounded-full bg-primary/5 blur-xl animate-pulse" />
+            <AnimatePresence>
+              {hasUnread && (
+                <>
+                  <motion.div
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: [1, 2.2], opacity: [0.3, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className={cn(
+                      "absolute h-10 w-10 rounded-full blur-md",
+                      latestCategory === 'urgent' ? 'bg-red-500' : 'bg-primary'
+                    )}
+                  />
+                </>
+              )}
+            </AnimatePresence>
+            <div className="flex items-center gap-3 relative z-10">
+              <div className={cn(
+                "w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all duration-700",
+                hasUnread
+                  ? "bg-black border-primary text-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.4)]"
+                  : "bg-black/40 border-white/10 text-white/40"
+              )}>
+                <SignalHigh className={cn("w-6 h-6", hasUnread ? "animate-pulse" : "opacity-50")} />
+              </div>
+              <div className="hidden md:flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-[0.25em] opacity-60">
+                  {hasUnread ? "New Campus Signal" : "Pulse Network"}
+                </span>
+                <span className="text-[11px] font-bold line-clamp-1 max-w-[9rem] opacity-80">
+                  {isLoading ? "Syncing..." : latestTitle}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </SheetTrigger>
 
       <SheetContent side="right" className="w-full sm:max-w-md bg-black/95 backdrop-blur-3xl border-l border-white/10 p-0 text-white flex flex-col">
@@ -190,15 +216,15 @@ export function PulseBeacon() {
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-primary italic">
                     {editingId ? "Update Parameters" : "Secure Transmission"}
                   </h4>
-                  <Input placeholder="SIGNAL TITLE" className="super-input bg-black/40" value={newSignal.title} onChange={(e) => setNewSignal({...newSignal, title: e.target.value})} />
-                  <Textarea placeholder="TRANSMISSION BODY" className="super-input min-h-[120px] bg-black/40" value={newSignal.content} onChange={(e) => setNewSignal({...newSignal, content: e.target.value})} />
+                  <Input placeholder="SIGNAL TITLE" className="super-input bg-black/40" value={newSignal.title} onChange={(e) => setNewSignal({ ...newSignal, title: e.target.value })} />
+                  <Textarea placeholder="TRANSMISSION BODY" className="super-input min-h-[120px] bg-black/40" value={newSignal.content} onChange={(e) => setNewSignal({ ...newSignal, content: e.target.value })} />
                   <div className="grid grid-cols-2 gap-3">
-                    <Input placeholder="LOCATION" className="super-input text-[10px] bg-black/40" value={newSignal.venue} onChange={(e) => setNewSignal({...newSignal, venue: e.target.value})} />
-                    <Input placeholder="TIME" className="super-input text-[10px] bg-black/40" value={newSignal.event_time} onChange={(e) => setNewSignal({...newSignal, event_time: e.target.value})} />
+                    <Input placeholder="LOCATION" className="super-input text-[10px] bg-black/40" value={newSignal.venue} onChange={(e) => setNewSignal({ ...newSignal, venue: e.target.value })} />
+                    <Input placeholder="TIME" className="super-input text-[10px] bg-black/40" value={newSignal.event_time} onChange={(e) => setNewSignal({ ...newSignal, event_time: e.target.value })} />
                   </div>
                   <div className="flex gap-2 py-2">
                     {['general', 'event', 'internship', 'urgent'].map((cat) => (
-                      <button key={cat} onClick={() => setNewSignal({...newSignal, category: cat})} className={cn("flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border", newSignal.category === cat ? "bg-primary text-black border-primary" : "bg-white/5 text-white/30 border-white/5")}>{cat}</button>
+                      <button key={cat} onClick={() => setNewSignal({ ...newSignal, category: cat })} className={cn("flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border", newSignal.category === cat ? "bg-primary text-black border-primary" : "bg-white/5 text-white/30 border-white/5")}>{cat}</button>
                     ))}
                   </div>
                   <Button onClick={handleTransmit} className="w-full h-14 theme-bg rounded-2xl font-black uppercase tracking-widest italic">
@@ -214,7 +240,7 @@ export function PulseBeacon() {
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] italic opacity-80">{s.category || 'signal'}</span>
                       </div>
-                      
+
                       {/* ADMIN TOOLS */}
                       {profile?.role === 'admin' && (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -1,3 +1,5 @@
+
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,80 +8,94 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { ThemeProvider } from "@/theme/themeProvider";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
-// Unified Page Imports
-import MessMenuPage from "./pages/MessMenuPage"; 
-import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
-import Profile from "./pages/Profile";
-import Search from "./pages/Search";
-import Explore from "./pages/Explore";
-import Create from "./pages/Create";
-import Activity from "./pages/Activity";
-import Messages from "./pages/Messages";
-import SecretRoom from "./pages/SecretRoom";
-import Circles from "./pages/Circles";
-import CircleDetail from "./pages/CircleDetail";
-import Events from "./pages/Events";
-import Internships from "./pages/Internships";
-import LostFound from "./pages/LostFound";
-import Marketplace from "./pages/Marketplace";
-import StudyGroups from "./pages/StudyGroups";
-import Polls from "./pages/Polls"; 
-import Settings from "./pages/Settings";
-import Reels from "./pages/Reels";
-import Saved from "./pages/Saved";
-import NotFound from "./pages/NotFound";
-import Admin from "./pages/Admin";
-import Leaderboard from "./pages/Leaderboard"; // Redirecting leaderboard to Explore or your Rank page
-import PostDetails from "./pages/PostDetails";
-const queryClient = new QueryClient();
+// Lazy Loaded Pages for Production Performance
+const MessMenuPage = lazy(() => import("./pages/MessMenuPage"));
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Search = lazy(() => import("./pages/Search"));
+const Explore = lazy(() => import("./pages/Explore"));
+const Create = lazy(() => import("./pages/Create"));
+const Activity = lazy(() => import("./pages/Activity"));
+const Messages = lazy(() => import("./pages/Messages"));
+const SecretRoom = lazy(() => import("./pages/SecretRoom"));
+const Circles = lazy(() => import("./pages/Circles"));
+const CircleDetail = lazy(() => import("./pages/CircleDetail"));
+const Events = lazy(() => import("./pages/Events"));
+const Internships = lazy(() => import("./pages/Internships"));
+const LostFound = lazy(() => import("./pages/LostFound"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const StudyGroups = lazy(() => import("./pages/StudyGroups"));
+const Polls = lazy(() => import("./pages/Polls"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Reels = lazy(() => import("./pages/Reels"));
+const Saved = lazy(() => import("./pages/Saved"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const PostDetails = lazy(() => import("./pages/PostDetails"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1, // Minimize retries in production for faster fail handling
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function App() {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AuthProvider>
-              <SettingsProvider>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/profile/:username" element={<Profile />} />
-                  <Route path="/search" element={<Search />} />
-                  <Route path="/explore" element={<Explore />} />
-                  <Route path="/create" element={<Create />} />
-                  <Route path="/activity" element={<Activity />} />
-                  <Route path="/messages" element={<Messages />} />
-                  <Route path="/mess-menu" element={<MessMenuPage />} />
-                  <Route path="/secret-room" element={<SecretRoom />} />
-                  <Route path="/polls" element={<Polls />} />
-                  <Route path="/lost-found" element={<LostFound />} />
-                  <Route path="/circles" element={<Circles />} />
-                  <Route path="/circles/:id" element={<CircleDetail />} />
-                  <Route path="/events" element={<Events />} />
-                  <Route path="/internships" element={<Internships />} />
-                  <Route path="/marketplace" element={<Marketplace />} />
-                  <Route path="/study-groups" element={<StudyGroups />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/reels" element={<Reels />} />
-                  <Route path="/saved" element={<Saved />} />
-                 <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/post/:id" element={<PostDetails />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </SettingsProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AuthProvider>
+                <SettingsProvider>
+                  <Suspense fallback={<LoadingScreen />}>
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/profile/:username" element={<Profile />} />
+                      <Route path="/search" element={<Search />} />
+                      <Route path="/explore" element={<Explore />} />
+                      <Route path="/create" element={<Create />} />
+                      <Route path="/activity" element={<Activity />} />
+                      <Route path="/messages" element={<Messages />} />
+                      <Route path="/mess-menu" element={<MessMenuPage />} />
+                      <Route path="/secret-room" element={<SecretRoom />} />
+                      <Route path="/polls" element={<Polls />} />
+                      <Route path="/lost-found" element={<LostFound />} />
+                      <Route path="/circles" element={<Circles />} />
+                      <Route path="/circles/:id" element={<CircleDetail />} />
+                      <Route path="/events" element={<Events />} />
+                      <Route path="/internships" element={<Internships />} />
+                      <Route path="/marketplace" element={<Marketplace />} />
+                      <Route path="/study-groups" element={<StudyGroups />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/reels" element={<Reels />} />
+                      <Route path="/saved" element={<Saved />} />
+                      <Route path="/leaderboard" element={<Leaderboard />} />
+                      <Route path="/post/:id" element={<PostDetails />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </Suspense>
+                </SettingsProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }

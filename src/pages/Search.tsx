@@ -4,9 +4,10 @@ import { Search as SearchIcon, Loader2, Users, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { supabase } from "@/integrations/supabase/client"; // Direct import for better control
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
+import { sanitizeSearchQuery, searchLimiter } from "@/lib/security";
 
 interface UserResult {
   id: string;
@@ -30,13 +31,24 @@ export default function Search() {
         return;
       }
 
+      // Rate limit: 30 searches per minute
+      if (!searchLimiter.canProceed('search_page')) {
+        return;
+      }
+
+      // SECURITY: Sanitize search input to prevent PostgREST filter injection
+      const sanitized = sanitizeSearchQuery(debouncedQuery);
+      if (!sanitized || sanitized.length < 2) {
+        setResults([]);
+        return;
+      }
+
       setLoading(true);
-      
-      // FIXED: Using .ilike for partial matching on both username and full_name
+
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, full_name, avatar_url, department, total_aura')
-        .or(`username.ilike.%${debouncedQuery}%,full_name.ilike.%${debouncedQuery}%`)
+        .or(`username.ilike.%${sanitized}%,full_name.ilike.%${sanitized}%`)
         .limit(10);
 
       if (error) {
@@ -101,7 +113,7 @@ export default function Search() {
                     {getInitials(user.full_name || user.username)}
                   </AvatarFallback>
                 </Avatar>
-                
+
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate text-sm uppercase tracking-tight">
                     {user.full_name || user.username}

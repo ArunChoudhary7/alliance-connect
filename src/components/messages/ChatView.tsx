@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  ArrowLeft, Send, Image as ImageIcon, MoreVertical, Loader2, 
+import {
+  ArrowLeft, Send, Image as ImageIcon, MoreVertical, Loader2,
   Check, CheckCheck, X, Trash2, Reply, Ban, Copy, Heart,
   User, Flag, PlayCircle
 } from "lucide-react";
@@ -27,7 +27,7 @@ import { getInitials, cn } from "@/lib/utils";
 export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: any) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
@@ -82,7 +82,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
       console.error("Fetch Error:", error);
       return;
     }
-    
+
     if (data) setMessages(data);
     setLoading(false);
   };
@@ -139,19 +139,19 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
 
     if (error) { toast.error("Failed to send"); return; }
     if (newMsg) {
-        await supabase.from("conversations").update({ 
-            last_message_at: new Date().toISOString(),
-            last_message: content || "Sent a file"
-        }).eq("id", conversationId);
+      await supabase.from("conversations").update({
+        last_message_at: new Date().toISOString(),
+        last_message: content || "Sent a file"
+      }).eq("id", conversationId);
     }
   };
 
   const deleteMessage = async (id: string) => {
     const { error } = await supabase.from("direct_messages").delete().eq("id", id).eq("sender_id", user?.id);
-    if (!error) { 
-      toast.success("Message deleted"); 
+    if (!error) {
+      toast.success("Message deleted");
       setActiveMessageId(null);
-      fetchMessages(); 
+      fetchMessages();
     }
   };
 
@@ -174,7 +174,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
             <span className="text-[10px] text-green-500 font-medium mt-1 uppercase tracking-tighter italic">Active Now</span>
           </div>
         </div>
-        
+
         {/* RESTORED 3 DOTS MENU */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -205,7 +205,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
           return (
             <div key={message.id} className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
               <div className="relative flex flex-col gap-1 max-w-[85%] md:max-w-[70%]">
-                
+
                 {/* REPLIED MESSAGE PREVIEW BUBBLE */}
                 {repliedMessage && (
                   <div className={`text-[10px] opacity-60 mb-1 px-3 py-1.5 rounded-2xl bg-white/5 border border-white/5 truncate max-w-full italic flex items-center gap-1 ${isOwn ? 'self-end' : 'self-start'}`}>
@@ -214,7 +214,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                   </div>
                 )}
 
-                <motion.div 
+                <motion.div
                   onClick={(e) => { e.stopPropagation(); handleDoubleTap(message); }}
                   className={cn(
                     "relative rounded-[22px] transition-all active:scale-[0.98] shadow-lg overflow-hidden",
@@ -225,10 +225,10 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                 >
                   {/* INSTAGRAM STYLE SHARED POST CARD */}
                   {isPostShare && (
-                    <div 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        navigate(`/post/${message.shared_post.id}`); 
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/post/${message.shared_post.id}`);
                       }}
                       className="group flex flex-col w-[240px] md:w-[280px] bg-zinc-900 rounded-[20px] overflow-hidden cursor-pointer active:opacity-90 transition-all border border-white/5 shadow-2xl"
                     >
@@ -247,24 +247,36 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                       <div className="aspect-square relative bg-black overflow-hidden flex items-center justify-center">
                         {(message.shared_post.images?.[0] || message.shared_post.video_url) ? (
                           <>
-                            <img 
-                              src={message.shared_post.images?.[0] || message.shared_post.video_url} 
-                              className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700" 
-                              alt="Post Preview"
-                              loading="lazy"
-                            />
+                            {message.shared_post.images?.[0] ? (
+                              <img
+                                src={message.shared_post.images[0]}
+                                className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
+                                alt="Post Preview"
+                                loading="lazy"
+                              />
+                            ) : message.shared_post.video_url ? (
+                              <video
+                                src={message.shared_post.video_url}
+                                className="w-full h-full object-cover"
+                                muted
+                                playsInline
+                                loop
+                                autoPlay
+                              />
+                            ) : null}
+
                             {message.shared_post.video_url && (
-                               <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                                 <div className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
-                                    <PlayCircle className="w-10 h-10 text-white fill-white/20" />
-                                 </div>
-                               </div>
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                <div className="p-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                                  <PlayCircle className="w-10 h-10 text-white fill-white/20" />
+                                </div>
+                              </div>
                             )}
                           </>
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-zinc-900">
-                             <ImageIcon className="w-8 h-8 text-white/10 mb-2" />
-                             <p className="text-[10px] font-black text-white/20 uppercase tracking-widest italic leading-tight">Post Preview<br/>Unavailable</p>
+                            <ImageIcon className="w-8 h-8 text-white/10 mb-2" />
+                            <p className="text-[10px] font-black text-white/20 uppercase tracking-widest italic leading-tight">Post Preview<br />Unavailable</p>
                           </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40" />
@@ -283,8 +295,8 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
 
                   {/* Standard Messages (Images/Videos) */}
                   {message.media_url && !isPostShare && (
-                    <div className="rounded-xl overflow-hidden mb-1 cursor-pointer" onClick={(e) => { 
-                      e.stopPropagation(); 
+                    <div className="rounded-xl overflow-hidden mb-1 cursor-pointer" onClick={(e) => {
+                      e.stopPropagation();
                       if (message.content && message.content.includes("Replied to")) {
                         // Redirects exactly to the ?openStory trigger
                         const targetUsername = isOwn ? otherUser.username : ((user as any)?.user_metadata?.username || (user as any)?.username);
@@ -292,17 +304,17 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                           navigate(`/profile/${targetUsername}?openStory=true`);
                         }
                       } else {
-                        setLightboxImage(message.media_url); 
+                        setLightboxImage(message.media_url);
                       }
                     }}>
                       {message.message_type === 'video' ? <video src={message.media_url} className="max-h-60" /> : <img src={message.media_url} className="max-h-60 object-cover" />}
                     </div>
                   )}
-                  
+
                   {message.content && !isPostShare && (
                     <p className="text-[15px] font-medium leading-snug break-words">{message.content}</p>
                   )}
-                  
+
                   {message.is_liked && (
                     <div className={`absolute -bottom-2 ${isOwn ? "-left-2" : "-right-2"} bg-zinc-900 rounded-full p-1 border border-white/10 shadow-lg`}>
                       <Heart className="h-3 w-3 fill-red-500 text-red-500" />
@@ -314,20 +326,20 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
               {/* RESTORED REPLY/DELETE MENU WHEN TAPPED */}
               <AnimatePresence>
                 {isTapped && (
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
                     animate={{ opacity: 1, height: 'auto', marginTop: 8 }}
                     exit={{ opacity: 0, height: 0, marginTop: 0 }}
                     className={`flex items-center gap-2 px-2 overflow-hidden ${isOwn ? "justify-end" : "justify-start"}`}
                   >
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); setReplyingTo(message); setActiveMessageId(null); }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800 text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-zinc-700 transition-colors"
                     >
                       <Reply className="w-3 h-3" /> Reply
                     </button>
                     {isOwn && (
-                      <button 
+                      <button
                         onClick={(e) => { e.stopPropagation(); deleteMessage(message.id); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-red-500/20 transition-colors"
                       >
@@ -347,13 +359,13 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
           );
         })}
         <div ref={messagesEndRef} />
-      </div>
+      </div >
 
       <footer className="flex-none p-4 bg-background border-t border-white/5 relative">
         {/* RESTORED "REPLYING TO..." PREVIEW BAR */}
         <AnimatePresence>
           {replyingTo && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
@@ -373,11 +385,11 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
           <Button variant="ghost" size="icon" className="rounded-full h-11 w-11 text-white/40 hover:bg-white/5 hover:text-white transition-colors" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
             {uploading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <ImageIcon className="h-5 w-5" />}
           </Button>
-          <Input 
-            value={newMessage} 
-            onChange={(e) => setNewMessage(e.target.value)} 
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Message..." 
+            placeholder="Message..."
             className="bg-transparent border-none focus-visible:ring-0 h-11 text-[15px] text-white shadow-none"
           />
           {newMessage.trim() && (
@@ -385,18 +397,20 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
           )}
         </div>
       </footer>
-         
+
       {/* LIGHTBOX POPUP */}
-      {lightboxImage && (
-        <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
-          <DialogContent className="max-w-none w-screen h-screen bg-black/95 backdrop-blur-3xl p-0 border-none flex items-center justify-center shadow-none z-[160]">
-            <img src={lightboxImage} className="max-w-full max-h-full object-contain" alt="Enlarged Media" />
-            <Button variant="ghost" size="icon" className="absolute top-6 right-6 text-white bg-black/50 hover:bg-white/20 rounded-full" onClick={() => setLightboxImage(null)}>
-              <X className="h-6 w-6" />
-            </Button>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+      {
+        lightboxImage && (
+          <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+            <DialogContent className="max-w-none w-screen h-screen bg-black/95 backdrop-blur-3xl p-0 border-none flex items-center justify-center shadow-none z-[160]">
+              <img src={lightboxImage} className="max-w-full max-h-full object-contain" alt="Enlarged Media" />
+              <Button variant="ghost" size="icon" className="absolute top-6 right-6 text-white bg-black/50 hover:bg-white/20 rounded-full" onClick={() => setLightboxImage(null)}>
+                <X className="h-6 w-6" />
+              </Button>
+            </DialogContent>
+          </Dialog>
+        )
+      }
+    </div >
   );
 }

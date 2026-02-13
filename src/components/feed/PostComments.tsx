@@ -12,7 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import { getInitials, cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export function PostComments({ postId, open, onOpenChange, postOwnerId }: any) {
+export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommentAdded }: any) {
   const { user } = useAuth();
   const [comments, setComments] = useState<any[]>([]);
   const [content, setContent] = useState("");
@@ -27,9 +27,9 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId }: any) {
     setLoading(true);
     const { data, error } = await getComments(postId);
     if (!error && data) {
-      setComments(data.map((c: any) => ({ 
-        ...c, 
-        profiles: c.profiles || { full_name: 'Unknown User', username: 'user' } 
+      setComments(data.map((c: any) => ({
+        ...c,
+        profiles: c.profiles || { full_name: 'Unknown User', username: 'user' }
       })));
     }
     setLoading(false);
@@ -45,21 +45,21 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId }: any) {
     }
   }, [postId, open, fetchComments]);
 
-const handleSubmit = async (emoji?: string) => {
-  const txt = emoji || content;
-  if (!user || !postId || !txt.trim() || submitting) return;
+  const handleSubmit = async (emoji?: string) => {
+    const txt = emoji || content;
+    if (!user || !postId || !txt.trim() || submitting) return;
 
-  setSubmitting(true);
-  try {
-    const { data, error } = await supabase
-      .from("comments")
-      .insert({
-        user_id: user.id,
-        post_id: postId,
-        content: txt.trim(),
-        parent_id: replyTo?.id ?? null,
-      })
-      .select(`
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from("comments")
+        .insert({
+          user_id: user.id,
+          post_id: postId,
+          content: txt.trim(),
+          parent_id: replyTo?.id ?? null,
+        })
+        .select(`
         *,
         profiles:user_id (
           username,
@@ -67,23 +67,24 @@ const handleSubmit = async (emoji?: string) => {
           avatar_url
         )
       `)
-      .single();
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    // Update state & UI
-    setComments(prev => [...prev, data]);
-    setContent("");
-    setReplyTo(null);
-    toast.success("Commented");
-    
-  } catch (e: any) {
-    console.error("Comment Error:", e);
-    toast.error(e.message || "Failed to post");
-  } finally {
-    setSubmitting(false);
-  }
-};
+      // Update state & UI
+      setComments(prev => [...prev, data]);
+      setContent("");
+      setReplyTo(null);
+      if (onCommentAdded) onCommentAdded();
+      toast.success("Commented");
+
+    } catch (e: any) {
+      console.error("Comment Error:", e);
+      toast.error(e.message || "Failed to post");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleDelete = async (commentId: string) => {
     try {
@@ -168,16 +169,16 @@ const handleSubmit = async (emoji?: string) => {
           </div>
 
           <div className="flex gap-2 relative">
-            <Input 
-              value={content} 
-              onChange={e => setContent(e.target.value)} 
+            <Input
+              value={content}
+              onChange={e => setContent(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder={replyTo ? `Add a reply...` : "Add a comment..."} 
-              className="rounded-2xl border-white/10 bg-white/5 h-14 pr-14 text-sm placeholder:opacity-20" 
+              placeholder={replyTo ? `Add a reply...` : "Add a comment..."}
+              className="rounded-2xl border-white/10 bg-white/5 h-14 pr-14 text-sm placeholder:opacity-20"
             />
-            <Button 
-              onClick={() => handleSubmit()} 
-              disabled={submitting || !content.trim()} 
+            <Button
+              onClick={() => handleSubmit()}
+              disabled={submitting || !content.trim()}
               className="absolute right-2 top-2 h-10 w-10 rounded-xl theme-bg shadow-lg shadow-primary/20"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="w-4 h-4" />}

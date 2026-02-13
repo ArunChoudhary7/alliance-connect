@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  Home, Search, PlusSquare, User, Menu, 
+import {
+  Home, Search, PlusSquare, User, Menu,
   MessageCircle, Heart, Ghost, ShoppingBag, PackageSearch, Settings, LogOut, Palette,
   Users2, ChevronRight
 } from "lucide-react";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { signOut, supabase } from "@/lib/supabase"; 
+import { signOut, supabase } from "@/lib/supabase";
 import { CreatePostModal } from "@/components/feed/CreatePostModal";
 import { PulseBeacon } from "./PulseBeacon";
 
@@ -20,6 +20,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('feed-atmosphere') || 'aurora-violet');
 
@@ -63,23 +64,51 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Fetch unread notification count for the Activity dot
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnreadNotifs = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      setUnreadNotifCount(count || 0);
+    };
+
+    fetchUnreadNotifs();
+
+    const notifChannel = supabase.channel('global-notif-dot')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchUnreadNotifs)
+      .subscribe();
+
+    return () => { supabase.removeChannel(notifChannel); };
+  }, [user]);
+
   const desktopNavItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: Search, label: "Explore", path: "/explore" },
     { icon: Heart, label: "Activity", path: "/activity" },
     { icon: Ghost, label: "Secret Room", path: "/secret-room" },
     { icon: ShoppingBag, label: "Marketplace", path: "/marketplace" },
-    { icon: Users2, label: "Squads", path: "/study-groups" },
+    // Circles: replaces old "Squads" entry
+    { icon: Users2, label: "Circles", path: "/circles" },
     { icon: PackageSearch, label: "Lost & Found", path: "/lost-found" },
     { icon: User, label: "Profile", path: profile?.username ? `/profile/${profile.username}` : "/profile" },
     { icon: Settings, label: "Settings", path: "/settings" },
+    ...(profile?.username === 'arun' || profile?.role === 'admin' ? [{ icon: Users2, label: "Admin Panel", path: "/admin" }] : []),
   ];
 
   const isLight = currentTheme === 'clean-minimal';
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <div className={`min-h-screen flex flex-col md:flex-row overflow-x-hidden transition-colors duration-1000 feed-atmosphere-container ${isLight ? 'text-zinc-900' : 'text-white'}`} data-theme={currentTheme}>
-      
+
       {/* MOBILE HEADER */}
       <header className={`md:hidden sticky top-0 z-40 backdrop-blur-3xl border-b px-4 h-16 flex items-center justify-between transition-all ${isLight ? 'bg-white/70 border-black/5' : 'bg-black/40 border-white/10'}`}>
         <div className="flex-none">
@@ -129,7 +158,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 border-r backdrop-blur-3xl p-4 z-50 bg-black/40 border-white/10`}>
         <div className="text-2xl font-black mb-10 px-4 italic uppercase theme-text">Alliance</div>
-        
+
         <div className="flex items-center gap-2 mb-8 px-2">
           <PulseBeacon />
           <div className="flex-1 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest opacity-40 italic">System Online</div>
@@ -173,8 +202,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <Button onClick={() => setShowCreateModal(true)} className="mt-4 w-full h-12 rounded-2xl font-black bg-white text-black hover:opacity-90 uppercase text-[10px] tracking-widest shadow-[0_4px_20px_rgba(255,255,255,0.1)]">Create Post</Button>
       </aside>
 
-      <main className="flex-1 md:pl-64 pt-4 pb-24 md:pb-8">
-        <div className="px-2 pt-4 relative z-10">{children}</div>
+      <main className="flex-1 md:pl-64 pt-4 pb-24 md:pb-8 min-h-screen">
+        <div key={location.pathname} className="px-2 pt-4 relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out fill-mode-forwards">
+          {children}
+        </div>
       </main>
 
       {/* MOBILE NAV BAR */}
@@ -182,7 +213,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <button onClick={() => navigate('/')}><Home className={`h-6 w-6 ${location.pathname === '/' ? 'theme-text' : 'opacity-40'}`} /></button>
         <button onClick={() => navigate('/explore')}><Search className={`h-6 w-6 ${location.pathname === '/explore' ? 'theme-text' : 'opacity-40'}`} /></button>
         <button onClick={() => setShowCreateModal(true)}><PlusSquare className="h-8 w-8 theme-text" /></button>
-        <button onClick={() => navigate('/activity')}><Heart className={`h-6 w-6 ${location.pathname === '/activity' ? 'theme-text' : 'opacity-40'}`} /></button>
+        <button onClick={() => navigate('/activity')} className="relative">
+          <Heart className={`h-6 w-6 ${location.pathname === '/activity' ? 'theme-text' : 'opacity-40'}`} />
+          {unreadNotifCount > 0 && (
+            <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 border-2 border-black animate-pulse" />
+          )}
+        </button>
         <button onClick={() => navigate(profile?.username ? `/profile/${profile.username}` : "/profile")}><User className={`h-6 w-6 ${location.pathname.includes('/profile') ? 'theme-text' : 'opacity-40'}`} /></button>
       </nav>
 

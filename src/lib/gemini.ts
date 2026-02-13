@@ -1,6 +1,27 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+/**
+ * ⚠️ SECURITY NOTE: This API key is exposed in the client bundle because
+ * Vite injects all VITE_ prefixed env vars into the build.
+ * 
+ * MITIGATIONS:
+ * 1. Set strict quotas on this key in Google Cloud Console (e.g., 100 req/day)
+ * 2. Restrict the key to the Gemini API only (no other Google APIs)
+ * 3. Set an HTTP referrer restriction to your domain
+ * 4. For production: Move this to a Supabase Edge Function and proxy the call
+ *
+ * The key is PUBLISHABLE (like the Supabase anon key) — it should have
+ * limited permissions and be rate-limited at the provider level.
+ */
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+/** Rate limit: max 5 menu analyses per 10 minutes */
+const MENU_ANALYSIS_TIMESTAMPS: number[] = [];
+const MAX_ANALYSES = 5;
+const ANALYSIS_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+
+/** Max file size for menu image: 5MB */
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 // --- BACKUP DATA (Used if AI fails so your demo doesn't break) ---
 const BACKUP_MENU = {
@@ -11,23 +32,45 @@ const BACKUP_MENU = {
 };
 
 export async function analyzeMenuWithGemini(file: File) {
-  // 1. Safety Check: If no key, return backup immediately
+  // 1. Rate limit check
+  const now = Date.now();
+  const recentTimestamps = MENU_ANALYSIS_TIMESTAMPS.filter(t => now - t < ANALYSIS_WINDOW_MS);
+  if (recentTimestamps.length >= MAX_ANALYSES) {
+    console.warn("⚠️ Menu analysis rate limited");
+    return BACKUP_MENU;
+  }
+
+  // 2. File size validation
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    console.warn("⚠️ File too large for menu analysis (max 5MB)");
+    return BACKUP_MENU;
+  }
+
+  // 3. File type validation
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!allowedTypes.includes(file.type)) {
+    console.warn("⚠️ Invalid file type for menu analysis");
+    return BACKUP_MENU;
+  }
+
+  // 4. Safety Check: If no key, return backup immediately
   if (!API_KEY || API_KEY === "undefined") {
     console.warn("⚠️ Using Backup Menu (VITE_GEMINI_API_KEY is missing in .env)");
     return BACKUP_MENU;
   }
 
+  MENU_ANALYSIS_TIMESTAMPS.push(now);
+
   const genAI = new GoogleGenerativeAI(API_KEY);
-  
-  // Using 1.5 Flash - it's fastest and free under 15 requests per minute
-  const model = genAI.getGenerativeModel({ 
+
+  const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
-    generationConfig: { responseMimeType: "application/json" } // Force JSON mode
+    generationConfig: { responseMimeType: "application/json" }
   });
 
   try {
     const imagePart = await fileToGenerativePart(file);
-    
+
     // Get Today's Day Name
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const todayName = days[new Date().getDay()];
@@ -54,11 +97,11 @@ export async function analyzeMenuWithGemini(file: File) {
     `;
 
     console.log(`🤖 Contacting Gemini AI for ${todayName}'s menu...`);
-    
+
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
     const text = response.text();
-    
+
     // Clean up potential AI chatter or markdown blocks
     const cleanedText = text
       .replace(/```json/g, "")
@@ -66,7 +109,7 @@ export async function analyzeMenuWithGemini(file: File) {
       .trim();
 
     const parsedData = JSON.parse(cleanedText);
-    
+
     console.log("✅ AI SUCCESS:", parsedData);
     return parsedData;
 

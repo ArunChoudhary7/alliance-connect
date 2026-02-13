@@ -2,16 +2,17 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  Menu, X, Users, Calendar, Briefcase, BookOpen, 
-  MapPin, ShoppingBag, Ghost, BarChart3, Home, 
+import {
+  Menu, X, Users, Calendar, Briefcase, BookOpen,
+  MapPin, ShoppingBag, Ghost, BarChart3, Home,
   Compass, PlusSquare, User, MessageCircle, Bell, Settings,
-  Film, Bookmark
+  Film, Bookmark, ShieldCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
-const menuSections = [
+const baseMenuSections = [
   {
     title: "Main",
     items: [
@@ -52,8 +53,20 @@ const menuSections = [
 ];
 
 export function MenuDrawer() {
+  const { profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+
+  const menuSections = [
+    ...baseMenuSections,
+    // Add Admin Section if user is authorized
+    ...(profile?.username === 'arun' || profile?.role === 'admin' ? [{
+      title: "Command Center",
+      items: [
+        { icon: ShieldCheck, label: "Admin Dashboard", path: "/admin" }
+      ]
+    }] : [])
+  ];
 
   // Close on ESC key
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

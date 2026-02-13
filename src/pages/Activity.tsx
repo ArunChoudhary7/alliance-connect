@@ -103,7 +103,7 @@ export default function Activity() {
 
     if (data) {
       const requesterIds = data.map(r => r.requester_id);
-      
+
       if (requesterIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
@@ -178,57 +178,66 @@ export default function Activity() {
       // 1. Update Request Status
       // We try to find the request by ID first. 
       // If we only have requesterId (from notification), we find the pending request.
-      
+
       let targetRequestId = requestId;
 
       if (!targetRequestId && requesterId) {
-         const { data: foundRequest } = await supabase
-            .from('follow_requests')
-            .select('id')
-            .eq('requester_id', requesterId)
-            .eq('target_id', user.id)
-            .eq('status', 'pending')
-            .single();
-         
-         if (foundRequest) targetRequestId = foundRequest.id;
+        const { data: foundRequest } = await supabase
+          .from('follow_requests')
+          .select('id')
+          .eq('requester_id', requesterId)
+          .eq('target_id', user.id)
+          .eq('status', 'pending')
+          .single();
+
+        if (foundRequest) targetRequestId = foundRequest.id;
       }
 
       if (targetRequestId) {
-          const { error: updateError } = await supabase
-            .from("follow_requests")
-            .update({ status: "accepted" })
-            .eq("id", targetRequestId);
+        const { error: updateError } = await supabase
+          .from("follow_requests")
+          .update({ status: "accepted" })
+          .eq("id", targetRequestId);
 
-          if (updateError) throw updateError;
+        if (updateError) throw updateError;
       }
 
       // 2. Add to Followers Table
       // Check if already following to avoid duplicates
       const { data: existingFollow } = await supabase
-         .from('follows')
-         .select('id')
-         .eq('follower_id', requesterId)
-         .eq('following_id', user.id)
-         .maybeSingle();
+        .from('follows')
+        .select('id')
+        .eq('follower_id', requesterId)
+        .eq('following_id', user.id)
+        .maybeSingle();
 
       if (!existingFollow) {
-          const { error: followError } = await supabase.from("follows").insert({
-            follower_id: requesterId,
-            following_id: user.id,
-          });
-          if (followError) throw followError;
+        const { error: followError } = await supabase.from("follows").insert({
+          follower_id: requesterId,
+          following_id: user.id,
+        });
+        if (followError) throw followError;
       }
 
       // 3. Update UI
       setFollowRequests(prev => prev.filter(r => r.id !== targetRequestId));
-      
-      // Also remove the notification from the list to clean up
+
+      // Remove notification from UI
       setNotifications(prev => prev.filter(n => n.data?.requester_id !== requesterId));
 
-      toast.success("Follow request accepted");
+      // 4. Delete the notification from DB as well to keep it clean (Insta style)
+      // We don't await this to keep UI snappy
+      supabase.from('notifications')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('type', 'follow_request')
+        .contains('data', { requester_id: requesterId })
+        .then();
+
+      toast.success("Accepted");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to accept request");
+      toast.error("Failed to accept");
     } finally {
       setProcessingRequest(null);
     }
@@ -240,37 +249,127 @@ export default function Activity() {
     setProcessingRequest(requestId || requesterId); // Use whichever is available as key
 
     try {
-        let targetRequestId = requestId;
+      let targetRequestId = requestId;
 
-        if (!targetRequestId && requesterId) {
-            const { data: foundRequest } = await supabase
-                .from('follow_requests')
-                .select('id')
-                .eq('requester_id', requesterId)
-                .eq('target_id', user.id)
-                .eq('status', 'pending')
-                .single();
-            
-            if (foundRequest) targetRequestId = foundRequest.id;
-        }
+      if (!targetRequestId && requesterId) {
+        const { data: foundRequest } = await supabase
+          .from('follow_requests')
+          .select('id')
+          .eq('requester_id', requesterId)
+          .eq('target_id', user.id)
+          .eq('status', 'pending')
+          .single();
 
-        if (targetRequestId) {
-            const { error } = await supabase
-                .from("follow_requests")
-                .delete() // Delete the request instead of just marking rejected to keep DB clean
-                .eq("id", targetRequestId);
+        if (foundRequest) targetRequestId = foundRequest.id;
+      }
 
-            if (error) throw error;
-        }
+      if (targetRequestId) {
+        const { error } = await supabase
+          .from("follow_requests")
+          .delete() // Delete the request instead of just marking rejected back to Insta style
+          .eq("id", targetRequestId);
 
-        setFollowRequests(prev => prev.filter(r => r.id !== targetRequestId));
-        setNotifications(prev => prev.filter(n => n.data?.requester_id !== requesterId));
-        toast.success("Follow request declined");
+        if (error) throw error;
+      }
+
+      setFollowRequests(prev => prev.filter(r => r.id !== targetRequestId));
+      setNotifications(prev => prev.filter(n => n.data?.requester_id !== requesterId));
+
+      // Clean up notification DB
+      supabase.from('notifications')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('type', 'follow_request')
+        .contains('data', { requester_id: requesterId })
+        .then();
+
+      toast.success("Removed");
     } catch (error) {
-        toast.error("Failed to decline request");
+      toast.error("Failed to decline request");
     } finally {
-        setProcessingRequest(null);
+      setProcessingRequest(null);
     }
+  };
+
+  const handleAcceptInvite = async (notification: Notification, e: any) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    try {
+      const { error } = await supabase.from('circle_members').insert({
+        circle_id: notification.data.circle_id,
+        user_id: user.id,
+        role: 'member'
+      });
+
+      if (error) throw error;
+
+      await markAsRead(notification.id);
+      toast.success(`Joined ${notification.data.circle_name}!`);
+    } catch (err) {
+      toast.error("Failed to join circle");
+    }
+  };
+
+  const handleDeclineInvite = async (notification: Notification, e: any) => {
+    e.stopPropagation();
+    await markAsRead(notification.id);
+    await supabase.from('notifications').delete().eq('id', notification.id);
+    setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    toast.success("Invite declined");
+  };
+
+  // --- HANDLE CIRCLE JOIN REQUEST (Admin approves someone joining) ---
+  const handleApproveJoinRequest = async (notification: Notification, e: any) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    try {
+      const { circle_id, requester_id, circle_name } = notification.data || {};
+      if (!circle_id || !requester_id) throw new Error('Missing data');
+
+      // Check if already a member
+      const { data: existing } = await supabase
+        .from('circle_members')
+        .select('id')
+        .eq('circle_id', circle_id)
+        .eq('user_id', requester_id)
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await supabase.from('circle_members').insert({
+          circle_id,
+          user_id: requester_id,
+          role: 'member'
+        });
+        if (error) throw error;
+      }
+
+      // Notify the requester that they were approved
+      await supabase.from('notifications').insert({
+        user_id: requester_id,
+        type: 'circle_invite',
+        title: 'Request Approved!',
+        body: `Your request to join ${circle_name} was approved!`,
+        data: { circle_id, circle_name },
+        is_read: false,
+      });
+
+      await markAsRead(notification.id);
+      await supabase.from('notifications').delete().eq('id', notification.id);
+      setNotifications(prev => prev.filter(n => n.id !== notification.id));
+      toast.success(`Approved! User added to ${circle_name}`);
+    } catch (err) {
+      toast.error('Failed to approve request');
+    }
+  };
+
+  const handleDeclineJoinRequest = async (notification: Notification, e: any) => {
+    e.stopPropagation();
+    await markAsRead(notification.id);
+    await supabase.from('notifications').delete().eq('id', notification.id);
+    setNotifications(prev => prev.filter(n => n.id !== notification.id));
+    toast.success('Request declined');
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -292,6 +391,10 @@ export default function Activity() {
       case "follow": return { icon: UserPlus, color: "text-green-500", bg: "bg-green-500/20" };
       case "follow_request": return { icon: Users, color: "text-purple-500", bg: "bg-purple-500/20" };
       case "message": return { icon: MessageSquare, color: "text-orange-500", bg: "bg-orange-500/20" };
+      case "circle_invite": return { icon: Users, color: "text-cyan-500", bg: "bg-cyan-500/20" };
+      case "circle_join_request": return { icon: UserPlus, color: "text-amber-500", bg: "bg-amber-500/20" };
+      case "request_accepted": return { icon: Check, color: "text-green-500", bg: "bg-green-500/20" };
+      case "system": return { icon: Check, color: "text-blue-500", bg: "bg-blue-500/20" };
       default: return { icon: Bell, color: "text-primary", bg: "bg-primary/20" };
     }
   };
@@ -302,6 +405,10 @@ export default function Activity() {
       navigate(`/messages?chat=${notification.data.conversation_id}`);
     } else if (notification.type === "follow_request") {
       // Do nothing, buttons handle it
+    } else if (notification.data?.type === 'verification_request' && notification.data?.requester_id) {
+      // Find username and go there
+      navigate(`/profile?uid=${notification.data.requester_id}`); // We will need to handle uid lookup or just rely on actor_profile if available
+      if (notification.actor_profile?.username) navigate(`/profile/${notification.actor_profile.username}`);
     } else if (notification.data?.post_id) {
       navigate(`/?post=${notification.data.post_id}`);
     } else if (notification.data?.follower_id || notification.data?.user_id || notification.data?.requester_id) {
@@ -383,43 +490,91 @@ export default function Activity() {
                             <AvatarFallback className="bg-gradient-primary text-primary-foreground">{getInitials(notification.actor_profile?.full_name)}</AvatarFallback>
                           </Avatar>
                         </Link>
-                        
+
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm">
-                            <span className="font-semibold">{notification.actor_profile?.full_name || "Someone"}</span>{" "}
-                            <span className="text-muted-foreground">{notification.body?.replace(notification.actor_profile?.full_name || "Someone", "").trim()}</span>
+                          <p className="text-sm leading-snug">
+                            {notification.type === 'circle_invite' ? (
+                              <span className="font-medium text-foreground">{notification.body}</span>
+                            ) : (
+                              <>
+                                <span className="font-semibold">{notification.actor_profile?.full_name || "Someone"}</span>{" "}
+                                <span className="text-muted-foreground">{notification.body?.replace(notification.actor_profile?.full_name || "Someone", "").trim()}</span>
+                              </>
+                            )}
                           </p>
-                          <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}</p>
+                          <p className="text-xs text-muted-foreground/60 mt-0.5">{formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}</p>
                         </div>
 
                         <div className={`p-2 rounded-full ${bg} ${color}`}><Icon className="h-4 w-4" /></div>
                         {!notification.is_read && <div className="w-2 h-2 rounded-full bg-primary" />}
                       </div>
 
+                      {/* CIRCLE INVITE ACTIONS */}
+                      {notification.type === 'circle_invite' && !notification.is_read && (
+                        <div className="flex gap-2 ml-14 mt-1 mb-2">
+                          <Button
+                            size="sm"
+                            className="bg-primary text-black font-black uppercase tracking-wider h-8 px-4"
+                            onClick={(e) => handleAcceptInvite(notification, e)}
+                          >
+                            Join Club
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 px-4"
+                            onClick={(e) => handleDeclineInvite(notification, e)}
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* CIRCLE JOIN REQUEST ACTIONS (Admin sees these) */}
+                      {notification.type === 'circle_join_request' && !notification.is_read && (
+                        <div className="flex gap-2 ml-14 mt-1 mb-2">
+                          <Button
+                            size="sm"
+                            className="bg-emerald-500 text-black font-black uppercase tracking-wider h-8 px-4"
+                            onClick={(e) => handleApproveJoinRequest(notification, e)}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 px-4"
+                            onClick={(e) => handleDeclineJoinRequest(notification, e)}
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      )}
+
                       {/* FOLLOW REQUEST BUTTONS INSIDE NOTIFICATION */}
                       {isFollowRequest && requesterId && (
                         <div className="flex gap-2 ml-14 mt-1">
-                           <Button 
-                              size="sm" 
-                              className="bg-gradient-primary h-8 px-4"
-                              onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleAcceptRequest("", requesterId);
-                              }}
-                           >
-                              Confirm
-                           </Button>
-                           <Button 
-                              size="sm" 
-                              variant="secondary" 
-                              className="h-8 px-4"
-                              onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleRejectRequest("", requesterId);
-                              }}
-                           >
-                              Delete
-                           </Button>
+                          <Button
+                            size="sm"
+                            className="bg-gradient-primary h-8 px-4"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAcceptRequest("", requesterId);
+                            }}
+                          >
+                            Confirm
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 px-4"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRejectRequest("", requesterId);
+                            }}
+                          >
+                            Delete
+                          </Button>
                         </div>
                       )}
                     </motion.div>

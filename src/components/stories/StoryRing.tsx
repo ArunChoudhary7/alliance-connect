@@ -15,8 +15,8 @@ export function StoryRing({ user, hasStory = false, isSeen = false, onClick }: S
   // Grey for Seen, Gradient for Unseen
   const ringClass = hasStory
     ? isSeen
-      ? "p-[2px] border-2 border-neutral-700" 
-      : "p-[2px] bg-gradient-to-tr from-yellow-400 via-purple-500 to-indigo-500"
+      ? "p-[2px] border-2 border-zinc-600"
+      : "p-[2px] bg-gradient-to-tr from-cyan-400 via-blue-500 to-purple-600"
     : "p-[1px] border border-transparent";
 
   return (

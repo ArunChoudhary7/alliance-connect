@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Image as ImageIcon, Type, Loader2, X, Camera, AtSign, Search, ZoomIn, Clock, Palette } from "lucide-react";
+import { Image as ImageIcon, Type, Loader2, X, Camera, Search, ZoomIn, Clock, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -176,7 +176,7 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
       {/* HEADER TOOLS */}
       <div className="flex justify-between items-center p-4 z-20 absolute top-0 left-0 right-0 bg-gradient-to-b from-black/50 to-transparent">
         <Button variant="ghost" className="text-white" onClick={handleClose}><X /></Button>
-        <div className="flex gap-4">
+          <div className="flex gap-4">
            {(storyType === 'text' || isReshare) && (
               <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
                 <PopoverTrigger asChild><Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60"><Palette className="h-5 w-5" /></Button></PopoverTrigger>
@@ -187,8 +187,15 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
                 </PopoverContent>
               </Popover>
            )}
-           {(storyType !== 'text') && <Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60" onClick={() => setShowTextOverlay(!showTextOverlay)}><Type className="h-5 w-5" /></Button>}
-           {(storyType !== 'camera') && <Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60" onClick={() => setShowMentionSearch(true)}><AtSign className="h-5 w-5" /></Button>}
+           {(storyType !== 'text') && (
+             <Button
+               variant="ghost"
+               className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60"
+               onClick={() => setShowTextOverlay(!showTextOverlay)}
+             >
+               <Type className="h-5 w-5" />
+             </Button>
+           )}
         </div>
         <Button onClick={handleSubmit} disabled={loading} className="bg-white text-black font-bold rounded-full px-6">{loading ? <Loader2 className="animate-spin" /> : 'Share'}</Button>
       </div>
@@ -257,11 +264,20 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
               )}
             </motion.div>
 
-            {/* Caption Overlay */}
+            {/* Caption Overlay (draggable, optional text like Instagram) */}
             {(showTextOverlay || content) && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                <Textarea value={content} onChange={(e) => setContent(e.target.value)} className="bg-transparent border-none text-white text-3xl font-bold text-center pointer-events-auto resize-none focus-visible:ring-0 shadow-black drop-shadow-lg" placeholder="Tap to add caption..." />
-              </div>
+              <motion.div
+                drag
+                dragMomentum={false}
+                className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+              >
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="bg-transparent border-none text-white text-3xl font-bold text-center pointer-events-auto resize-none focus-visible:ring-0 shadow-black drop-shadow-lg"
+                  placeholder="Tap to add caption..."
+                />
+              </motion.div>
             )}
           </div>
         )}

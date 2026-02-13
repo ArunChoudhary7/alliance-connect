@@ -29,6 +29,7 @@ export default function Circles() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set());
 
   const fetchCircles = useCallback(async () => {
     const { data } = await supabase
@@ -36,7 +37,20 @@ export default function Circles() {
       .select('*')
       .order('member_count', { ascending: false });
 
-    setCircles(data || []);
+    if (!data) { setCircles([]); return; }
+
+    // Fetch real member counts for all circles to fix drift/mismatch
+    const circlesWithRealCounts = await Promise.all(
+      data.map(async (circle) => {
+        const { count } = await supabase
+          .from('circle_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('circle_id', circle.id);
+        return { ...circle, member_count: Math.max(0, count || 0) };
+      })
+    );
+
+    setCircles(circlesWithRealCounts);
   }, []);
 
   const fetchMemberships = useCallback(async () => {
@@ -49,10 +63,26 @@ export default function Circles() {
     setUserMemberships(new Set(data?.map(m => m.circle_id) || []));
   }, [user]);
 
+  const fetchPendingRequests = useCallback(async () => {
+    if (!user) return;
+    // Check for pending circle join request notifications sent BY this user
+    const { data } = await supabase
+      .from('notifications')
+      .select('data')
+      .eq('type', 'circle_join_request')
+      .eq('is_read', false)
+      .contains('data', { requester_id: user.id });
+
+    const pendingCircleIds = new Set(
+      data?.map(n => n.data?.circle_id).filter(Boolean) || []
+    );
+    setPendingRequests(pendingCircleIds);
+  }, [user]);
+
   const loadData = useCallback(async () => {
-    await Promise.all([fetchCircles(), fetchMemberships()]);
+    await Promise.all([fetchCircles(), fetchMemberships(), fetchPendingRequests()]);
     setLoading(false);
-  }, [fetchCircles, fetchMemberships]);
+  }, [fetchCircles, fetchMemberships, fetchPendingRequests]);
 
   useEffect(() => {
     loadData();
@@ -61,16 +91,41 @@ export default function Circles() {
   const handleJoin = async (circleId: string) => {
     if (!user) return;
 
+    // Find the circle to check if it's private
+    const targetCircle = circles.find(c => c.id === circleId);
+
     try {
-      const { error } = await supabase
-        .from('circle_members')
-        .insert({ circle_id: circleId, user_id: user.id });
+      if (targetCircle?.is_private) {
+        // PRIVATE CIRCLE: Send a join request notification to the circle admin
+        const { error } = await supabase.from('notifications').insert({
+          user_id: targetCircle.created_by, // Send to circle creator/admin
+          type: 'circle_join_request',
+          title: 'Circle Join Request',
+          body: `wants to join ${targetCircle.name}`,
+          data: {
+            circle_id: circleId,
+            circle_name: targetCircle.name,
+            requester_id: user.id,
+          },
+          is_read: false,
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setUserMemberships(prev => new Set([...prev, circleId]));
-      fetchCircles();
-      toast.success('Joined circle!');
+        setPendingRequests(prev => new Set([...prev, circleId]));
+        toast.success('Join request sent! Waiting for admin approval.');
+      } else {
+        // PUBLIC CIRCLE: Join instantly
+        const { error } = await supabase
+          .from('circle_members')
+          .insert({ circle_id: circleId, user_id: user.id });
+
+        if (error) throw error;
+
+        setUserMemberships(prev => new Set([...prev, circleId]));
+        fetchCircles();
+        toast.success('Joined circle!');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to join circle');
     }
@@ -165,6 +220,7 @@ export default function Circles() {
                   key={circle.id}
                   circle={circle}
                   isMember={true}
+                  isPending={false}
                   onJoin={handleJoin}
                   onLeave={handleLeave}
                   onClick={(id) => navigate(`/circles/${id}`)}
@@ -194,6 +250,7 @@ export default function Circles() {
                   key={circle.id}
                   circle={circle}
                   isMember={false}
+                  isPending={pendingRequests.has(circle.id)}
                   onJoin={handleJoin}
                   onLeave={handleLeave}
                   onClick={(id) => navigate(`/circles/${id}`)}

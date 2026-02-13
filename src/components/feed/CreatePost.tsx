@@ -16,7 +16,7 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<{ file: File; preview: string; type: 'image' | 'video' }[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   const [isStealth, setIsStealth] = useState(false);
   const [duration, setDuration] = useState(24);
 
@@ -49,8 +49,8 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
         }
       }
 
-      const expiresAt = isStealth 
-        ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString() 
+      const expiresAt = isStealth
+        ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString()
         : null;
 
       const { error } = await createPost({
@@ -69,11 +69,11 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
       setIsExpanded(false);
       setIsStealth(false);
       onPostCreated();
-    } catch (error) { 
+    } catch (error) {
       console.error(error);
-      toast.error("Failed to post."); 
-    } finally { 
-      setIsSubmitting(false); 
+      toast.error("Failed to post.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -96,9 +96,9 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
           <AvatarImage src={profile.avatar_url || ""} />
           <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
         </Avatar>
-        
+
         <div className="flex-1 space-y-4">
-          <Input 
+          <Input
             placeholder={isStealth ? "Whisper something secret..." : "What's on your mind?"}
             className={cn("super-input h-12 md:h-14 text-base md:text-lg", isStealth && "text-red-100 placeholder:text-red-500/30")}
             value={content}
@@ -113,19 +113,19 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
                   <Image className="h-5 w-5" />
                 </Button>
                 <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" multiple accept="image/*,video/*" />
-                
+
                 <div className="hidden md:block w-[1px] h-6 bg-white/10 mx-2" />
 
                 <div className="flex items-center bg-white/5 rounded-xl px-1">
-                  <Button 
+                  <Button
                     onClick={() => setIsStealth(!isStealth)}
-                    variant="ghost" 
+                    variant="ghost"
                     className={cn("rounded-lg px-2 md:px-3 h-9 gap-2 transition-all", isStealth ? "text-red-500" : "text-white/40")}
                   >
                     <Timer className={cn("h-4 w-4", isStealth && "animate-spin")} />
                     <span className="text-[10px] font-black uppercase tracking-widest">Stealth</span>
                   </Button>
-                  
+
                   {isStealth && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -142,10 +142,10 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
                   )}
                 </div>
               </div>
-              
-              <Button 
-                onClick={handleSubmit} 
-                disabled={isSubmitting} 
+
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
                 className={cn(
                   "rounded-full h-10 px-6 font-bold transition-all shadow-lg w-full md:w-auto",
                   isStealth ? "bg-red-600 text-white shadow-red-500/20" : "bg-white text-black"

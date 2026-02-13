@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { 
-  UtensilsCrossed, 
-  ArrowRight, 
-  Zap, 
-  Swords, 
-} from "lucide-react"; 
+import {
+  UtensilsCrossed,
+  ArrowRight,
+  Zap,
+  Swords,
+  Calendar,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ export function CampusCarousel() {
   const { profile } = useAuth();
   const [menuData, setMenuData] = useState<any>(null);
   const [topUser, setTopUser] = useState<any>(null);
-  
+
   const [width, setWidth] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -40,37 +41,37 @@ export function CampusCarousel() {
   }, [menuData, topUser]);
 
   const cards = [
-    { 
-      id: 'mess', 
-      title: "Mess Menu", 
-      subtitle: "Alliance Food Court", 
-      icon: <UtensilsCrossed className="h-5 w-5 text-orange-500" />, 
-      color: "from-orange-500/20 to-orange-500/5", 
-      path: "/mess-menu" 
+    {
+      id: 'events',
+      title: "Events",
+      subtitle: "Campus Life",
+      icon: <Calendar className="h-5 w-5 text-pink-500" />,
+      color: "from-pink-500/20 to-pink-500/5",
+      path: "/events"
     },
-    { 
-      id: 'duel', 
-      title: "Aura Rank", 
-      subtitle: "Campus Duel", 
-      icon: <Swords className="h-5 w-5 text-yellow-500" />, 
-      color: "from-yellow-500/20 to-yellow-500/5", 
-      path: "/leaderboard" 
+    {
+      id: 'mess',
+      title: "Mess Menu",
+      subtitle: "Alliance Food Court",
+      icon: <UtensilsCrossed className="h-5 w-5 text-orange-500" />,
+      color: "from-orange-500/20 to-orange-500/5",
+      path: "/mess-menu"
     },
-    { 
-      id: 'pulse', 
-      title: "Live Pulse", 
-      subtitle: "Happening Now", 
-      icon: <Zap className="h-5 w-5 text-purple-500" />, 
-      color: "from-purple-500/20 to-purple-500/5", 
-      path: "/secret-room" 
+    {
+      id: 'duel',
+      title: "Aura Rank",
+      subtitle: "Campus Duel",
+      icon: <Swords className="h-5 w-5 text-yellow-500" />,
+      color: "from-yellow-500/20 to-yellow-500/5",
+      path: "/leaderboard"
     }
   ];
 
   return (
     <div className="relative mb-8 w-full overflow-hidden" ref={carouselRef}>
-      <motion.div 
-        drag="x" 
-        dragConstraints={{ right: 0, left: -width - 64 }} 
+      <motion.div
+        drag="x"
+        dragConstraints={{ right: 0, left: -width - 64 }}
         dragElastic={0.1}
         className="flex gap-4 px-4 w-max py-2 cursor-grab active:cursor-grabbing"
       >
@@ -93,61 +94,61 @@ export function CampusCarousel() {
             </div>
 
             <div className="mt-4 pointer-events-none min-h-[40px]">
-                {card.id === 'mess' && (
-                  <div className="space-y-2">
-                    <p className="text-[8px] font-black uppercase tracking-widest opacity-30">Coming up next:</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {menuData?.lunch?.length > 0 ? (
-                        menuData.lunch.slice(0, 3).map((i: string) => (
-                          <Badge key={i} variant="secondary" className="bg-white/5 border-none text-[8px] uppercase font-bold py-1 px-2 text-orange-200">
-                            {i}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-[9px] font-bold opacity-20 uppercase tracking-tighter">Menu not uploaded yet</span>
-                      )}
-                    </div>
+              {card.id === 'mess' && (
+                <div className="space-y-2">
+                  <p className="text-[8px] font-black uppercase tracking-widest opacity-30">Coming up next:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {menuData?.lunch?.length > 0 ? (
+                      menuData.lunch.slice(0, 3).map((i: string) => (
+                        <Badge key={i} variant="secondary" className="bg-white/5 border-none text-[8px] uppercase font-bold py-1 px-2 text-orange-200">
+                          {i}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-[9px] font-bold opacity-20 uppercase tracking-tighter">Menu not uploaded yet</span>
+                    )}
                   </div>
-                )}
-                
-                {card.id === 'duel' && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-[9px] font-bold uppercase">
-                      <span className="opacity-40">Gap to #1</span>
-                      <span className="text-yellow-500">
-                        {Math.max(((topUser?.total_aura || 0) - (profile?.total_aura || 0)), 0)}
-                      </span>
-                    </div>
-                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(((profile?.total_aura || 0) / (topUser?.total_aura || 1)) * 100, 100)}%` }}
-                        className="h-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]" 
-                      />
-                    </div>
-                  </div>
-                )}
+                </div>
+              )}
 
-                {card.id === 'pulse' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-ping" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-green-500">
-                        Live Pulse Active
-                      </span>
-                    </div>
-                    <div className="flex -space-x-2">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-6 w-6 rounded-full border-2 border-background bg-secondary flex items-center justify-center overflow-hidden">
-                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 10}`} alt="user" />
-                        </div>
-                      ))}
-                      <div className="h-6 w-6 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[8px] font-bold">
-                        +12
+              {card.id === 'duel' && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[9px] font-bold uppercase">
+                    <span className="opacity-40">Gap to #1</span>
+                    <span className="text-yellow-500">
+                      {Math.max(((topUser?.total_aura || 0) - (profile?.total_aura || 0)), 0)}
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(((profile?.total_aura || 0) / (topUser?.total_aura || 1)) * 100, 100)}%` }}
+                      className="h-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {card.id === 'events' && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-pink-500 animate-pulse" />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-pink-500">
+                      Don't Miss Out
+                    </span>
+                  </div>
+                  <div className="flex -space-x-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-6 w-6 rounded-full border-2 border-background bg-secondary flex items-center justify-center overflow-hidden">
+                        <div className={`w-full h-full bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 opacity-${100 - (i * 20)}`} />
                       </div>
+                    ))}
+                    <div className="h-6 w-6 rounded-full border-2 border-background bg-secondary flex items-center justify-center text-[8px] font-bold">
+                      +
                     </div>
                   </div>
-                )}
+                </div>
+              )}
             </div>
           </motion.div>
         ))}

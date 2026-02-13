@@ -21,12 +21,13 @@ interface Circle {
 interface CircleCardProps {
   circle: Circle;
   isMember: boolean;
+  isPending?: boolean;
   onJoin: (circleId: string) => void;
   onLeave: (circleId: string) => void;
   onClick: (circleId: string) => void;
 }
 
-export function CircleCard({ circle, isMember, onJoin, onLeave, onClick }: CircleCardProps) {
+export function CircleCard({ circle, isMember, isPending, onJoin, onLeave, onClick }: CircleCardProps) {
   const { user } = useAuth();
   const [joining, setJoining] = useState(false);
 
@@ -51,51 +52,71 @@ export function CircleCard({ circle, isMember, onJoin, onLeave, onClick }: Circl
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onClick(circle.id)}
-      className="glass-card p-4 rounded-2xl cursor-pointer"
+      className="group relative aspect-[16/10] sm:aspect-[4/3] rounded-[32px] overflow-hidden cursor-pointer shadow-xl border-none"
     >
-      {/* Cover image */}
-      <div className="relative h-24 rounded-xl overflow-hidden mb-3 bg-gradient-to-br from-primary/30 to-accent/30">
-        {circle.cover_url && (
+      {/* Background Layer */}
+      <div className="absolute inset-0 z-0">
+        {circle.cover_url ? (
           <img
             src={circle.cover_url}
             alt={circle.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-tr from-primary via-purple-600 to-pink-500" />
         )}
-        <div className="absolute top-2 right-2">
-          <Badge variant={circle.is_private ? "secondary" : "outline"} className="gap-1">
-            {circle.is_private ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-            {circle.is_private ? 'Private' : 'Public'}
-          </Badge>
-        </div>
+        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-90" />
       </div>
 
-      {/* Circle info */}
-      <h3 className="font-semibold text-foreground mb-1">{circle.name}</h3>
-      {circle.description && (
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-          {circle.description}
-        </p>
-      )}
+      {/* Top Badges */}
+      <div className="absolute top-4 right-4 z-20 flex gap-2">
+        {circle.is_private && (
+          <Badge variant="secondary" className="bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60">
+            <Lock className="h-3 w-3 mr-1" /> Private
+          </Badge>
+        )}
+      </div>
 
-      {/* Members and action */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Users className="h-4 w-4" />
-          <span>{circle.member_count} members</span>
-        </div>
+      {/* content */}
+      <div className="absolute bottom-0 left-0 w-full p-6 z-20">
+        <div className="flex items-end justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white mb-1 truncate leading-none">
+              {circle.name}
+            </h3>
+            <div className="flex items-center gap-3 text-white/80">
+              <div className="flex items-center gap-1.5 bg-white/10 px-2 py-1 rounded-full backdrop-blur-sm">
+                <Users className="h-3 w-3" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">{circle.member_count} Members</span>
+              </div>
+            </div>
+          </div>
 
-        {user && (
           <Button
             size="sm"
-            variant={isMember ? "outline" : "default"}
             onClick={handleJoinLeave}
-            disabled={joining}
-            className={isMember ? "" : "bg-gradient-primary"}
+            disabled={joining || isPending}
+            className={`rounded-full px-5 h-10 font-black uppercase tracking-wider transition-all shadow-lg ${isMember
+              ? "bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20"
+              : isPending
+                ? "bg-yellow-500/20 text-yellow-400 backdrop-blur-md border border-yellow-500/30 cursor-not-allowed"
+                : "bg-white text-black hover:bg-white/90 hover:scale-105"
+              }`}
           >
-            {isMember ? 'Leave' : 'Join'}
+            {joining ? (
+              <span className="animate-pulse">...</span>
+            ) : isMember ? (
+              "Joined"
+            ) : isPending ? (
+              "Requested"
+            ) : circle.is_private ? (
+              "Request"
+            ) : (
+              "Join"
+            )}
           </Button>
-        )}
+        </div>
       </div>
     </motion.div>
   );

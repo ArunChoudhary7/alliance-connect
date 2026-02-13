@@ -12,8 +12,9 @@ import { getInitials, cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { toast } from "sonner";
 import { PostComments } from "@/components/feed/PostComments";
-import { ShareModal } from "@/components/feed/ShareModal"; 
+import { ShareModal } from "@/components/feed/ShareModal";
 import { motion, AnimatePresence } from "framer-motion";
+import { UserBadge } from "@/components/ui/UserBadge";
 
 function CustomVideoPlayer({ src }: { src: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,7 +28,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          videoRef.current?.play().catch(() => {}); // Catch autoplay restrictions silently
+          videoRef.current?.play().catch(() => { }); // Catch autoplay restrictions silently
           setIsPlaying(true);
         } else {
           videoRef.current?.pause();
@@ -108,7 +109,7 @@ export function PostCard({ post, onDeleted }: any) {
   const [showComments, setShowComments] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [timeLeft, setTimeLeft] = useState("");
-  
+
   // Double tap animation state
   const [lastTap, setLastTap] = useState(0);
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
@@ -138,19 +139,19 @@ export function PostCard({ post, onDeleted }: any) {
   // Initial Aura Check & Realtime Subscription
   useEffect(() => {
     if (!user) return;
-    
+
     // Check if user liked
     supabase.from("auras").select("id").eq("post_id", post.id).eq("user_id", user.id).maybeSingle().then(({ data }) => setHasAura(!!data));
-    
+
     // Subscribe to count updates
     const channel = supabase.channel(`post_stats:${post.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${post.id}` }, (payload: any) => {
-          if (payload.new) {
-            setAuraCount(Number(payload.new.aura_count) || 0);
-          }
+        if (payload.new) {
+          setAuraCount(Number(payload.new.aura_count) || 0);
+        }
       })
       .subscribe();
-      
+
     return () => { supabase.removeChannel(channel); };
   }, [user, post.id]);
 
@@ -195,12 +196,12 @@ export function PostCard({ post, onDeleted }: any) {
       const { error } = await supabase.from("posts").delete().eq("id", post.id);
       if (error) throw error;
       toast.success("Broadcast Terminated");
-      if (onDeleted) onDeleted(); 
-    } catch (e) { 
-      setIsDeleted(false); 
-      toast.error("Deletion failed"); 
-    } finally { 
-      setShowDeleteDialog(false); 
+      if (onDeleted) onDeleted();
+    } catch (e) {
+      setIsDeleted(false);
+      toast.error("Deletion failed");
+    } finally {
+      setShowDeleteDialog(false);
     }
   };
 
@@ -237,7 +238,7 @@ export function PostCard({ post, onDeleted }: any) {
         )}
 
         {isStealth && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full z-20 whitespace-nowrap">
+          <div className="absolute top-16 right-4 flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full z-20 whitespace-nowrap pointer-events-none">
             <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_red]" />
             <span className="text-[10px] font-black text-red-500 tracking-tighter uppercase tabular-nums">
               BURN IN: {timeLeft}
@@ -258,9 +259,18 @@ export function PostCard({ post, onDeleted }: any) {
             </div>
             <div>
               {/* ENHANCED: Username Pops with drop-shadow for heavy themes */}
-              <p className="font-black text-[15px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:underline leading-none">
-                {author.full_name}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-black text-[15px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:underline leading-none">
+                  {author.full_name}
+                </p>
+                <UserBadge
+                  role={author.role}
+                  userId={author.user_id || post.user_id}
+                  isVerified={author.is_verified}
+                  verifiedTitle={author.verified_title}
+                  verificationExpiry={author.verification_expiry}
+                />
+              </div>
               <p className="text-[10px] text-white/90 font-black tracking-wide uppercase mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
                 @{author.username} • {isStealth ? "CLASSIFIED" : `${formatDistanceToNow(new Date(post.created_at))} ago`}
               </p>
@@ -269,8 +279,8 @@ export function PostCard({ post, onDeleted }: any) {
           {user?.id === post.user_id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full dark:hover:bg-white/10 hover:bg-black/5">
-                  <MoreVertical className="h-4 w-4 dark:text-white/80 text-zinc-900/80" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 text-white hover:bg-white/20 hover:scale-105 active:scale-95 transition-all shadow-sm border border-white/5">
+                  <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white dark:bg-black/90 backdrop-blur-xl border-black/5 dark:border-white/10 rounded-xl">
@@ -296,46 +306,46 @@ export function PostCard({ post, onDeleted }: any) {
               {post.content}
             </p>
           )}
-          
+
           {(post.is_thread && post.thread_items) || post.video_url || post.images?.[0] ? (
-            <div 
+            <div
               className={cn(
                 "rounded-[2rem] overflow-hidden border dark:border-white/5 border-black/5 bg-black shadow-inner relative group cursor-pointer",
                 isStealth && "grayscale opacity-80"
               )}
               onClick={handleDoubleTap}
             >
-                {/* Double Tap Heart Animation overlay */}
-                <AnimatePresence>
-                  {showHeartAnimation && (
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 1.5 }}
-                      transition={{ duration: 0.4, type: "spring" }}
-                      className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none drop-shadow-2xl"
-                    >
-                      <Heart className="w-32 h-32 fill-red-500 text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {post.is_thread ? (
-                    <Carousel className="w-full">
-                        <CarouselContent>
-                          {post.thread_items.map((item: any, idx: number) => (
-                            <CarouselItem key={idx}>
-                              {item.type === 'video' ? <CustomVideoPlayer src={item.url} /> : <img src={item.url} alt="Thread item" className="w-full object-cover max-h-[500px]" />}
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                        {post.thread_items.length > 1 && <><CarouselPrevious className="hidden md:flex left-2" /><CarouselNext className="hidden md:flex right-2" /></>}
-                    </Carousel>
-                ) : post.video_url ? (
-                    <CustomVideoPlayer src={post.video_url} />
-                ) : (
-                    <img src={post.images[0]} alt="Post content" className="w-full object-cover max-h-[500px]" loading="lazy" />
+              {/* Double Tap Heart Animation overlay */}
+              <AnimatePresence>
+                {showHeartAnimation && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.5 }}
+                    transition={{ duration: 0.4, type: "spring" }}
+                    className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none drop-shadow-2xl"
+                  >
+                    <Heart className="w-32 h-32 fill-red-500 text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]" />
+                  </motion.div>
                 )}
+              </AnimatePresence>
+
+              {post.is_thread ? (
+                <Carousel className="w-full">
+                  <CarouselContent>
+                    {post.thread_items.map((item: any, idx: number) => (
+                      <CarouselItem key={idx}>
+                        {item.type === 'video' ? <CustomVideoPlayer src={item.url} /> : <img src={item.url} alt="Thread item" className="w-full object-cover max-h-[500px]" />}
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  {post.thread_items.length > 1 && <><CarouselPrevious className="hidden md:flex left-2" /><CarouselNext className="hidden md:flex right-2" /></>}
+                </Carousel>
+              ) : post.video_url ? (
+                <CustomVideoPlayer src={post.video_url} />
+              ) : (
+                <img src={post.images[0]} alt="Post content" className="w-full object-cover max-h-[500px]" loading="lazy" />
+              )}
             </div>
           ) : null}
         </div>
@@ -343,31 +353,31 @@ export function PostCard({ post, onDeleted }: any) {
         {/* FROSTED GLASS ACTION BUTTONS */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t dark:border-white/5 border-black/5 relative z-20">
           <div className="flex gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className={cn(
                 "rounded-full h-10 px-4 gap-2 transition-all duration-300",
                 "bg-black/30 dark:bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-lg flex flex-row items-center justify-center",
                 /* FIXED: Tone down aura glow slightly */
-                hasAura && "bg-red-500/10 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.15)]" 
-              )} 
+                hasAura && "bg-red-500/10 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.15)]"
+              )}
               onClick={handleAura}
             >
               <Heart className={cn(
-                "h-5 w-5 transition-transform duration-300", 
+                "h-5 w-5 transition-transform duration-300",
                 hasAura ? "fill-red-500 text-red-500 scale-110 drop-shadow-[0_0_2px_rgba(239,68,68,0.4)]" : "text-white scale-100 hover:scale-110"
               )} />
               <span className={cn("text-[10px] md:text-xs font-black uppercase tracking-widest whitespace-nowrap", hasAura ? "text-red-500" : "text-white")}>
                 {auraCount} Aura
               </span>
             </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="rounded-full h-10 px-4 gap-2 bg-black/30 dark:bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-lg hover:bg-black/50 transition-all flex flex-row items-center justify-center" 
-              disabled={!commentsEnabled} 
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full h-10 px-4 gap-2 bg-black/30 dark:bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-lg hover:bg-black/50 transition-all flex flex-row items-center justify-center"
+              disabled={!commentsEnabled}
               onClick={() => setShowComments(true)}
             >
               <MessageCircle className="h-5 w-5 hover:scale-110 transition-transform" />
@@ -377,9 +387,9 @@ export function PostCard({ post, onDeleted }: any) {
             </Button>
           </div>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="rounded-full h-10 w-10 bg-black/30 dark:bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-lg hover:bg-black/50 transition-all flex items-center justify-center"
             onClick={() => setShowShareModal(true)}
           >
@@ -405,17 +415,17 @@ export function PostCard({ post, onDeleted }: any) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <PostComments 
-        postId={post.id} 
-        open={showComments} 
-        onOpenChange={setShowComments} 
-        postOwnerId={post.user_id} 
+      <PostComments
+        postId={post.id}
+        open={showComments}
+        onOpenChange={setShowComments}
+        postOwnerId={post.user_id}
       />
-      
-      <ShareModal 
-        post={post} 
-        open={showShareModal} 
-        onOpenChange={setShowShareModal} 
+
+      <ShareModal
+        post={post}
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
       />
     </>
   );

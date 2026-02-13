@@ -1,234 +1,256 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Check, X, ShieldAlert, Loader2, FileText, UserCheck } from "lucide-react";
+import { getInitials } from "@/lib/utils";
 import { toast } from "sonner";
-import { Ban, Eye, Trash2 } from "lucide-react";
-
-interface Report {
-  id: string;
-  reason: string;
-  created_at: string;
-  reporter_id: string;
-  target_user_id?: string;
-  target_post_id?: string;
-  reporter_profile?: {
-    full_name: string | null;
-    username: string | null;
-    avatar_url: string | null;
-  };
-  target_profile?: {
-    full_name: string | null;
-    username: string | null;
-    avatar_url: string | null;
-  };
-}
+import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Admin() {
-  const { profile } = useAuth();
-  const [reports, setReports] = useState<Report[]>([]);
+  const { user, profile: currentProfile } = useAuth();
+  const navigate = useNavigate();
+  const [requests, setRequests] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const isAdmin = profile?.is_admin === true;
-
+  // Security Check: Only Admin (Arun) can access
   useEffect(() => {
-    if (!isAdmin) return;
-    fetchReports();
-  }, [isAdmin]);
+    if (currentProfile && currentProfile.username !== 'arun' && currentProfile.role !== 'admin') {
+      navigate("/");
+      toast.error("Unauthorized Access");
+    }
+  }, [currentProfile, navigate]);
 
-  const fetchReports = async () => {
+  const fetchRequests = async () => {
     setLoading(true);
+    const { data: reqData, error: reqError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('verification_status', 'pending');
 
-    const { data, error } = await supabase
-      .from("reports")
-      .select("*")
-      .order("created_at", { ascending: false });
+    if (reqError) toast.error("Failed to fetch requests");
+    else setRequests(reqData || []);
 
-    if (error) {
-      toast.error("Failed to load reports");
-      setLoading(false);
-      return;
-    }
-
-    if (!data) {
-      setReports([]);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch reporter & target profiles
-    const userIds = [
-      ...new Set(
-        data
-          .flatMap((r) => [r.reporter_id, r.target_user_id])
-          .filter(Boolean)
-      ),
-    ];
-
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, full_name, username, avatar_url")
-      .in("user_id", userIds as string[]);
-
-    const profileMap = new Map(
-      profiles?.map((p) => [p.user_id, p]) || []
-    );
-
-    const enriched: Report[] = data.map((r) => ({
-      ...r,
-      reporter_profile: profileMap.get(r.reporter_id),
-      target_profile: profileMap.get(r.target_user_id || ""),
-    }));
-
-    setReports(enriched);
     setLoading(false);
   };
 
-  const banUser = async (userId?: string) => {
-    if (!userId) return;
+  const fetchReports = async () => {
+    setLoadingReports(true);
+    const { data: repData, error: repError } = await supabase
+      .from('support_tickets')
+      .select('*, profiles:user_id(full_name, username, avatar_url)')
+      .order('created_at', { ascending: false });
 
-    const confirmBan = confirm("Ban this user?");
-    if (!confirmBan) return;
+    if (repError) toast.error("Failed to fetch reports");
+    else setReports(repData || []);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_banned: true })
-      .eq("user_id", userId);
+    setLoadingReports(false);
+  };
 
-    if (error) {
-      toast.error("Failed to ban user");
-    } else {
-      toast.success("User banned");
-      fetchReports();
+  const handleResolveReport = async (id: string) => {
+    const { error } = await supabase.from('support_tickets').update({ status: 'resolved' }).eq('id', id);
+    if (error) toast.error("Failed to resolve");
+    else {
+      toast.success("Resolved");
+      setReports(prev => prev.map(p => p.id === id ? { ...p, status: 'resolved' } : p));
     }
   };
 
-  const deletePost = async (postId?: string) => {
-    if (!postId) return;
-
-    const confirmDelete = confirm("Delete this post?");
-    if (!confirmDelete) return;
-
-    const { error } = await supabase.from("posts").delete().eq("id", postId);
-
-    if (error) {
-      toast.error("Failed to delete post");
-    } else {
-      toast.success("Post deleted");
+  useEffect(() => {
+    if (user) {
+      fetchRequests();
       fetchReports();
+    }
+  }, [user]);
+
+  const handleApprove = async (targetProfile: any) => {
+    setProcessingId(targetProfile.user_id);
+    try {
+      // 1. Update Profile via Secure RPC (bypasses potential RLS issues)
+      const { error } = await supabase.rpc('admin_verify_user', {
+        target_user_id: targetProfile.user_id,
+        should_verify: true
+      });
+
+      if (error) throw error;
+
+      // 2. Send Notification
+      await supabase.from('notifications').insert({
+        user_id: targetProfile.user_id,
+        type: 'system',
+        title: 'Verification Approved!',
+        body: 'Welcome to the elite circle. Your badge is active.',
+        data: { type: 'verification_approved' },
+        is_read: false
+      });
+
+      toast.success(`Verified @${targetProfile.username}`);
+      setRequests(prev => prev.filter(p => p.user_id !== targetProfile.user_id));
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to approve");
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <AppLayout>
-        <div className="p-10 text-center">
-          <h1 className="text-xl font-semibold">Access Denied</h1>
-          <p className="text-muted-foreground">Admins only.</p>
-        </div>
-      </AppLayout>
-    );
+  const handleReject = async (targetProfile: any) => {
+    setProcessingId(targetProfile.user_id);
+    try {
+      // 1. Update Profile
+      const { error } = await supabase.from('profiles').update({
+        verification_status: 'rejected'
+      }).eq('user_id', targetProfile.user_id);
+
+      if (error) throw error;
+
+      // 2. Send Notification
+      await supabase.from('notifications').insert({
+        user_id: targetProfile.user_id,
+        type: 'system',
+        title: 'Verification Update',
+        body: 'Your verification request could not be approved at this time. Please contact support.',
+        data: { type: 'verification_rejected' },
+        is_read: false
+      });
+
+      toast.error(`Rejected @${targetProfile.username}`);
+      setRequests(prev => prev.filter(p => p.user_id !== targetProfile.user_id));
+    } catch (err) {
+      toast.error("Failed to reject");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  if (!user || (currentProfile?.username !== 'arun' && currentProfile?.role !== 'admin')) {
+    return null;
   }
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto p-4 space-y-4">
-        <h1 className="text-2xl font-bold">Admin Reports</h1>
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black italic uppercase tracking-tighter">Command Center</h1>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Admin Dashboard</p>
+          </div>
+        </div>
 
-        {loading && <p>Loading reports...</p>}
+        <Tabs defaultValue="verification">
+          <TabsList className="mb-8 bg-secondary/30">
+            <TabsTrigger value="verification" className="gap-2"><UserCheck className="w-4 h-4" /> Verifications</TabsTrigger>
+            <TabsTrigger value="reports" className="gap-2"><FileText className="w-4 h-4" /> Reports</TabsTrigger>
+          </TabsList>
 
-        {!loading && reports.length === 0 && (
-          <p className="text-muted-foreground">No reports yet.</p>
-        )}
-
-        {reports.map((report) => (
-          <div
-            key={report.id}
-            className="border rounded-xl p-4 flex flex-col gap-3 bg-card"
-          >
-            {/* Reporter */}
-            <div className="flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={report.reporter_profile?.avatar_url || ""} />
-                <AvatarFallback>
-                  {report.reporter_profile?.full_name?.[0] || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">
-                  {report.reporter_profile?.full_name}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  @{report.reporter_profile?.username}
-                </p>
-              </div>
+          <TabsContent value="verification" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Verification Requests</h2>
+              <span className="text-xs font-mono bg-secondary px-2 py-1 rounded-md">{requests.length} Pending</span>
             </div>
 
-            {/* Reason */}
-            <p className="text-sm">Reason: {report.reason}</p>
+            {loading ? (
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+            ) : requests.length === 0 ? (
+              <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl bg-white/5">
+                <p className="text-muted-foreground text-sm font-medium">All clear, Commander.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {requests.map(req => (
+                  <div key={req.user_id} className="p-4 rounded-2xl bg-secondary/20 border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12 ring-2 ring-white/10">
+                        <AvatarImage src={req.avatar_url} />
+                        <AvatarFallback>{getInitials(req.full_name)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-bold text-sm">{req.full_name}</p>
+                        <p className="text-xs text-muted-foreground font-mono">@{req.username}</p>
+                        <p className="text-[10px] text-emerald-500 mt-1 uppercase tracking-wider font-bold">Paid Request</p>
+                      </div>
+                    </div>
 
-            {/* Target */}
-            {report.target_profile && (
-              <div className="flex items-center gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={report.target_profile.avatar_url || ""} />
-                  <AvatarFallback>
-                    {report.target_profile.full_name?.[0] || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    {report.target_profile.full_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    @{report.target_profile.username}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                  {report.target_user_id && (
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => banUser(report.target_user_id)}
-                    >
-                      <Ban className="h-4 w-4" />
-                    </Button>
-                  )}
-
-                  {report.target_post_id && (
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      onClick={() => deletePost(report.target_post_id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-
-                  {report.target_profile?.username && (
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      onClick={() =>
-                        window.open(`/u/${report.target_profile?.username}`, "_blank")
-                      }
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApprove(req)}
+                        disabled={processingId === req.user_id}
+                        className="bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white border border-emerald-500/20"
+                      >
+                        {processingId === req.user_id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleReject(req)}
+                        disabled={processingId === req.user_id}
+                        className="bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
+          </TabsContent>
 
-            <p className="text-xs text-muted-foreground">
-              {new Date(report.created_at).toLocaleString()}
-            </p>
-          </div>
-        ))}
+
+          <TabsContent value="reports">
+            {loadingReports ? (
+              <div className="flex justify-center py-12"><Loader2 className="animate-spin text-muted-foreground" /></div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-20 border border-dashed border-white/10 rounded-3xl bg-white/5">
+                <p className="text-muted-foreground text-sm font-medium">No active reports.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {reports.map((ticket: any) => (
+                  <div key={ticket.id} className="p-4 rounded-2xl bg-secondary/20 border border-white/5 group hover:border-white/10 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8 ring-1 ring-white/10">
+                          <AvatarImage src={ticket.profiles?.avatar_url} />
+                          <AvatarFallback>{getInitials(ticket.profiles?.full_name)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-bold">{ticket.profiles?.full_name || 'Unknown'}</p>
+                          <p className="text-xs text-muted-foreground">@{ticket.profiles?.username}</p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] uppercase font-bold tracking-widest opacity-50">{new Date(ticket.created_at).toLocaleDateString()}</span>
+                    </div>
+
+                    <div className="bg-black/20 p-3 rounded-xl mb-3 text-sm text-foreground/90 font-medium">
+                      {ticket.message}
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${ticket.type === 'bug' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                        {ticket.type}
+                      </span>
+                      {ticket.status !== 'resolved' && (
+                        <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => handleResolveReport(ticket.id)}>
+                          Mark Resolved
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
