@@ -35,12 +35,16 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex items-center justify-center p-4">
-      {/* Background decoration */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl" />
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-black">
+      {/* FESTIVAL BACKGROUND */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-600/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] animate-pulse delay-1000" />
+        <div className="absolute top-[40%] left-[60%] w-[300px] h-[300px] bg-yellow-500/20 rounded-full blur-[80px]" />
+        <div className="absolute top-[10%] right-[20%] w-[200px] h-[200px] bg-green-500/20 rounded-full blur-[60px]" />
+
+        {/* Confetti / Noise Texture overlay if possible, or just subtle grid */}
+        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
       </div>
 
       <div className="relative z-10 w-full">

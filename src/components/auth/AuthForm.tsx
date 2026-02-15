@@ -82,35 +82,41 @@ export function AuthForm() {
       className="w-full max-w-md mx-auto"
     >
       <div className="glass-card p-8 rounded-2xl">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
+          {/* FESTIVAL DECORATION */}
+          <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-400 rounded-full blur-[50px] opacity-40 animate-pulse" />
+          <div className="absolute -top-12 -right-12 w-24 h-24 bg-blue-500 rounded-full blur-[50px] opacity-40 animate-pulse delay-700" />
+
           <motion.div
             className="inline-block mb-4"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-primary blur-3xl opacity-20 rounded-full" />
-              <img
-                src="/auconnect.png"
-                alt="AUConnect Logo"
-                className="relative w-32 h-32 object-contain mx-auto drop-shadow-2xl"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-              <div className="hidden relative w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center mx-auto shadow-xl ring-4 ring-white/10">
-                <span className="text-4xl font-bold text-white drop-shadow-md">AU</span>
+            <div className="relative group cursor-pointer">
+              {/* Festival Logo Placeholder / Drop Zone */}
+              <div className="w-40 h-40 mx-auto relative flex items-center justify-center">
+                <div className="absolute inset-0 bg-gradient-to-tr from-red-500 via-yellow-400 to-blue-600 rounded-full opacity-20 blur-xl group-hover:opacity-40 transition-opacity" />
+                <img
+                  src="/festival_logo.png"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    // Fallback to text logo if image missing
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                  className="relative w-full h-full object-contain drop-shadow-2xl z-10"
+                  alt="Lit Fest 2026"
+                />
+                <div className="hidden flex flex-col items-center justify-center text-center">
+                  <span className="text-4xl font-black tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500">LIT FEST</span>
+                  <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">2026</span>
+                </div>
               </div>
             </div>
           </motion.div>
-          <h1 className="text-2xl font-bold gradient-text mb-2">
-            {isLogin ? "Welcome Back" : "Join AUConnect"}
+
+          <h1 className="text-3xl font-black italic tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-blue-600 animate-gradient-x">
+            ALLIANCE ONE
           </h1>
-          <p className="text-muted-foreground text-sm">
-            {isLogin
-              ? "Sign in to continue to your campus network"
-              : "Create your account with Alliance University email"}
-          </p>
+          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">Feb 19-21 • The Grand Celebration</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -205,14 +211,14 @@ export function AuthForm() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-12 rounded-xl bg-gradient-primary hover:opacity-90 transition-opacity font-semibold text-primary-foreground shadow-glow"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 hover:opacity-90 transition-all font-black uppercase tracking-widest text-white shadow-lg shadow-orange-500/20"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : isLogin ? (
-                "Sign In"
+                "Enter the Festival"
               ) : (
-                "Create Account"
+                "Get Your Pass"
               )}
             </Button>
           </motion.div>

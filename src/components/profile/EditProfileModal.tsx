@@ -15,6 +15,7 @@ import { Slider } from "@/components/ui/slider";
 
 export function EditProfileModal({ open, onOpenChange, profile, onProfileUpdated }: any) {
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState(profile?.username || "");
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
   const [website, setWebsite] = useState(profile?.website || "");
@@ -109,7 +110,7 @@ export function EditProfileModal({ open, onOpenChange, profile, onProfileUpdated
       const theme_config = { accent: accentColor, background: bgStyle, aura: "glow" };
       const { error } = await supabase
         .from('profiles')
-        .update({ full_name: fullName, bio, website, is_private: isPrivate, theme_config, avatar_url, cover_url })
+        .update({ username, full_name: fullName, bio, website, is_private: isPrivate, theme_config, avatar_url, cover_url })
         .eq('user_id', profile.user_id);
 
       if (error) throw error;
@@ -193,6 +194,7 @@ export function EditProfileModal({ open, onOpenChange, profile, onProfileUpdated
             <input type="file" ref={avatarInputRef} hidden accept="image/*" onChange={(e) => handleFileSelect(e, 'avatar')} />
 
             <div className="space-y-4">
+              <div className="space-y-2"><Label>Username</Label><Input value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().trim())} className="bg-white/5 border-white/10" /></div>
               <div className="space-y-2"><Label>Full Name</Label><Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="bg-white/5 border-white/10" /></div>
               <div className="space-y-2"><Label>Bio</Label><Textarea value={bio} onChange={(e) => setBio(e.target.value)} className="bg-white/5 border-white/10" /></div>
               <div className="space-y-2"><Label>Website</Label><div className="relative"><LinkIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={website} onChange={(e) => setWebsite(e.target.value)} className="pl-9 bg-white/5 border-white/10" placeholder="https://..." /></div></div>
