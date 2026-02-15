@@ -37,6 +37,8 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const PostDetails = lazy(() => import("./pages/PostDetails"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,6 +94,8 @@ export default function App() {
                       <Route path="/saved" element={<Saved />} />
                       <Route path="/leaderboard" element={<Leaderboard />} />
                       <Route path="/post/:id" element={<PostDetails />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/verify-email" element={<VerifyEmail />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>

@@ -48,7 +48,7 @@ export async function signUp(email: string, password: string) {
     return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
   }
 
-  const redirectUrl = `${window.location.origin}/`;
+  const redirectUrl = `${window.location.origin}/verify-email`;
   const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,

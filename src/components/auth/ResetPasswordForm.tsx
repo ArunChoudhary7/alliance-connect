@@ -7,15 +7,24 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export function ResetPasswordForm() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // If auth is done loading and no user is found, it's likely an invalid link
+    if (!authLoading && !user) {
+      setError("Invalid or expired reset link. Please request a new one.");
+    }
+  }, [authLoading, user]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +51,7 @@ export function ResetPasswordForm() {
 
       setSuccess(true);
       toast.success("Password updated successfully!");
-      
+
       // Redirect to home after a delay
       setTimeout(() => {
         navigate("/");
@@ -146,7 +155,7 @@ export function ResetPasswordForm() {
 
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || !!error}
             className="w-full h-12 rounded-xl bg-gradient-primary font-semibold"
           >
             {loading ? (

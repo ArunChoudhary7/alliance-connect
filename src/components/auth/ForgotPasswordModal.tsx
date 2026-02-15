@@ -42,7 +42,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
@@ -151,7 +151,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
               <div className="space-y-2">
                 <h3 className="font-semibold">Email Sent!</h3>
                 <p className="text-sm text-muted-foreground">
-                  We've sent a password reset link to <strong>{email}</strong>. 
+                  We've sent a password reset link to <strong>{email}</strong>.
                   Check your inbox and click the link to reset your password.
                 </p>
               </div>

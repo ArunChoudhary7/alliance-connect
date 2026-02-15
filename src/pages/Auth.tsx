@@ -1,26 +1,22 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AuthForm } from "@/components/auth/AuthForm";
-import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const { user, loading, isOnboarded } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const isReset = searchParams.get("reset") === "true";
 
   useEffect(() => {
-    // Don't redirect if user is resetting password
-    if (!loading && user && !isReset) {
+    if (!loading && user) {
       if (isOnboarded) {
         navigate("/");
       } else {
         navigate("/onboarding");
       }
     }
-  }, [user, loading, isOnboarded, navigate, isReset]);
+  }, [user, loading, isOnboarded, navigate]);
 
   if (loading) {
     return (
@@ -48,7 +44,7 @@ export default function Auth() {
       </div>
 
       <div className="relative z-10 w-full">
-        {isReset && user ? <ResetPasswordForm /> : <AuthForm />}
+        <AuthForm />
       </div>
     </div>
   );
