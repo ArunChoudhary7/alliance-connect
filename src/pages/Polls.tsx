@@ -4,19 +4,20 @@ import { BarChart3, Loader2, Clock, CheckCircle2, Plus, Users, Zap } from "lucid
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // FIXED: Added missing import
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { validatePollCreate, sanitizeField, pollLimiter, voteLimiter, isRateLimited } from "@/lib/security";
 
 export default function Polls() {
   const { user } = useAuth();
   const [polls, setPolls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  
+
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", ""]);
   const [creating, setCreating] = useState(false);
@@ -53,22 +54,32 @@ export default function Polls() {
 
   const handleCreatePoll = async () => {
     const validOptions = options.filter(opt => opt.trim() !== "");
-    if (!question.trim() || validOptions.length < 2) {
-      toast.error("Enter a question and 2+ options");
+
+    // SECURITY: Validate poll data
+    const validation = validatePollCreate(question, validOptions);
+    if (!validation.valid) {
+      toast.error(validation.error);
       return;
     }
 
+    // SECURITY: Rate limit poll creation
+    if (isRateLimited(pollLimiter, 'create_poll')) return;
+
     setCreating(true);
     try {
+      // Sanitize inputs before insert
+      const sanitizedQuestion = sanitizeField(question.trim(), 300);
+      const sanitizedOptions = validOptions.map(opt => sanitizeField(opt.trim(), 200));
+
       const { data: poll, error: pollError } = await supabase
         .from('polls')
-        .insert([{ question: question.trim() }])
+        .insert([{ question: sanitizedQuestion }])
         .select().single();
 
       if (pollError) throw pollError;
 
       const { error: optError } = await supabase.from('poll_options').insert(
-        validOptions.map(opt => ({ poll_id: poll.id, option_text: opt.trim() }))
+        sanitizedOptions.map(opt => ({ poll_id: poll.id, option_text: opt }))
       );
 
       if (optError) throw optError;
@@ -87,6 +98,10 @@ export default function Polls() {
 
   const handleVote = async (pollId: string, optionId: string) => {
     if (!user) return;
+
+    // SECURITY: Rate limit voting
+    if (isRateLimited(voteLimiter, 'poll_vote')) return;
+
     try {
       const { error } = await supabase.from('poll_votes').insert({ poll_id: pollId, option_id: optionId, user_id: user.id });
       if (error) throw error;
@@ -103,8 +118,8 @@ export default function Polls() {
     <AppLayout>
       <div className="max-w-xl mx-auto px-4 py-8 pb-32">
         {/* HERO SECTION */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }} 
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col gap-2 mb-10"
         >
@@ -116,7 +131,7 @@ export default function Polls() {
             <h1 className="text-4xl font-black tracking-tighter italic uppercase text-foreground">
               Campus <span className="gradient-text">Pulse</span>
             </h1>
-            
+
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
               <DialogTrigger asChild>
                 <Button className="bg-primary text-primary-foreground rounded-2xl h-12 px-6 shadow-xl shadow-primary/20 hover:scale-105 transition-transform">
@@ -147,7 +162,7 @@ export default function Polls() {
                     )}
                   </div>
                   <Button onClick={handleCreatePoll} disabled={creating} className="w-full bg-gradient-primary h-14 rounded-2xl font-black uppercase tracking-widest text-lg">
-                     {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : "Launch Poll"}
+                    {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : "Launch Poll"}
                   </Button>
                 </div>
               </DialogContent>
@@ -164,15 +179,15 @@ export default function Polls() {
             </div>
           ) : (
             polls.map((poll, index) => (
-              <motion.div 
-                key={poll.id} 
+              <motion.div
+                key={poll.id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: index * 0.1 }}
                 className="glass-card p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group"
               >
                 <div className={`absolute top-0 left-0 w-1.5 h-full bg-primary/20`} />
-                
+
                 <h3 className="text-2xl font-black leading-tight uppercase tracking-tighter italic mb-6">
                   {poll.question}
                 </h3>
@@ -182,20 +197,19 @@ export default function Polls() {
                     const pct = poll.total_votes > 0 ? Math.round((opt.votes_count / poll.total_votes) * 100) : 0;
                     return (
                       <div key={opt.id} className="relative h-16">
-                        <Button 
-                          disabled={poll.has_voted} 
-                          onClick={() => handleVote(poll.id, opt.id)} 
-                          variant="ghost" 
-                          className={`w-full h-full justify-between px-6 rounded-2xl relative z-10 border-2 transition-all duration-500 ${
-                            poll.has_voted 
-                            ? 'border-transparent' 
+                        <Button
+                          disabled={poll.has_voted}
+                          onClick={() => handleVote(poll.id, opt.id)}
+                          variant="ghost"
+                          className={`w-full h-full justify-between px-6 rounded-2xl relative z-10 border-2 transition-all duration-500 ${poll.has_voted
+                            ? 'border-transparent'
                             : 'border-secondary hover:border-primary/50 bg-secondary/20'
-                          }`}
+                            }`}
                         >
                           <span className="font-bold text-lg">{opt.option_text}</span>
                           {poll.has_voted && (
-                            <motion.span 
-                              initial={{ opacity: 0, x: 20 }} 
+                            <motion.span
+                              initial={{ opacity: 0, x: 20 }}
                               animate={{ opacity: 1, x: 0 }}
                               className="font-black text-2xl text-primary italic"
                             >
@@ -203,13 +217,13 @@ export default function Polls() {
                             </motion.span>
                           )}
                         </Button>
-                        
+
                         {poll.has_voted && (
-                          <motion.div 
-                            initial={{ width: 0 }} 
-                            animate={{ width: `${pct}%` }} 
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
                             transition={{ duration: 1, ease: "circOut" }}
-                            className="absolute inset-0 bg-primary/10 rounded-2xl z-0" 
+                            className="absolute inset-0 bg-primary/10 rounded-2xl z-0"
                           />
                         )}
                       </div>
@@ -228,7 +242,7 @@ export default function Polls() {
                       {formatDistanceToNow(new Date(poll.created_at), { addSuffix: true })}
                     </div>
                   </div>
-                  
+
                   {poll.has_voted && (
                     <div className="flex items-center gap-1 text-green-500 font-black text-[10px] uppercase tracking-tighter">
                       <CheckCircle2 className="h-3 w-3" /> Voted

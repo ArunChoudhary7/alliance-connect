@@ -17,7 +17,18 @@ export function Feed() {
     setLoading(true);
     if (highlightedPostId) {
       const { data } = await supabase.from("posts").select("*, profiles(*)").eq("id", highlightedPostId).maybeSingle();
-      setPosts(data ? [data] : []);
+      if (data) {
+        // Fetch aura status for the highlighted post too
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        let has_aura = false;
+        if (currentUser) {
+          const { data: auraData } = await supabase.from("auras").select("id").eq("post_id", data.id).eq("user_id", currentUser.id).maybeSingle();
+          has_aura = !!auraData;
+        }
+        setPosts([{ ...data, aura_count: Number(data.aura_count) || 0, has_aura }]);
+      } else {
+        setPosts([]);
+      }
     } else {
       const { data } = await getPosts(20, 0);
       setPosts(data || []);
@@ -82,4 +93,4 @@ export function Feed() {
       )}
     </div>
   );
-}
+}  

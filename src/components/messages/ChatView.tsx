@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { getInitials, cn } from "@/lib/utils";
+import { validateMessage, sanitizeField, messageLimiter, isRateLimited } from "@/lib/security";
 
 export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: any) {
   const { user } = useAuth();
@@ -58,23 +59,10 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
   }, [messages.length]);
 
   const fetchMessages = async () => {
+    // Fetch messages without FK join (works regardless of DB constraints)
     const { data, error } = await supabase
       .from("direct_messages")
-      .select(`
-        *,
-        shared_post:posts!shared_post_id (
-          id,
-          content,
-          images,
-          video_url,
-          user_id,
-          profiles!user_id (
-            username,
-            full_name,
-            avatar_url
-          )
-        )
-      `)
+      .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
@@ -83,7 +71,38 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
       return;
     }
 
-    if (data) setMessages(data);
+    if (!data) { setLoading(false); return; }
+
+    // Collect ALL messages that have a shared_post_id (don't rely on message_type)
+    const sharedPostIds = [...new Set(
+      data.filter(m => m.shared_post_id).map(m => m.shared_post_id)
+    )];
+
+    let sharedPostMap = new Map<string, any>();
+
+    if (sharedPostIds.length > 0) {
+      const { data: postsData } = await supabase
+        .from("posts")
+        .select(`
+          id, content, images, video_url, user_id,
+          profiles!user_id (
+            username, full_name, avatar_url
+          )
+        `)
+        .in("id", sharedPostIds);
+
+      if (postsData) {
+        postsData.forEach(p => sharedPostMap.set(p.id, p));
+      }
+    }
+
+    // Enrich messages with shared post data
+    const enrichedMessages = data.map(m => ({
+      ...m,
+      shared_post: m.shared_post_id ? sharedPostMap.get(m.shared_post_id) || null : null
+    }));
+
+    setMessages(enrichedMessages);
     setLoading(false);
   };
 
@@ -123,7 +142,20 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
 
   const sendMessage = async (mediaUrl: string | null = null, type: string = 'text') => {
     if (!user || (!newMessage.trim() && !mediaUrl)) return;
-    const content = newMessage.trim();
+
+    // SECURITY: Validate text messages (skip for media-only messages)
+    if (type === 'text' && newMessage.trim()) {
+      const validation = validateMessage(newMessage);
+      if (!validation.valid) {
+        toast.error(validation.error);
+        return;
+      }
+    }
+
+    // SECURITY: Rate limit message sending
+    if (isRateLimited(messageLimiter, 'send_message')) return;
+
+    const content = sanitizeField(newMessage.trim(), 2000);
     const replyId = replyingTo?.id;
     setNewMessage("");
     setReplyingTo(null);
@@ -199,7 +231,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
         {messages.map((message) => {
           const isOwn = message.sender_id === user?.id;
           const isTapped = activeMessageId === message.id;
-          const isPostShare = message.message_type === 'post_share' && message.shared_post;
+          const isPostShare = !!message.shared_post;
           const repliedMessage = message.reply_to_id ? messageMap.get(message.reply_to_id) : null;
 
           return (

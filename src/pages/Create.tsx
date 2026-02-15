@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { createPost } from "@/lib/supabase";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadFile, uploadMultipleFiles } from "@/lib/storage";
 import { toast } from "sonner";
 
 export default function Create() {
@@ -33,27 +34,22 @@ export default function Create() {
     setUploading(true);
 
     try {
-      const uploadPromises = Array.from(files).slice(0, 10).map(async (file) => {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // Use helper to upload multiple files to Cloudinary
+      const fileArray = Array.from(files).slice(0, 10);
+      const { urls, errors } = await uploadMultipleFiles('posts', fileArray, user.id);
 
-        const { error } = await supabase.storage
-          .from("posts")
-          .upload(fileName, file);
+      if (errors.length > 0) {
+        console.error("Some uploads failed", errors);
+        toast.error("Some images failed to upload");
+      }
 
-        if (error) throw error;
-
-        const { data: urlData } = supabase.storage
-          .from("posts")
-          .getPublicUrl(fileName);
-
-        return urlData.publicUrl;
-      });
-
-      const urls = await Promise.all(uploadPromises);
       setImages(prev => [...prev, ...urls].slice(0, 10));
-      toast.success("Images uploaded");
+
+      if (urls.length > 0) {
+        toast.success("Images uploaded");
+      }
     } catch (error) {
+      console.error(error);
       toast.error("Failed to upload images");
     } finally {
       setUploading(false);
@@ -72,23 +68,16 @@ export default function Create() {
     setUploading(true);
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error } = await supabase.storage
-        .from("posts")
-        .upload(fileName, file);
+      const { url, error } = await uploadFile('videos', file, user.id);
 
       if (error) throw error;
+      if (!url) throw new Error("Upload failed");
 
-      const { data: urlData } = supabase.storage
-        .from("posts")
-        .getPublicUrl(fileName);
-
-      setVideoUrl(urlData.publicUrl);
+      setVideoUrl(url);
       setImages([]); // Clear images when video is added
       toast.success("Video uploaded");
     } catch (error) {
+      console.error(error);
       toast.error("Failed to upload video");
     } finally {
       setUploading(false);

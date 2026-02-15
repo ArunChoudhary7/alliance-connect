@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Tesseract from "tesseract.js";
+import { uploadFile } from "@/lib/storage";
 
 export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
   const [status, setStatus] = useState<"idle" | "uploading" | "saving">("idle");
@@ -26,19 +27,15 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
 
     try {
       setStatus("uploading");
-      
-      const fileExt = file.name.split('.').pop();
-      const fileName = `menu-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('campus_assets')
-        .upload(fileName, file);
+      // Upload to Cloudinary ('posts' is a general enough bucket for now)
+      // Using a valid UUID for the user ID part, or just a placeholder 'admin' as it's not strictly checked by the helper 
+      // but good for folder organization in Cloudinary.
+      const userId = (supabase.auth.getSession() as any)?.user?.id || 'admin';
+      const { url: publicUrl, error: uploadError } = await uploadFile('posts', file, userId);
 
       if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('campus_assets')
-        .getPublicUrl(fileName);
+      if (!publicUrl) throw new Error("Upload failed");
 
       // Save the URL so we can use it in the final save
       (window as any).lastUploadedMenuUrl = publicUrl;
@@ -113,7 +110,7 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
     try {
       const { error } = await supabase
         .from('mess_menu')
-        .upsert({ 
+        .upsert({
           day_name: 'Today',
           image_url: imageUrl,
           // Split by comma and trim spaces to create clean arrays for your badges
@@ -142,7 +139,7 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
       <motion.div className="relative w-full max-w-lg glass-card p-6 md:p-8 rounded-[2.5rem] border-white/10 bg-zinc-900 overflow-y-auto max-h-[90vh] no-scrollbar">
-        
+
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-black uppercase italic text-white flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" /> Update Mess
@@ -171,7 +168,7 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
             {['breakfast', 'lunch', 'snacks', 'dinner'].map((meal) => (
               <div key={meal} className="space-y-2">
                 <label className="text-[9px] font-black uppercase tracking-widest opacity-40 ml-1">{meal}</label>
-                <Input 
+                <Input
                   name={meal}
                   placeholder="Item 1, Item 2, Item 3..."
                   className="bg-white/5 border-white/5 h-11 rounded-xl text-sm"
@@ -182,9 +179,9 @@ export function AdminMenuUpload({ isOpen, onClose, onSuccess }: any) {
             ))}
           </div>
 
-          <Button 
-            onClick={saveMenu} 
-            disabled={status !== "idle"} 
+          <Button
+            onClick={saveMenu}
+            disabled={status !== "idle"}
             className="w-full h-14 rounded-2xl bg-primary text-black font-black uppercase tracking-widest"
           >
             {status === "saving" ? <Loader2 className="animate-spin" /> : "Broadcast Menu"}

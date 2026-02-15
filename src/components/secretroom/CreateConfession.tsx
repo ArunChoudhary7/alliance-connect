@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { validateConfession, sanitizeField, confessionLimiter, isRateLimited } from "@/lib/security";
 
 interface CreateConfessionProps {
   onCreated: () => void;
@@ -19,12 +20,22 @@ export function CreateConfession({ onCreated }: CreateConfessionProps) {
   const handleSubmit = async () => {
     if (!user || !content.trim()) return;
 
+    // SECURITY: Validate confession content
+    const validation = validateConfession(content);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit confessions
+    if (isRateLimited(confessionLimiter, 'create_confession')) return;
+
     setLoading(true);
 
     try {
       const { error } = await supabase.from('confessions').insert({
         user_id: user.id,
-        content: content.trim()
+        content: sanitizeField(content.trim(), 1000)
       });
 
       if (error) throw error;

@@ -147,7 +147,7 @@ export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
     <Sheet>
       <SheetTrigger asChild>
         {trigger || (
-          <div className="relative cursor-pointer group flex items-center justify-center h-16 w-40 gap-3" onClick={() => setHasUnread(false)}>
+          <div className="relative cursor-pointer group flex items-center justify-center gap-2" onClick={() => setHasUnread(false)}>
             <div className="absolute h-8 w-8 rounded-full bg-primary/5 blur-xl animate-pulse" />
             <AnimatePresence>
               {hasUnread && (
@@ -157,21 +157,21 @@ export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
                     animate={{ scale: [1, 2.2], opacity: [0.3, 0] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className={cn(
-                      "absolute h-10 w-10 rounded-full blur-md",
+                      "absolute h-8 w-8 rounded-full blur-md",
                       latestCategory === 'urgent' ? 'bg-red-500' : 'bg-primary'
                     )}
                   />
                 </>
               )}
             </AnimatePresence>
-            <div className="flex items-center gap-3 relative z-10">
+            <div className="flex items-center gap-2 relative z-10">
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center border-2 transition-all duration-700",
+                "w-9 h-9 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center border-2 transition-all duration-700 shrink-0",
                 hasUnread
                   ? "bg-black border-primary text-primary shadow-[0_0_25px_rgba(var(--primary-rgb),0.4)]"
                   : "bg-black/40 border-white/10 text-white/40"
               )}>
-                <SignalHigh className={cn("w-6 h-6", hasUnread ? "animate-pulse" : "opacity-50")} />
+                <SignalHigh className={cn("w-4 h-4 md:w-6 md:h-6", hasUnread ? "animate-pulse" : "opacity-50")} />
               </div>
               <div className="hidden md:flex flex-col">
                 <span className="text-[9px] font-black uppercase tracking-[0.25em] opacity-60">

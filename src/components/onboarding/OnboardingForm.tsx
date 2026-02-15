@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { checkUsernameAvailable, updateProfile, supabase } from "@/lib/supabase";
+import { uploadFile } from "@/lib/storage";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -302,12 +303,14 @@ export function OnboardingForm() {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        // Simple upload logic
-                        const fileName = `${user.id}/avatar-${Date.now()}`;
-                        const { data, error } = await supabase.storage.from("campus_assets").upload(fileName, file);
-                        if (data) {
-                          const { data: { publicUrl } } = supabase.storage.from("campus_assets").getPublicUrl(fileName);
-                          setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+
+                        // Use Cloudinary upload
+                        const { url, error } = await uploadFile('avatars', file, user.id);
+
+                        if (url) {
+                          setFormData(prev => ({ ...prev, avatar_url: url }));
+                        } else {
+                          console.error("Avatar upload failed:", error);
                         }
                       }}
                     />
@@ -336,11 +339,14 @@ export function OnboardingForm() {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const fileName = `${user.id}/banner-${Date.now()}`;
-                        const { data, error } = await supabase.storage.from("campus_assets").upload(fileName, file);
-                        if (data) {
-                          const { data: { publicUrl } } = supabase.storage.from("campus_assets").getPublicUrl(fileName);
-                          setFormData(prev => ({ ...prev, banner_url: publicUrl }));
+
+                        // Use Cloudinary upload
+                        const { url, error } = await uploadFile('covers', file, user.id);
+
+                        if (url) {
+                          setFormData(prev => ({ ...prev, banner_url: url }));
+                        } else {
+                          console.error("Banner upload failed:", error);
                         }
                       }}
                     />

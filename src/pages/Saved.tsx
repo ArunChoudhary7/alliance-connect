@@ -7,6 +7,7 @@ import { SavedCollections } from "@/components/saved/SavedCollections";
 import { PostCard } from "@/components/feed/PostCard";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toggleAura as toggleAuraFn } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 
 interface Post {
@@ -77,10 +78,23 @@ export default function Saved() {
         .select("user_id, username, full_name, avatar_url")
         .in("user_id", userIds);
 
+      // Batch-fetch aura status for saved posts
+      const postIds = postsData.map(p => p.id);
+      const { data: auraData } = await supabase
+        .from("auras")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .in("post_id", postIds);
+
+      const likedPostIds = new Set(auraData?.map(a => a.post_id) || []);
+      setUserAuras(likedPostIds);
+
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       const enrichedPosts = postsData.map(post => ({
         ...post,
+        aura_count: Number(post.aura_count) || 0,
+        has_aura: likedPostIds.has(post.id),
         profiles: profileMap.get(post.user_id) || null,
       }));
 
@@ -105,18 +119,24 @@ export default function Saved() {
   const handleToggleAura = async (postId: string) => {
     if (!user) return;
 
-    const hasAura = userAuras.has(postId);
+    const wasLiked = userAuras.has(postId);
 
-    if (hasAura) {
-      await supabase.from("auras").delete().eq("user_id", user.id).eq("post_id", postId);
+    // Optimistic update
+    setUserAuras(prev => {
+      const next = new Set(prev);
+      wasLiked ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+
+    const result = await toggleAuraFn(user.id, postId);
+
+    if (result.error) {
+      // Rollback
       setUserAuras(prev => {
         const next = new Set(prev);
-        next.delete(postId);
+        wasLiked ? next.add(postId) : next.delete(postId);
         return next;
       });
-    } else {
-      await supabase.from("auras").insert({ user_id: user.id, post_id: postId });
-      setUserAuras(prev => new Set([...prev, postId]));
     }
   };
 

@@ -90,18 +90,53 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased overflow-x-hidden;
+    @apply bg-background text-foreground antialiased;
+    overflow: hidden;
+    height: 100vh;
+    height: 100dvh;
+    /* Dynamic viewport height — accounts for mobile browser chrome */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  #root {
+    height: 100%;
   }
 }
 
 @layer components {
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Smooth, native-feel touch scrolling */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [id="main-scroll-area"] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    /* Prevents pull-to-refresh / bounce on content scroll */
+  }
+
+  /* Accessibility: respect reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   /* --- THE DYNAMIC FEED CONTAINER --- */
   .feed-atmosphere-container {
-    @apply min-h-screen relative transition-all duration-700;
+    @apply relative transition-all duration-700;
     background-color: var(--theme-base);
     background-image: var(--theme-gradient);
     background-size: 200% 200%;
@@ -204,7 +239,7 @@
 
 @layer components {
   .feed-atmosphere-container {
-    @apply min-h-screen relative transition-all duration-1000;
+    @apply relative transition-all duration-1000;
     background-color: var(--theme-base);
     background-image: var(--theme-gradient);
     background-size: 150% 150%;

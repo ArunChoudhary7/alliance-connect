@@ -179,6 +179,7 @@ export async function createPost(post: {
   content?: string;
   images?: string[] | null;
   video_url?: string | null;
+  hashtags?: string[];
   expires_at?: string | null;
   is_stealth?: boolean;
 }) {
@@ -198,7 +199,8 @@ export async function createPost(post: {
   // Sanitize content
   const sanitizedPost = {
     ...post,
-    content: post.content ? post.content.trim() : undefined
+    content: post.content ? post.content.trim() : undefined,
+    hashtags: post.hashtags
   };
 
   return await supabase.from("posts").insert([sanitizedPost]).select().single();
@@ -234,6 +236,8 @@ export async function getPosts(limit = 20, offset = 0) {
 
   // CLIENT-SIDE SAFETY NET: Filter out private account posts
   let filteredData = data;
+  let likedPostIds = new Set<string>();
+
   if (currentUser) {
     const { data: followingData } = await supabase
       .from("follows")
@@ -247,12 +251,27 @@ export async function getPosts(limit = 20, offset = 0) {
       if (post.profiles?.is_private && !followingIds.has(post.user_id)) return false;
       return true;
     });
+
+    // BATCH-FETCH the user's aura (like) status for ALL posts in this page.
+    // This eliminates N+1 queries in PostCard and ensures like state is
+    // available immediately when the component mounts (no flash of un-liked).
+    const postIds = filteredData.map((p: any) => p.id);
+    if (postIds.length > 0) {
+      const { data: userAuras } = await supabase
+        .from("auras")
+        .select("post_id")
+        .eq("user_id", currentUser.id)
+        .in("post_id", postIds);
+
+      likedPostIds = new Set(userAuras?.map(a => a.post_id) || []);
+    }
   }
 
   return {
     data: filteredData.map((post: any) => ({
       ...post,
       aura_count: Number(post.aura_count) || 0,
+      has_aura: likedPostIds.has(post.id),
       profiles: post.profiles || { full_name: 'AU User', username: 'user' }
     })),
     error: null
@@ -262,6 +281,8 @@ export async function getPosts(limit = 20, offset = 0) {
 export async function getUserPosts(userId: string, limit = 12, offset = 0) {
   const safeLimit = Math.min(Math.max(1, limit), 50);
   const safeOffset = Math.max(0, offset);
+
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
 
   const { data: postsData, error } = await supabase
     .from("posts")
@@ -284,10 +305,26 @@ export async function getUserPosts(userId: string, limit = 12, offset = 0) {
 
   if (error || !postsData) return { data: null, error };
 
+  // Batch-fetch aura status for all posts
+  let likedPostIds = new Set<string>();
+  if (currentUser) {
+    const postIds = postsData.map((p: any) => p.id);
+    if (postIds.length > 0) {
+      const { data: userAuras } = await supabase
+        .from("auras")
+        .select("post_id")
+        .eq("user_id", currentUser.id)
+        .in("post_id", postIds);
+
+      likedPostIds = new Set(userAuras?.map(a => a.post_id) || []);
+    }
+  }
+
   return {
     data: postsData.map((post: any) => ({
       ...post,
       aura_count: Number(post.aura_count) || 0,
+      has_aura: likedPostIds.has(post.id),
       profiles: post.profiles || { full_name: 'AU User', username: 'user' }
     })),
     error: null

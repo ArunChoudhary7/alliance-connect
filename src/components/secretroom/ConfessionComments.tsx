@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { validateComment, sanitizeField, commentLimiter, isRateLimited } from "@/lib/security";
 
 interface Comment {
   id: string;
@@ -50,13 +51,23 @@ export function ConfessionComments({ confessionId, onClose }: ConfessionComments
   const handleSubmit = async () => {
     if (!user || !confessionId || !newComment.trim()) return;
 
+    // SECURITY: Validate comment content
+    const validation = validateComment(newComment);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit comments
+    if (isRateLimited(commentLimiter, 'confession_comment')) return;
+
     setSubmitting(true);
 
     try {
       const { error } = await supabase.from('confession_comments').insert({
         confession_id: confessionId,
         user_id: user.id,
-        content: newComment.trim()
+        content: sanitizeField(newComment.trim(), 500)
       });
 
       if (error) throw error;

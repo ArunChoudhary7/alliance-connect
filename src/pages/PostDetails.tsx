@@ -31,8 +31,15 @@ export default function PostDetails() {
       if (error) {
         console.error("Signal Lost:", error);
         navigate('/');
-      } else {
-        setPost(data);
+      } else if (data) {
+        // Fetch aura status for this post
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        let has_aura = false;
+        if (currentUser) {
+          const { data: auraData } = await supabase.from("auras").select("id").eq("post_id", data.id).eq("user_id", currentUser.id).maybeSingle();
+          has_aura = !!auraData;
+        }
+        setPost({ ...data, aura_count: Number(data.aura_count) || 0, has_aura });
       }
       setLoading(false);
     };
@@ -45,10 +52,10 @@ export default function PostDetails() {
       <div className="max-w-2xl mx-auto px-4 pb-24">
         {/* Instagram Style Header */}
         <div className="flex items-center gap-4 mb-6 mt-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(-1)} 
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
             className="rounded-full bg-white/5 text-white hover:bg-white/10"
           >
             <ArrowLeft className="h-5 w-5" />

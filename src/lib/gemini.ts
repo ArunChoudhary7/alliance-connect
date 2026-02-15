@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { RateLimiter, isRateLimited } from "@/lib/security";
 
 /**
  * ⚠️ SECURITY NOTE: This API key is exposed in the client bundle because
@@ -15,10 +16,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
  */
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-/** Rate limit: max 5 menu analyses per 10 minutes */
-const MENU_ANALYSIS_TIMESTAMPS: number[] = [];
-const MAX_ANALYSES = 5;
-const ANALYSIS_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+/** Rate limit: max 5 menu analyses per 10 minutes (uses security module) */
+const menuAnalysisLimiter = new RateLimiter({ maxRequests: 5, windowMs: 10 * 60 * 1000 });
 
 /** Max file size for menu image: 5MB */
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -32,10 +31,8 @@ const BACKUP_MENU = {
 };
 
 export async function analyzeMenuWithGemini(file: File) {
-  // 1. Rate limit check
-  const now = Date.now();
-  const recentTimestamps = MENU_ANALYSIS_TIMESTAMPS.filter(t => now - t < ANALYSIS_WINDOW_MS);
-  if (recentTimestamps.length >= MAX_ANALYSES) {
+  // 1. Rate limit check (uses security module's RateLimiter)
+  if (isRateLimited(menuAnalysisLimiter, 'menu_analysis', 'Menu analysis rate limited. Please try again later.')) {
     console.warn("⚠️ Menu analysis rate limited");
     return BACKUP_MENU;
   }
@@ -58,8 +55,6 @@ export async function analyzeMenuWithGemini(file: File) {
     console.warn("⚠️ Using Backup Menu (VITE_GEMINI_API_KEY is missing in .env)");
     return BACKUP_MENU;
   }
-
-  MENU_ANALYSIS_TIMESTAMPS.push(now);
 
   const genAI = new GoogleGenerativeAI(API_KEY);
 

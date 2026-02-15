@@ -3,16 +3,23 @@
  * SECURITY UTILITIES - AUConnect
  * ============================================================
  * OWASP-aligned security layer for client-side hardening.
- * Covers: Input sanitization, validation schemas, rate limiting.
+ * Covers: Input sanitization, validation schemas, rate limiting,
+ *         graceful 429 handling, and type-safe field allowlists.
+ *
+ * IMPORTANT: Client-side security is a DEFENSE-IN-DEPTH layer.
+ * Real enforcement MUST happen server-side via Supabase RLS,
+ * Edge Functions, and PostgREST configuration.
  * ============================================================
  */
 
+import { toast } from 'sonner';
+
 // ============================================================
-// 1. INPUT SANITIZATION (XSS Prevention)
+// 1. INPUT SANITIZATION (XSS Prevention — OWASP A7:2017)
 // ============================================================
 
 /**
- * Strips HTML tags from user input to prevent XSS.
+ * Strips HTML entities from user input to prevent XSS.
  * Use on all user-facing text before storing or rendering.
  */
 export function sanitizeText(input: string): string {
@@ -32,10 +39,9 @@ export function sanitizeText(input: string): string {
  */
 export function sanitizeSearchQuery(query: string): string {
     if (!query || typeof query !== 'string') return '';
-    // Remove PostgREST special characters that could alter query meaning
     return query
-        .replace(/[%_\\(),.'"]/g, '') // Remove SQL wildcards and PostgREST operators
-        .replace(/[^\w\s@.-]/g, '')   // Allow only word chars, spaces, @, dots, hyphens
+        .replace(/[%_\\(),.'"/;`]/g, '')   // Remove SQL wildcards & PostgREST operators
+        .replace(/[^\w\s@.\-]/g, '')        // Allow only word chars, spaces, @, dots, hyphens
         .trim()
         .slice(0, 100); // Hard length limit
 }
@@ -53,8 +59,17 @@ export function stripDangerousHTML(input: string): string {
         .replace(/javascript:/gi, '');
 }
 
+/**
+ * Generic text sanitizer: trims, enforces max length, and strips dangerous chars.
+ * Use for any free-text field before database insert.
+ */
+export function sanitizeField(input: string, maxLength: number = 2000): string {
+    if (!input || typeof input !== 'string') return '';
+    return stripDangerousHTML(input.trim()).slice(0, maxLength);
+}
+
 // ============================================================
-// 2. INPUT VALIDATION (Schema-based)
+// 2. INPUT VALIDATION (Schema-based — OWASP A1:2017)
 // ============================================================
 
 export interface ValidationResult {
@@ -123,7 +138,7 @@ export function validateEmail(email: string): ValidationResult {
     return { valid: true };
 }
 
-/** Validates password: min 8 chars */
+/** Validates password: min 8 chars, max 128 */
 export function validatePassword(password: string): ValidationResult {
     if (!password || typeof password !== 'string') return { valid: false, error: 'Password is required' };
     if (password.length < 8) return { valid: false, error: 'Password must be at least 8 characters' };
@@ -134,6 +149,7 @@ export function validatePassword(password: string): ValidationResult {
 /** Validates a URL */
 export function validateUrl(url: string): ValidationResult {
     if (!url || typeof url !== 'string') return { valid: true }; // URLs are often optional
+    if (url.length > 2048) return { valid: false, error: 'URL is too long' };
     try {
         const parsed = new URL(url);
         if (!['http:', 'https:'].includes(parsed.protocol)) {
@@ -150,6 +166,40 @@ export function validateUUID(id: string): ValidationResult {
     if (!id || typeof id !== 'string') return { valid: false, error: 'ID is required' };
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) return { valid: false, error: 'Invalid ID format' };
+    return { valid: true };
+}
+
+/** Validates a generic short text field: 1-{max} chars */
+export function validateShortText(text: string, fieldName: string, max: number = 150): ValidationResult {
+    if (!text || typeof text !== 'string') return { valid: false, error: `${fieldName} is required` };
+    const trimmed = text.trim();
+    if (trimmed.length < 1) return { valid: false, error: `${fieldName} cannot be empty` };
+    if (trimmed.length > max) return { valid: false, error: `${fieldName} must be ${max} characters or fewer` };
+    return { valid: true };
+}
+
+/** Validates a generic long text field: optional, max chars */
+export function validateLongText(text: string, fieldName: string, max: number = 2000): ValidationResult {
+    if (!text || typeof text !== 'string') return { valid: true }; // optional
+    if (text.trim().length > max) return { valid: false, error: `${fieldName} must be ${max} characters or fewer` };
+    return { valid: true };
+}
+
+/** Validates a price/number: must be positive, max 10 million */
+export function validatePrice(price: number | string, fieldName: string = 'Price'): ValidationResult {
+    const num = typeof price === 'string' ? parseFloat(price) : price;
+    if (isNaN(num) || !isFinite(num)) return { valid: false, error: `${fieldName} must be a valid number` };
+    if (num < 0) return { valid: false, error: `${fieldName} cannot be negative` };
+    if (num > 10_000_000) return { valid: false, error: `${fieldName} exceeds maximum allowed` };
+    return { valid: true };
+}
+
+/** Validates an integer within bounds */
+export function validateInt(value: number | string, fieldName: string, min: number = 1, max: number = 1000): ValidationResult {
+    const num = typeof value === 'string' ? parseInt(value, 10) : value;
+    if (isNaN(num) || !isFinite(num)) return { valid: false, error: `${fieldName} must be a valid number` };
+    if (num < min) return { valid: false, error: `${fieldName} must be at least ${min}` };
+    if (num > max) return { valid: false, error: `${fieldName} must be at most ${max}` };
     return { valid: true };
 }
 
@@ -196,9 +246,166 @@ export function validateProfileUpdate(updates: Record<string, any>): ValidationR
     return { valid: true };
 }
 
+// ============================================================
+// 3. ENTITY VALIDATION SCHEMAS
+//    Each function validates the entire insert payload for a
+//    specific table, rejecting unexpected fields and enforcing
+//    type/length/format constraints.
+// ============================================================
+
+/** Validates a Poll creation payload */
+export function validatePollCreate(question: string, options: string[]): ValidationResult {
+    const q = validateShortText(question, 'Question', 300);
+    if (!q.valid) return q;
+
+    const validOptions = options.filter(o => o.trim() !== '');
+    if (validOptions.length < 2) return { valid: false, error: 'At least 2 options are required' };
+    if (validOptions.length > 10) return { valid: false, error: 'Maximum 10 options allowed' };
+
+    for (const opt of validOptions) {
+        if (opt.trim().length > 200) return { valid: false, error: 'Each option must be 200 characters or fewer' };
+    }
+    return { valid: true };
+}
+
+/** Validates a Lost & Found item */
+export function validateLostFoundItem(data: { title: string; description?: string; type: string; location?: string; contact_info?: string }): ValidationResult {
+    const t = validateShortText(data.title, 'Title', 150);
+    if (!t.valid) return t;
+
+    if (data.description) {
+        const d = validateLongText(data.description, 'Description', 1000);
+        if (!d.valid) return d;
+    }
+
+    if (!['lost', 'found'].includes(data.type)) return { valid: false, error: 'Type must be "lost" or "found"' };
+
+    if (data.location && data.location.length > 200) return { valid: false, error: 'Location must be 200 characters or fewer' };
+    if (data.contact_info && data.contact_info.length > 200) return { valid: false, error: 'Contact info must be 200 characters or fewer' };
+
+    return { valid: true };
+}
+
+/** Validates a Marketplace listing */
+export function validateMarketplaceListing(data: { title: string; description?: string; price: string | number; category: string }): ValidationResult {
+    const t = validateShortText(data.title, 'Title', 150);
+    if (!t.valid) return t;
+
+    if (data.description) {
+        const d = validateLongText(data.description, 'Description', 2000);
+        if (!d.valid) return d;
+    }
+
+    const p = validatePrice(data.price);
+    if (!p.valid) return p;
+
+    const allowedCategories = ['books', 'electronics', 'clothing', 'furniture', 'services', 'other'];
+    if (!allowedCategories.includes(data.category)) return { valid: false, error: 'Invalid category' };
+
+    return { valid: true };
+}
+
+/** Validates an Event creation */
+export function validateEventCreate(data: { title: string; description?: string; location?: string; event_date: string }): ValidationResult {
+    const t = validateShortText(data.title, 'Event title', 200);
+    if (!t.valid) return t;
+
+    if (data.description) {
+        const d = validateLongText(data.description, 'Description', 2000);
+        if (!d.valid) return d;
+    }
+
+    if (data.location && data.location.length > 200) return { valid: false, error: 'Location must be 200 characters or fewer' };
+
+    if (!data.event_date) return { valid: false, error: 'Event date is required' };
+    const parsedDate = new Date(data.event_date);
+    if (isNaN(parsedDate.getTime())) return { valid: false, error: 'Invalid event date' };
+
+    return { valid: true };
+}
+
+/** Validates an Internship posting */
+export function validateInternshipCreate(data: { title: string; company: string; description?: string; location?: string; stipend?: string; duration?: string; apply_link?: string }): ValidationResult {
+    const t = validateShortText(data.title, 'Title', 200);
+    if (!t.valid) return t;
+
+    const c = validateShortText(data.company, 'Company', 150);
+    if (!c.valid) return c;
+
+    if (data.description) {
+        const d = validateLongText(data.description, 'Description', 2000);
+        if (!d.valid) return d;
+    }
+
+    if (data.location && data.location.length > 200) return { valid: false, error: 'Location must be 200 characters or fewer' };
+    if (data.stipend && data.stipend.length > 100) return { valid: false, error: 'Stipend must be 100 characters or fewer' };
+    if (data.duration && data.duration.length > 100) return { valid: false, error: 'Duration must be 100 characters or fewer' };
+    if (data.apply_link) {
+        const l = validateUrl(data.apply_link);
+        if (!l.valid) return l;
+    }
+
+    return { valid: true };
+}
+
+/** Validates a Study Group creation */
+export function validateStudyGroupCreate(data: { subject: string; description?: string; max_members: string | number; meeting_time?: string; location?: string }): ValidationResult {
+    const s = validateShortText(data.subject, 'Subject', 200);
+    if (!s.valid) return s;
+
+    if (data.description) {
+        const d = validateLongText(data.description, 'Description', 1000);
+        if (!d.valid) return d;
+    }
+
+    const m = validateInt(data.max_members, 'Max members', 2, 50);
+    if (!m.valid) return m;
+
+    if (data.meeting_time && data.meeting_time.length > 100) return { valid: false, error: 'Meeting time must be 100 characters or fewer' };
+    if (data.location && data.location.length > 200) return { valid: false, error: 'Location must be 200 characters or fewer' };
+
+    return { valid: true };
+}
+
+/** Validates a Confession (Secret Room) */
+export function validateConfession(content: string): ValidationResult {
+    if (!content || typeof content !== 'string') return { valid: false, error: 'Confession cannot be empty' };
+    const trimmed = content.trim();
+    if (trimmed.length < 1) return { valid: false, error: 'Confession cannot be empty' };
+    if (trimmed.length > 1000) return { valid: false, error: 'Confession must be 1000 characters or fewer' };
+    return { valid: true };
+}
+
+/** Validates a Circle creation */
+export function validateCircleCreate(data: { name: string; description?: string }): ValidationResult {
+    const n = validateShortText(data.name, 'Circle name', 100);
+    if (!n.valid) return n;
+
+    if (data.description) {
+        const d = validateLongText(data.description, 'Description', 500);
+        if (!d.valid) return d;
+    }
+
+    return { valid: true };
+}
+
+/** Validates a Circle message */
+export function validateCircleMessage(content: string): ValidationResult {
+    return validateMessage(content); // Same rules as DM
+}
+
+/** Validates a report/support ticket */
+export function validateReport(message: string): ValidationResult {
+    if (!message || typeof message !== 'string') return { valid: false, error: 'Please provide details' };
+    const trimmed = message.trim();
+    if (trimmed.length < 10) return { valid: false, error: 'Please provide more detail (at least 10 characters)' };
+    if (trimmed.length > 2000) return { valid: false, error: 'Report is too long (max 2000 characters)' };
+    return { valid: true };
+}
+
 
 // ============================================================
-// 3. CLIENT-SIDE RATE LIMITER
+// 4. CLIENT-SIDE RATE LIMITER
 // ============================================================
 
 /**
@@ -212,7 +419,7 @@ export function validateProfileUpdate(updates: Record<string, any>): ValidationR
  *
  * Usage:
  *   const limiter = new RateLimiter({ maxRequests: 5, windowMs: 60000 });
- *   if (!limiter.canProceed('signup')) return toast.error('Too many attempts');
+ *   if (!limiter.canProceed('signup')) return showRateLimitToast(limiter, 'signup');
  */
 export class RateLimiter {
     private timestamps: Map<string, number[]> = new Map();
@@ -263,7 +470,7 @@ export class RateLimiter {
 }
 
 // ============================================================
-// 4. PRE-CONFIGURED RATE LIMITERS
+// 5. PRE-CONFIGURED RATE LIMITERS (sensible defaults)
 // ============================================================
 
 /** Auth actions: 5 attempts per 60 seconds */
@@ -292,3 +499,84 @@ export const storyLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 
 
 /** Support tickets: 3 per 10 minutes */
 export const supportLimiter = new RateLimiter({ maxRequests: 3, windowMs: 600_000 });
+
+/** Poll creation: 5 per 10 minutes */
+export const pollLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 });
+
+/** Poll voting: 30 per minute */
+export const voteLimiter = new RateLimiter({ maxRequests: 30, windowMs: 60_000 });
+
+/** Lost & Found posting: 5 per 10 minutes */
+export const lostFoundLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 });
+
+/** Marketplace listing: 10 per 10 minutes */
+export const marketplaceLimiter = new RateLimiter({ maxRequests: 10, windowMs: 600_000 });
+
+/** Event creation: 5 per 10 minutes */
+export const eventLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 });
+
+/** Internship posting: 5 per 10 minutes */
+export const internshipLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 });
+
+/** Study group creation: 5 per 10 minutes */
+export const studyGroupLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 });
+
+/** Circle creation: 3 per 10 minutes */
+export const circleLimiter = new RateLimiter({ maxRequests: 3, windowMs: 600_000 });
+
+/** Confession posting: 5 per 10 minutes */
+export const confessionLimiter = new RateLimiter({ maxRequests: 5, windowMs: 600_000 });
+
+/** Report submission: 3 per 10 minutes */
+export const reportLimiter = new RateLimiter({ maxRequests: 3, windowMs: 600_000 });
+
+/** Generic action limiter: 20 per minute (joins, toggles, etc.) */
+export const genericLimiter = new RateLimiter({ maxRequests: 20, windowMs: 60_000 });
+
+/** File upload limiter: 10 per 5 minutes */
+export const uploadLimiter = new RateLimiter({ maxRequests: 10, windowMs: 300_000 });
+
+
+// ============================================================
+// 6. GRACEFUL 429 TOAST HELPER
+// ============================================================
+
+/**
+ * Shows a user-friendly "too many requests" toast with retry timer.
+ * Call this when a rate limiter blocks an action.
+ *
+ * @param limiter - The RateLimiter instance that blocked the action
+ * @param action  - The action key used in canProceed()
+ * @param customMessage - Optional custom message (default: generic 429)
+ * @returns An error result object compatible with Supabase return shapes
+ */
+export function showRateLimitToast(
+    limiter: RateLimiter,
+    action: string,
+    customMessage?: string
+): { data: null; error: { message: string } } {
+    const retryMs = limiter.retryAfter(action);
+    const retrySec = Math.ceil(retryMs / 1000);
+
+    const message = customMessage
+        || `Too many requests. Please wait ${retrySec > 60 ? `${Math.ceil(retrySec / 60)} minute(s)` : `${retrySec} second(s)`}.`;
+
+    toast.error(message, {
+        duration: 4000,
+        id: `rate-limit-${action}`, // Prevents duplicate toasts for same action
+    });
+
+    return { data: null, error: { message } };
+}
+
+/**
+ * Convenience: check limiter + auto-show toast. Returns true if BLOCKED.
+ * Usage: if (isRateLimited(pollLimiter, 'create_poll')) return;
+ */
+export function isRateLimited(limiter: RateLimiter, action: string, customMessage?: string): boolean {
+    if (!limiter.canProceed(action)) {
+        showRateLimitToast(limiter, action, customMessage);
+        return true;
+    }
+    return false;
+}

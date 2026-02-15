@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { CampusCarousel } from "@/components/feed/CampusCarousel";
 import { StoriesBar } from "@/components/stories/StoriesBar";
 import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
+import { TrendingTicker } from "@/components/feed/TrendingTicker";
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -12,9 +13,9 @@ export default function Index() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto w-full pb-20">
-        
+
         {/* Stories - Padded for clean alignment */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="px-4 mb-6 mt-2"
@@ -31,8 +32,18 @@ export default function Index() {
           <CampusCarousel />
         </motion.div>
 
+        {/* Trending Ticker - New Dynamic Element */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mt-4"
+        >
+          <TrendingTicker />
+        </motion.div>
+
         {/* Feed Section with Layout Transitions */}
-        <div className="px-4 mt-8 space-y-6">
+        <div className="px-4 mt-4 space-y-6">
           <AnimatePresence mode="popLayout">
             {loading ? (
               <motion.div

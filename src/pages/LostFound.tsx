@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { validateLostFoundItem, sanitizeField, lostFoundLimiter, genericLimiter, isRateLimited } from "@/lib/security";
 
 interface LostFoundItem {
   id: string;
@@ -88,6 +89,23 @@ export default function LostFound() {
 
   const handleCreate = async () => {
     if (!user || !title.trim()) return;
+
+    // SECURITY: Validate all fields
+    const validation = validateLostFoundItem({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      type,
+      location: location.trim() || undefined,
+      contact_info: contactInfo.trim() || undefined
+    });
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit
+    if (isRateLimited(lostFoundLimiter, 'create_lost_found')) return;
+
     setCreating(true);
     try {
       let imageUrls: string[] = [];
@@ -98,11 +116,11 @@ export default function LostFound() {
       }
 
       const { error } = await supabase.from('lost_found').insert({
-        title: title.trim(),
-        description: description.trim() || null,
+        title: sanitizeField(title.trim(), 150),
+        description: sanitizeField(description.trim(), 1000) || null,
         type,
-        location: location.trim() || null,
-        contact_info: contactInfo.trim() || null,
+        location: sanitizeField(location.trim(), 200) || null,
+        contact_info: sanitizeField(contactInfo.trim(), 200) || null,
         images: imageUrls,
         posted_by: user.id,
         is_resolved: false
@@ -121,6 +139,9 @@ export default function LostFound() {
   };
 
   const handleResolve = async (itemId: string) => {
+    // SECURITY: Rate limit resolve actions
+    if (isRateLimited(genericLimiter, 'resolve_item')) return;
+
     try {
       const { error } = await supabase.from('lost_found').update({ is_resolved: true }).eq('id', itemId);
       if (error) throw error;

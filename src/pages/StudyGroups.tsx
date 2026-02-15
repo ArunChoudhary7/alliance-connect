@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { validateStudyGroupCreate, sanitizeField, studyGroupLimiter, genericLimiter, isRateLimited } from "@/lib/security";
 
 // Engineering-focused subjects
 const ENGINEERING_SUBJECTS = [
@@ -63,6 +64,10 @@ export default function StudyGroups() {
 
   const handleJoin = async (groupId: string) => {
     if (!user) return;
+
+    // SECURITY: Rate limit join actions
+    if (isRateLimited(genericLimiter, 'join_group')) return;
+
     try {
       const { error } = await supabase.from('study_group_members').insert({ group_id: groupId, user_id: user.id });
       if (error) throw error;
@@ -76,6 +81,10 @@ export default function StudyGroups() {
 
   const handleLeave = async (groupId: string) => {
     if (!user) return;
+
+    // SECURITY: Rate limit leave actions
+    if (isRateLimited(genericLimiter, 'leave_group')) return;
+
     try {
       const { error } = await supabase.from('study_group_members').delete().eq('group_id', groupId).eq('user_id', user.id);
       if (error) throw error;
@@ -89,14 +98,31 @@ export default function StudyGroups() {
 
   const handleCreate = async () => {
     if (!user || !subject.trim()) return;
+
+    // SECURITY: Validate study group data
+    const validation = validateStudyGroupCreate({
+      subject: subject.trim(),
+      description: description.trim() || undefined,
+      max_members: maxMembers,
+      meeting_time: meetingTime.trim() || undefined,
+      location: location.trim() || undefined
+    });
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit study group creation
+    if (isRateLimited(studyGroupLimiter, 'create_study_group')) return;
+
     setCreating(true);
     try {
       const { data: group, error: groupError } = await supabase.from('study_groups').insert({
-        subject: subject.trim(),
-        description: description.trim() || null,
+        subject: sanitizeField(subject.trim(), 200),
+        description: sanitizeField(description.trim(), 1000) || null,
         max_members: parseInt(maxMembers) || 6,
-        meeting_time: meetingTime.trim() || null,
-        location: location.trim() || null,
+        meeting_time: sanitizeField(meetingTime.trim(), 100) || null,
+        location: sanitizeField(location.trim(), 200) || null,
         created_by: user.id
       }).select().single();
       if (groupError) throw groupError;
@@ -168,7 +194,7 @@ export default function StudyGroups() {
             return (
               <motion.div key={group.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05 }} className="glass-card p-6 rounded-[2.5rem] border-none shadow-xl relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity"><BookOpen className="h-16 w-16" /></div>
-                
+
                 <div className="flex items-start justify-between mb-4">
                   <div className="max-w-[70%]">
                     <Badge className="bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-widest px-3 py-1 mb-2">Engineering</Badge>

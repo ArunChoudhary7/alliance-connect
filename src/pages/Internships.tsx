@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { validateInternshipCreate, sanitizeField, internshipLimiter, isRateLimited } from "@/lib/security";
 
 interface Internship {
   id: string;
@@ -58,15 +59,33 @@ export default function Internships() {
   const handleCreate = async () => {
     if (!user || !title.trim() || !company.trim()) return;
 
+    // SECURITY: Validate internship data
+    const validation = validateInternshipCreate({
+      title: title.trim(),
+      company: company.trim(),
+      description: description.trim() || undefined,
+      location: location.trim() || undefined,
+      stipend: stipend.trim() || undefined,
+      duration: duration.trim() || undefined,
+      apply_link: applyLink.trim() || undefined
+    });
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit internship posting
+    if (isRateLimited(internshipLimiter, 'create_internship')) return;
+
     setCreating(true);
     try {
       const { error } = await supabase.from('internships').insert({
-        title: title.trim(),
-        company: company.trim(),
-        description: description.trim() || null,
-        location: location.trim() || null,
-        stipend: stipend.trim() || null,
-        duration: duration.trim() || null,
+        title: sanitizeField(title.trim(), 200),
+        company: sanitizeField(company.trim(), 150),
+        description: sanitizeField(description.trim(), 2000) || null,
+        location: sanitizeField(location.trim(), 200) || null,
+        stipend: sanitizeField(stipend.trim(), 100) || null,
+        duration: sanitizeField(duration.trim(), 100) || null,
         apply_link: applyLink.trim() || null,
         posted_by: user.id
       });
@@ -112,7 +131,7 @@ export default function Internships() {
             <h1 className="text-2xl font-bold gradient-text">Internships</h1>
             <p className="text-sm text-muted-foreground">Opportunities for students</p>
           </div>
-          
+
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-primary">
@@ -197,7 +216,7 @@ export default function Internships() {
                     </a>
                   )}
                 </div>
-                
+
                 {internship.description && (
                   <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{internship.description}</p>
                 )}

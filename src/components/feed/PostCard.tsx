@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toggleAura } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
 import { getInitials, cn } from "@/lib/utils";
@@ -101,7 +102,7 @@ function CustomVideoPlayer({ src }: { src: string }) {
 
 export function PostCard({ post, onDeleted }: any) {
   const { user } = useAuth();
-  const [hasAura, setHasAura] = useState(false);
+  const [hasAura, setHasAura] = useState(!!post.has_aura);
   const [auraCount, setAuraCount] = useState(Number(post.aura_count) || 0);
   const [commentsEnabled, setCommentsEnabled] = useState(post.comments_enabled ?? true);
   const [isDeleted, setIsDeleted] = useState(false);
@@ -140,8 +141,22 @@ export function PostCard({ post, onDeleted }: any) {
   useEffect(() => {
     if (!user) return;
 
-    // Check if user liked
-    supabase.from("auras").select("id").eq("post_id", post.id).eq("user_id", user.id).maybeSingle().then(({ data }) => setHasAura(!!data));
+    // Only verify from DB if has_aura wasn't pre-fetched by getPosts/getUserPosts.
+    // When has_aura is pre-fetched (boolean), we trust it. When it's undefined
+    // (e.g. highlighted post fallback, or PostDetails), we query the DB.
+    if (post.has_aura === undefined) {
+      supabase
+        .from("auras")
+        .select("id")
+        .eq("post_id", post.id)
+        .eq("user_id", user.id)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (!error) {
+            setHasAura(!!data);
+          }
+        });
+    }
 
     // Subscribe to count updates
     const channel = supabase.channel(`post_stats:${post.id}`)
@@ -165,17 +180,19 @@ export function PostCard({ post, onDeleted }: any) {
     setHasAura(!prevStatus);
     setAuraCount(prevCount + (prevStatus ? -1 : 1));
 
-    try {
-      if (prevStatus) {
-        await supabase.from("auras").delete().eq("post_id", post.id).eq("user_id", user.id);
-      } else {
-        await supabase.from("auras").insert({ post_id: post.id, user_id: user.id });
-      }
-    } catch (error) {
-      // Rollback
+    // Use the tested toggleAura function from supabase.ts
+    // It handles check-then-insert/delete with correct payload format
+    const result = await toggleAura(user.id, post.id);
+
+    if (result.error) {
+      // Rollback optimistic update
       setHasAura(prevStatus);
       setAuraCount(prevCount);
-      toast.error("Signal sync failed");
+      toast.error(prevStatus ? "Failed to remove Aura" : "Failed to give Aura");
+      console.error("Aura toggle error:", result.error);
+    } else {
+      // Sync to actual server state
+      setHasAura(result.action === 'added');
     }
   };
 

@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PulseBeacon } from "@/components/layout/PulseBeacon";
+import { validateEventCreate, sanitizeField, eventLimiter, isRateLimited } from "@/lib/security";
+import { uploadFile } from "@/lib/storage";
 
 interface Event {
   id: string;
@@ -78,26 +80,34 @@ export default function Events() {
       return;
     }
 
+    // SECURITY: Validate event data
+    const validation = validateEventCreate({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      location: location.trim() || undefined,
+      event_date: eventDate
+    });
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit event creation
+    if (isRateLimited(eventLimiter, 'create_event')) return;
+
     setCreating(true);
     try {
-      // 1. Upload Poster
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from('event-posters')
-        .upload(fileName, file);
+      // 1. Upload Poster to Cloudinary
+      const { url: publicUrl, error: uploadError } = await uploadFile('events', file, user.id);
 
       if (uploadError) throw uploadError;
+      if (!publicUrl) throw new Error("Failed to upload poster");
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-posters')
-        .getPublicUrl(fileName);
-
-      // 2. Insert Event
+      // 2. Insert Event (sanitized)
       const { error: dbError } = await supabase.from('events').insert({
-        title,
-        description,
-        location,
+        title: sanitizeField(title.trim(), 200),
+        description: sanitizeField(description.trim(), 2000),
+        location: sanitizeField(location.trim(), 200),
         event_date: new Date(eventDate).toISOString(),
         cover_url: publicUrl,
         created_by: user.id

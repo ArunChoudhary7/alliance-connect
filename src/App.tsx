@@ -9,7 +9,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { ThemeProvider } from "@/theme/themeProvider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 
 // Lazy Loaded Pages for Production Performance
 const MessMenuPage = lazy(() => import("./pages/MessMenuPage"));
@@ -42,8 +41,10 @@ const PostDetails = lazy(() => import("./pages/PostDetails"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1, // Minimize retries in production for faster fail handling
+      retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 2,   // Data stays fresh for 2min — no re-fetch on page switch
+      gcTime: 1000 * 60 * 5,      // Cache persists 5min after unmount for instant back-nav
     },
   },
 });
@@ -59,7 +60,11 @@ export default function App() {
             <BrowserRouter>
               <AuthProvider>
                 <SettingsProvider>
-                  <Suspense fallback={<LoadingScreen />}>
+                  <Suspense fallback={
+                    <div className="min-h-screen w-full flex items-center justify-center">
+                      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  }>
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/auth" element={<Auth />} />

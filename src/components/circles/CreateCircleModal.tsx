@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
+import { validateCircleCreate, sanitizeField, circleLimiter, isRateLimited } from "@/lib/security";
 
 interface CreateCircleModalProps {
   open: boolean;
@@ -38,6 +39,19 @@ export function CreateCircleModal({ open, onOpenChange, onCreated }: CreateCircl
   const handleSubmit = async () => {
     if (!user || !name.trim()) return;
 
+    // SECURITY: Validate circle data
+    const validation = validateCircleCreate({
+      name: name.trim(),
+      description: description.trim() || undefined
+    });
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit circle creation
+    if (isRateLimited(circleLimiter, 'create_circle')) return;
+
     setLoading(true);
 
     try {
@@ -49,12 +63,12 @@ export function CreateCircleModal({ open, onOpenChange, onCreated }: CreateCircl
         coverUrl = url;
       }
 
-      // Create the circle
+      // Create the circle (sanitized)
       const { data: circle, error: circleError } = await supabase
         .from('circles')
         .insert({
-          name: name.trim(),
-          description: description.trim() || null,
+          name: sanitizeField(name.trim(), 100),
+          description: sanitizeField(description.trim(), 500) || null,
           is_private: isPrivate,
           cover_url: coverUrl,
           created_by: user.id

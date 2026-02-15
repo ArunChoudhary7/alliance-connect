@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ShoppingBag, Loader2, MessageCircle, X, AlertCircle, IndianRupee, ImageIcon } from "lucide-react";
+import { Plus, ShoppingBag, Loader2, MessageCircle, X, AlertCircle, IndianRupee, ImageIcon, Search } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { uploadMultipleFiles } from "@/lib/storage";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getInitials } from "@/lib/utils";
+import { validateMarketplaceListing, sanitizeField, marketplaceLimiter, messageLimiter, isRateLimited } from "@/lib/security";
+import { FeaturedProductCarousel } from "@/components/marketplace/FeaturedProductCarousel";
+import { MarketplaceSkeleton } from "@/components/marketplace/MarketplaceSkeleton";
 
 interface Listing {
   id: string;
@@ -56,6 +59,7 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -129,6 +133,22 @@ export default function Marketplace() {
 
   const handleCreate = async () => {
     if (!user || !title.trim() || !price) return;
+
+    // SECURITY: Validate listing data
+    const validation = validateMarketplaceListing({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      price,
+      category
+    });
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    // SECURITY: Rate limit listing creation
+    if (isRateLimited(marketplaceLimiter, 'create_listing')) return;
+
     setCreating(true);
     try {
       let imageUrls: string[] = [];
@@ -138,8 +158,8 @@ export default function Marketplace() {
       }
 
       const { error } = await supabase.from('marketplace_listings').insert({
-        title: title.trim(),
-        description: description.trim() || null,
+        title: sanitizeField(title.trim(), 150),
+        description: sanitizeField(description.trim(), 2000) || null,
         price: parseFloat(price),
         category,
         images: imageUrls.length > 0 ? imageUrls : null,
@@ -195,9 +215,14 @@ export default function Marketplace() {
     toast.success('Request sent!');
   };
 
-  const filteredListings = selectedCategory === 'all' ? listings : listings.filter(l => l.category === selectedCategory);
+  const filteredListings = listings.filter(l => {
+    const matchesCategory = selectedCategory === 'all' || l.category === selectedCategory;
+    const matchesSearch = l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (l.description && l.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
 
-  if (loading) return <AppLayout><div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div></AppLayout>;
+  if (loading) return <AppLayout><div className="max-w-2xl mx-auto px-4 py-8"><MarketplaceSkeleton /></div></AppLayout>;
 
   return (
     <AppLayout>
@@ -245,16 +270,32 @@ export default function Marketplace() {
                   {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : "POST LISTING"}
                 </Button>
               </div>
+
             </DialogContent>
           </Dialog>
         </motion.div>
 
-        {/* FEED */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
-          <Button size="sm" variant={selectedCategory === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCategory('all')} className="rounded-full px-4">All</Button>
-          {CATEGORIES.map(cat => (
-            <Button key={cat.value} size="sm" variant={selectedCategory === cat.value ? 'default' : 'outline'} onClick={() => setSelectedCategory(cat.value)} className="rounded-full px-4 shrink-0">{cat.label}</Button>
-          ))}
+        {/* FEATURED CAROUSEL */}
+        <FeaturedProductCarousel listings={listings} onSelect={(item) => { setSelectedListing(item); setShowDetailDialog(true); }} />
+
+        {/* SEARCH & FILTERS */}
+        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl pb-4 pt-2 -mx-4 px-4 transition-all">
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search marketplace..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 bg-secondary/50 border-white/5 rounded-xl focus:bg-secondary transition-all"
+            />
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <Button size="sm" variant={selectedCategory === 'all' ? 'default' : 'outline'} onClick={() => setSelectedCategory('all')} className="rounded-full px-5 h-8 text-xs font-bold uppercase tracking-wide shadow-sm">All</Button>
+            {CATEGORIES.map(cat => (
+              <Button key={cat.value} size="sm" variant={selectedCategory === cat.value ? 'default' : 'outline'} onClick={() => setSelectedCategory(cat.value)} className="rounded-full px-5 h-8 text-xs font-bold uppercase tracking-wide shrink-0 shadow-sm">{cat.label}</Button>
+            ))}
+          </div>
         </div>
 
         {filteredListings.length === 0 ? (
@@ -263,7 +304,7 @@ export default function Marketplace() {
             <p className="text-muted-foreground font-bold uppercase text-xs tracking-widest">No items found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {filteredListings.map((listing, index) => (
               <motion.div
                 key={listing.id}
@@ -301,17 +342,17 @@ export default function Marketplace() {
             {selectedListing && (
               <div className="flex flex-col">
                 <div className="relative w-full aspect-square bg-black flex items-center justify-center overflow-hidden">
-                   {/* BLURRED BACKGROUND FOR BETTER RENDER */}
-                   {selectedListing.images?.[0] && (
-                     <img src={selectedListing.images[0]} className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-40 scale-110" alt="" />
-                   )}
-                   {/* MAIN IMAGE - OBJECT CONTAIN ENSURES RATIO IS KEPT */}
-                   <img 
-                    src={selectedListing.images?.[0] || ''} 
-                    className="relative z-10 max-w-full max-h-full object-contain" 
-                    alt={selectedListing.title} 
-                   />
-                   <Button onClick={() => setShowDetailDialog(false)} variant="ghost" className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10 p-0"><X className="h-5 w-5" /></Button>
+                  {/* BLURRED BACKGROUND FOR BETTER RENDER */}
+                  {selectedListing.images?.[0] && (
+                    <img src={selectedListing.images[0]} className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-40 scale-110" alt="" />
+                  )}
+                  {/* MAIN IMAGE - OBJECT CONTAIN ENSURES RATIO IS KEPT */}
+                  <img
+                    src={selectedListing.images?.[0] || ''}
+                    className="relative z-10 max-w-full max-h-full object-contain"
+                    alt={selectedListing.title}
+                  />
+                  <Button onClick={() => setShowDetailDialog(false)} variant="ghost" className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white rounded-full h-10 w-10 p-0"><X className="h-5 w-5" /></Button>
                 </div>
 
                 <div className="p-8 space-y-6">
@@ -345,6 +386,6 @@ export default function Marketplace() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppLayout>
+    </AppLayout >
   );
 }

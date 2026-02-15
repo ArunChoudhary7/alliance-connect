@@ -4,6 +4,7 @@ import { Heart, MessageCircle, Send, VolumeX, Volume2, Play, ArrowLeft, Loader2,
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toggleAura } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { cn, getInitials } from "@/lib/utils";
@@ -106,27 +107,38 @@ export default function Reels() {
     }
 
     const isLiked = likedReels.has(reelId);
+
+    // Optimistic update
     setLikedReels(prev => {
       const next = new Set(prev);
       isLiked ? next.delete(reelId) : next.add(reelId);
       return next;
     });
-
-    if (isLiked) {
-      await supabase.from("auras").delete().eq("user_id", user.id).eq("post_id", reelId);
-    } else {
-      await supabase.from("auras").insert({ user_id: user.id, post_id: reelId });
-    }
-
     setReels(prev => prev.map(r => {
       if (r.id === reelId) {
-        return {
-          ...r,
-          aura_count: (r.aura_count || 0) + (isLiked ? -1 : 1)
-        };
+        return { ...r, aura_count: (r.aura_count || 0) + (isLiked ? -1 : 1) };
       }
       return r;
     }));
+
+    // Use the tested toggleAura function
+    const result = await toggleAura(user.id, reelId);
+
+    if (result.error) {
+      // Rollback on failure
+      setLikedReels(prev => {
+        const next = new Set(prev);
+        isLiked ? next.add(reelId) : next.delete(reelId);
+        return next;
+      });
+      setReels(prev => prev.map(r => {
+        if (r.id === reelId) {
+          return { ...r, aura_count: (r.aura_count || 0) + (isLiked ? 1 : -1) };
+        }
+        return r;
+      }));
+      toast.error("Failed to toggle Aura");
+    }
   };
 
   if (reels.length === 0) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-white" /></div>;
