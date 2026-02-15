@@ -133,11 +133,8 @@ export function OnboardingForm() {
       );
     }
     if (step === 2) {
-      // Assuming Bio is important, but typically profile pic/banner are optional.
-      // User said "filling details like department etc" which usually refers to step 1 dropdowns.
-      // However, let's ensure Bio is at least filled to avoid empty profiles if that's the goal.
-      // Let's make Bio mandatory as well to ensure quality profiles.
-      return formData.bio.trim().length > 0;
+      // Step 2 is now optional
+      return true;
     }
     return true;
   };

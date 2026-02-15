@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Settings, Edit2, Sparkles, Grid, Lock, MessageCircle, Check, Link as LinkIcon, ShieldOff, MoreVertical } from "lucide-react";
+import { Settings, Edit2, Sparkles, Grid, Lock, MessageCircle, Check, Link as LinkIcon, ShieldOff, MoreVertical, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -436,6 +436,12 @@ export default function Profile() {
               />
             </div>
             <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">@{profile.username}</p>
+            {profile.department && (
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground/70 mt-1">
+                <Building2 className="h-3 w-3" />
+                <span>{profile.department}</span>
+              </div>
+            )}
 
             {/* NEW: Reputation / XP System Display */}
             <div className="w-full max-w-[200px] mt-2 group relative">
