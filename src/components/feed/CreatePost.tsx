@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Image, X, Send, Loader2, Sparkles, Ghost, Timer, ChevronDown } from "lucide-react";
+import { Image, X, Send, Loader2, Sparkles, Ghost, Timer, ChevronDown, Play } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { getInitials, cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
   const { user, profile } = useAuth();
@@ -105,6 +106,43 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => setIsExpanded(true)}
           />
+
+          {/* PREVIEW SECTION */}
+          {selectedFiles.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              <AnimatePresence>
+                {selectedFiles.map((file, i) => (
+                  <motion.div
+                    key={file.preview}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="relative shrink-0 w-24 h-24 rounded-2xl overflow-hidden border border-white/10 group bg-black"
+                  >
+                    {file.type === 'video' ? (
+                      <div className="relative w-full h-full">
+                        <video src={file.preview} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <Play className="w-6 h-6 text-white fill-white/20" />
+                        </div>
+                        <div className="absolute top-1 left-1 bg-primary px-1.5 rounded-md">
+                          <span className="text-[8px] font-black uppercase text-white">Reel</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <img src={file.preview} alt="Preview" className="w-full h-full object-cover" />
+                    )}
+                    <button
+                      onClick={() => setSelectedFiles(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
 
           {isExpanded && (
             <div className="flex flex-col md:flex-row md:items-center justify-between pt-2 animate-in slide-in-from-top-2 gap-3">

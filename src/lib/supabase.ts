@@ -22,7 +22,7 @@ import {
 // ============================================================
 export const ALLOWED_DOMAIN = ".alliance.edu.in";
 export function isValidAllianceEmail(email: string): boolean {
-  return email.toLowerCase().endsWith(ALLOWED_DOMAIN) || email.toLowerCase() === "arunc0799@gmail.com";
+  return email.toLowerCase().endsWith(ALLOWED_DOMAIN) || email.toLowerCase() === "auconnex@gmail.com";
 }
 
 // Helper to get the correct site URL for redirects (production vs local)

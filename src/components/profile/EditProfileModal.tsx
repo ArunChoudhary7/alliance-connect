@@ -88,37 +88,68 @@ export function EditProfileModal({ open, onOpenChange, profile, onProfileUpdated
   };
 
   const handleSave = async () => {
+    if (!profile?.user_id) {
+      toast.error("User ID not found");
+      return;
+    }
     setLoading(true);
+    console.log("[ProfileUpdate] Starting save process...");
     try {
       let avatar_url = profile.avatar_url;
       let cover_url = profile.cover_url;
 
       if (avatarFile) {
-        // cast Blob to File for uploadFile helper
-        const file = new File([avatarFile], "avatar.jpg", { type: "image/jpeg" });
-        const { url, error } = await uploadFile('avatars', file, `${profile.user_id}/avatar_${Date.now()}`);
+        console.log("[ProfileUpdate] Uploading new avatar...");
+        const file = new File([avatarFile], `avatar_${profile.user_id}.jpg`, { type: "image/jpeg" });
+        const { url, error } = await uploadFile('avatars', file, profile.user_id);
         if (error) throw error;
-        avatar_url = url;
+        if (url) {
+          avatar_url = url;
+          console.log("[ProfileUpdate] New avatar URL:", avatar_url);
+        }
       }
+
       if (coverFile) {
-        const file = new File([coverFile], "cover.jpg", { type: "image/jpeg" });
-        const { url, error } = await uploadFile('covers', file, `${profile.user_id}/cover_${Date.now()}`);
+        console.log("[ProfileUpdate] Uploading new cover...");
+        const file = new File([coverFile], `cover_${profile.user_id}.jpg`, { type: "image/jpeg" });
+        const { url, error } = await uploadFile('covers', file, profile.user_id);
         if (error) throw error;
-        cover_url = url;
+        if (url) {
+          cover_url = url;
+          console.log("[ProfileUpdate] New cover URL:", cover_url);
+        }
       }
 
       const theme_config = { accent: accentColor, background: bgStyle, aura: "glow" };
-      const { error } = await supabase
+      console.log("[ProfileUpdate] Updating Supabase profile...");
+      const { error: updateError } = await supabase
         .from('profiles')
-        .update({ username, full_name: fullName, bio, website, is_private: isPrivate, theme_config, avatar_url, cover_url })
+        .update({
+          username,
+          full_name: fullName,
+          bio,
+          website,
+          is_private: isPrivate,
+          theme_config,
+          avatar_url,
+          cover_url
+        })
         .eq('user_id', profile.user_id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
       toast.success("Profile updated!");
+      console.log("[ProfileUpdate] Success!");
+
+      // Cleanup previews
+      if (avatarFile) URL.revokeObjectURL(avatarPreview);
+      if (coverFile) URL.revokeObjectURL(coverPreview);
+
       onProfileUpdated();
       onOpenChange(false);
     } catch (e: any) {
-      toast.error("Failed to update");
+      console.error("[ProfileUpdate] Error:", e);
+      toast.error(e.message || "Failed to update profile");
     } finally {
       setLoading(false);
     }

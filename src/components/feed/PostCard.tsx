@@ -283,6 +283,7 @@ export function PostCard({ post, onDeleted }: any) {
                 <UserBadge
                   role={author.role}
                   userId={author.user_id || post.user_id}
+                  username={author.username}
                   isVerified={author.is_verified}
                   verifiedTitle={author.verified_title}
                   verificationExpiry={author.verification_expiry}

@@ -5,12 +5,16 @@ export type BadgeType = "developer" | "professor" | "scholar" | "verified" | "no
 
 // Mock implementation - Replace with DB query or role check later
 const SPECIAL_ROLES: Record<string, BadgeType> = {
-    // Add specific User IDs here if needed for testing
-    "admin-id-placeholder": "developer",
+    // Add specific User IDs or usernames here
+    "shlok": "developer",
+    "ateef": "developer",
+    "kartikaygour": "developer",
+    "areef": "developer", // Fallback for the user mention
 };
 
 interface UserBadgeProps {
     userId?: string;
+    username?: string;
     role?: string; // If role is passed directly
     isVerified?: boolean;
     verifiedTitle?: string;
@@ -18,7 +22,7 @@ interface UserBadgeProps {
     className?: string;
 }
 
-export function UserBadge({ userId, role, isVerified, verifiedTitle, verificationExpiry, className }: UserBadgeProps) {
+export function UserBadge({ userId, username, role, isVerified, verifiedTitle, verificationExpiry, className }: UserBadgeProps) {
     // Determine badge type
     let badgeType: BadgeType = "none";
     let badgeTitleStr = "";
@@ -37,6 +41,8 @@ export function UserBadge({ userId, role, isVerified, verifiedTitle, verificatio
         badgeType = "scholar";
     } else if (userId && SPECIAL_ROLES[userId]) {
         badgeType = SPECIAL_ROLES[userId];
+    } else if (username && SPECIAL_ROLES[username.toLowerCase()]) {
+        badgeType = SPECIAL_ROLES[username.toLowerCase()];
     }
 
     if (badgeType === "none") return null;

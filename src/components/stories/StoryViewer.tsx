@@ -440,6 +440,15 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
               ) : (
                 <img src={storyMedia} className="w-full h-full object-cover" />
               )}
+
+              {/* CAPTION OVERLAY FOR MEDIA STORIES */}
+              {currentStory.content && (
+                <div className="absolute bottom-24 inset-x-0 px-6 z-[75] flex justify-center pointer-events-none">
+                  <p className="text-white text-lg font-bold text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] leading-tight max-w-[90%]">
+                    {currentStory.content}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

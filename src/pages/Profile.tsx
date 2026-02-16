@@ -429,6 +429,7 @@ export default function Profile() {
               <UserBadge
                 role={profile.role}
                 userId={profile.user_id}
+                username={profile.username}
                 isVerified={profile.is_verified}
                 verifiedTitle={profile.verified_title}
                 verificationExpiry={profile.verification_expiry}

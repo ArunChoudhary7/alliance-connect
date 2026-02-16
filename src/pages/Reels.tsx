@@ -32,6 +32,8 @@ export default function Reels() {
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
   useEffect(() => {
     fetchReels();
     if (user) fetchUserLikes();
@@ -39,6 +41,7 @@ export default function Reels() {
 
   const fetchReels = async () => {
     try {
+      setIsInitialLoading(true);
       // FIX: Explicit Join 'profiles!user_id' prevents "Ambiguous Relationship" error
       const { data, error } = await supabase
         .from("posts")
@@ -66,6 +69,8 @@ export default function Reels() {
     } catch (err) {
       console.error("Reel error:", err);
       toast.error("Signal Lost. Check Database.");
+    } finally {
+      setIsInitialLoading(false);
     }
   };
 
@@ -141,7 +146,22 @@ export default function Reels() {
     }
   };
 
-  if (reels.length === 0) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-white" /></div>;
+  if (isInitialLoading) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-white" /></div>;
+
+  if (reels.length === 0) {
+    return (
+      <div className="h-screen bg-black flex flex-col items-center justify-center text-center p-10">
+        <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-6">
+          <Play className="w-10 h-10 text-white/20" />
+        </div>
+        <h2 className="text-xl font-black italic text-white uppercase tracking-tighter mb-2">No Reels Broadcasted</h2>
+        <p className="text-white/40 text-sm max-w-xs">Be the first to upload a video to the network!</p>
+        <Button onClick={() => navigate(-1)} variant="ghost" className="mt-8 text-white/60 hover:text-white">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-black overflow-hidden flex justify-center">

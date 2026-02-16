@@ -96,18 +96,27 @@ export async function uploadFile(
     }
 
     // 1. Compress if it's an image
-    const processedFile = await compressImage(file);
+    let processedFile = file;
+    try {
+      processedFile = await compressImage(file);
+      console.log(`[Storage] File processed: ${file.name} (${(file.size / 1024).toFixed(1)}KB) -> ${processedFile.name} (${(processedFile.size / 1024).toFixed(1)}KB)`);
+    } catch (compressError) {
+      console.error("[Storage] Compression failed, using original file:", compressError);
+    }
 
     // 2. Prepare Cloudinary Form Data
     const formData = new FormData();
     formData.append('file', processedFile);
     formData.append('upload_preset', UPLOAD_PRESET);
-    // Use 'bucket' as a tag to organize files in Cloudinary
     formData.append('tags', bucket);
+    // Explicitly set resource_type for videos
+    const isVideo = file.type.startsWith('video/');
+
+    console.log(`[Storage] Uploading to Cloudinary bucket: ${bucket}, isVideo: ${isVideo}...`);
 
     // 3. Upload to Cloudinary
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload`,
       {
         method: 'POST',
         body: formData,
@@ -116,15 +125,17 @@ export async function uploadFile(
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error("[Storage] Cloudinary Error:", errorData);
       throw new Error(errorData.error?.message || 'Cloudinary upload failed');
     }
 
     const data = await response.json();
+    console.log(`[Storage] Upload Successful:`, data.secure_url);
 
     // 4. Return the secure URL
     return { url: data.secure_url, error: null };
   } catch (error) {
-    console.error("Upload Error:", error);
+    console.error("[Storage] Upload Error:", error);
     return { url: null, error: error as Error };
   }
 }
