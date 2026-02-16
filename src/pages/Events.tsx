@@ -103,6 +103,7 @@ export default function Events() {
       if (uploadError) throw uploadError;
       if (!publicUrl) throw new Error("Failed to upload poster");
 
+      const uploadToast = toast.loading("Broadcasting Event...");
       // 2. Insert Event (sanitized)
       const { error: dbError } = await supabase.from('events').insert({
         title: sanitizeField(title.trim(), 200),
@@ -112,6 +113,8 @@ export default function Events() {
         cover_url: publicUrl,
         created_by: user.id
       });
+
+      toast.dismiss(uploadToast);
 
       if (dbError) throw dbError;
 

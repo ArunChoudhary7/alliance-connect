@@ -11,8 +11,12 @@ export type BucketName = 'avatars' | 'covers' | 'posts' | 'stories' | 'marketpla
  * to "unsigned" with strict allowed file types and size limits configured
  * in the Cloudinary dashboard.
  */
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dq9kqhji0";
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "alliance_preset";
+const CLOUD_NAME = (import.meta.env.VITE_CLOUDINARY_CLOUD_NAME && import.meta.env.VITE_CLOUDINARY_CLOUD_NAME !== "undefined")
+  ? import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  : "dq9kqhji0";
+const UPLOAD_PRESET = (import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET && import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET !== "undefined")
+  ? import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+  : "alliance_preset";
 
 /** Max file size: 100MB (Support for high-quality videos) */
 const MAX_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
@@ -109,10 +113,11 @@ export async function uploadFile(
     formData.append('file', processedFile);
     formData.append('upload_preset', UPLOAD_PRESET);
     formData.append('tags', bucket);
-    // Explicitly set resource_type for videos
-    const isVideo = file.type.startsWith('video/');
 
-    console.log(`[Storage] Uploading to Cloudinary bucket: ${bucket}, isVideo: ${isVideo}...`);
+    // Explicitly set resource_type for videos (Improved detection for mobile)
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|quicktime|m4v)$/i.test(file.name);
+
+    console.log(`[Storage] Uploading to Cloudinary [${CLOUD_NAME}] - Bucket: ${bucket}, isVideo: ${isVideo}...`);
 
     // 3. Upload to Cloudinary
     const response = await fetch(
@@ -126,17 +131,17 @@ export async function uploadFile(
     if (!response.ok) {
       const errorData = await response.json();
       console.error("[Storage] Cloudinary Error:", errorData);
-      throw new Error(errorData.error?.message || 'Cloudinary upload failed');
+      throw new Error(`[Cloudinary] ${errorData.error?.message || 'Upload failed'}`);
     }
 
     const data = await response.json();
-    console.log(`[Storage] Upload Successful:`, data.secure_url);
+    console.log(`[Storage] Upload Successful [${data.secure_url}]`);
 
     // 4. Return the secure URL
     return { url: data.secure_url, error: null };
-  } catch (error) {
+  } catch (error: any) {
     console.error("[Storage] Upload Error:", error);
-    return { url: null, error: error as Error };
+    return { url: null, error: error };
   }
 }
 

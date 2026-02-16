@@ -28,7 +28,7 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
     const newFiles = files.map(file => ({
       file,
       preview: URL.createObjectURL(file),
-      type: file.type.startsWith('video/') ? 'video' as const : 'image' as const
+      type: (file.type.startsWith('video/') || /\.(mp4|mov|webm|quicktime|m4v)$/i.test(file.name)) ? 'video' as const : 'image' as const
     }));
     setSelectedFiles(prev => [...prev, ...newFiles]);
     setIsExpanded(true);
@@ -54,6 +54,7 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
         ? new Date(Date.now() + duration * 60 * 60 * 1000).toISOString()
         : null;
 
+      const uploadToast = toast.loading("Broadcasting to network...");
       const { error } = await createPost({
         user_id: user.id,
         content: content.trim(),
@@ -62,6 +63,8 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
         expires_at: expiresAt,
         is_stealth: isStealth
       });
+
+      toast.dismiss(uploadToast);
 
       if (error) throw error;
       toast.success(isStealth ? `Stealth active for ${duration}h` : "Post created!");

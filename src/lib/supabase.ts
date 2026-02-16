@@ -152,7 +152,9 @@ export async function updateProfile(userId: string, updates: any) {
   if (sanitizedUpdates.full_name) sanitizedUpdates.full_name = sanitizedUpdates.full_name.trim();
   if (sanitizedUpdates.bio) sanitizedUpdates.bio = sanitizedUpdates.bio.trim();
 
-  return await supabase.from("profiles").update(sanitizedUpdates).eq("user_id", userId).select().single();
+  const { data, error } = await supabase.from("profiles").update(sanitizedUpdates).eq("user_id", userId).select().single();
+  if (error) return { data: null, error: { ...error, message: `[Supabase] ${error.message}` } };
+  return { data, error };
 }
 
 // ============================================================
@@ -210,7 +212,9 @@ export async function createPost(post: {
     hashtags: post.hashtags
   };
 
-  return await supabase.from("posts").insert([sanitizedPost]).select().single();
+  const { data, error } = await supabase.from("posts").insert([sanitizedPost]).select().single();
+  if (error) return { data: null, error: { ...error, message: `[Supabase] ${error.message}` } };
+  return { data, error };
 }
 
 export async function getPosts(limit = 20, offset = 0) {
