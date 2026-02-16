@@ -9,6 +9,9 @@ export default function Onboarding() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // SECURITY: If the user is on the reset-password page, do NOT redirect them.
+    if (window.location.pathname === "/reset-password") return;
+
     if (!loading) {
       if (!user) {
         navigate("/auth");

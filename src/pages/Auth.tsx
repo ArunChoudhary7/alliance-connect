@@ -9,6 +9,10 @@ export default function Auth() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // SECURITY: If the user is on the reset-password page, do NOT redirect them 
+    // even if they are "logged in" by the recovery link.
+    if (window.location.pathname === "/reset-password") return;
+
     if (!loading && user) {
       if (isOnboarded) {
         navigate("/");
