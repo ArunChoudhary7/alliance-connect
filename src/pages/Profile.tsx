@@ -367,7 +367,7 @@ export default function Profile() {
                   </div>
 
                   {/* ADMIN ONLY: Verification Toggle */}
-                  {(currentUserProfile?.username === 'arun' || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'developer') && (
+                  {(currentUserProfile?.username === 'arun' || currentUserProfile?.username === 'koki' || currentUserProfile?.role === 'admin' || currentUserProfile?.role === 'developer') && (
                     <Button
                       size="icon"
                       onClick={async () => {

@@ -21,7 +21,7 @@ export default function Admin() {
 
   // Security Check: Only Admin (Arun) can access
   useEffect(() => {
-    if (currentProfile && currentProfile.username !== 'arun' && currentProfile.role !== 'admin') {
+    if (currentProfile && currentProfile.username !== 'arun' && currentProfile.username !== 'koki' && currentProfile.role !== 'admin') {
       navigate("/");
       toast.error("Unauthorized Access");
     }
@@ -129,7 +129,7 @@ export default function Admin() {
     }
   };
 
-  if (!user || (currentProfile?.username !== 'arun' && currentProfile?.role !== 'admin')) {
+  if (!user || (currentProfile?.username !== 'arun' && currentProfile?.username !== 'koki' && currentProfile?.role !== 'admin')) {
     return null;
   }
 

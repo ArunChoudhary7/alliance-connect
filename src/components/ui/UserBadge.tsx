@@ -10,6 +10,7 @@ const SPECIAL_ROLES: Record<string, BadgeType> = {
     "ateef": "developer",
     "kartikaygour": "developer",
     "areef": "developer", // Fallback for the user mention
+    "koki": "developer",
 };
 
 interface UserBadgeProps {

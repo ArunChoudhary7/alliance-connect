@@ -211,7 +211,7 @@ export function validateProfileUpdate(updates: Record<string, any>): ValidationR
     const allowedFields = new Set([
         'username', 'full_name', 'department', 'year', 'bio', 'bio_link',
         'avatar_url', 'banner_url', 'cover_url', 'skills', 'website',
-        'is_private', 'show_activity', 'theme_config',
+        'is_private', 'show_activity', 'theme_config', 'role',
         'verification_status', 'verification_date', 'verified_title',
         'verification_expiry', 'is_verified'
     ]);

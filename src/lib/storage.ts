@@ -14,8 +14,8 @@ export type BucketName = 'avatars' | 'covers' | 'posts' | 'stories' | 'marketpla
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "dq9kqhji0";
 const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "alliance_preset";
 
-/** Max file size: 10MB */
-const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+/** Max file size: 100MB (Support for high-quality videos) */
+const MAX_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 
 /** Allowed MIME types for uploads */
 const ALLOWED_UPLOAD_TYPES = new Set([

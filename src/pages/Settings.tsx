@@ -551,7 +551,7 @@ export default function Settings() {
                     <p className="text-xs opacity-50 mb-4">You have submitted a request. Our admins will verify your payment and approve your badge shortly.</p>
 
                     {/* If user is admin (Arun), allow him to see the payment UI even if pending, for testing purposes */}
-                    {profile?.username === 'arun' || profile?.role === 'admin' ? (
+                    {profile?.username === 'arun' || profile?.username === 'koki' || profile?.role === 'admin' ? (
                       <div className="p-4 mb-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
                         <p className="text-[10px] text-yellow-500 font-bold uppercase tracking-widest leading-relaxed">Admin View: You have a pending request, but can still see the payment portal for testing.</p>
                       </div>
@@ -566,7 +566,7 @@ export default function Settings() {
                   </div>
 
                   {/* ONLY SHOW MAIL BUTTONS IF NOT ADMIN OR IF ADMIN WANTS TO SEE THEM */}
-                  {!(profile?.username === 'arun' || profile?.role === 'admin') && (
+                  {!(profile?.username === 'arun' || profile?.username === 'koki' || profile?.role === 'admin') && (
                     <div className="space-y-3">
                       <p className="text-[10px] text-muted-foreground/60 max-w-xs mx-auto mb-2">
                         If you have already paid and are not verified yet:
@@ -587,7 +587,7 @@ export default function Settings() {
                   )}
 
                   {/* ADMIN FALLTHROUGH: Display Payment UI below for testing */}
-                  {(profile?.username === 'arun' || profile?.role === 'admin') && (
+                  {(profile?.username === 'arun' || profile?.username === 'koki' || profile?.role === 'admin') && (
                     <div className="w-full mt-8 border-t border-white/10 pt-8">
                       {/* REPEAT PAYMENT UI FOR ADMIN */}
                       <div className="p-6 rounded-3xl bg-secondary/20 border border-white/5 flex flex-col items-center text-center">

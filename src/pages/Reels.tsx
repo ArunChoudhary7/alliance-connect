@@ -100,7 +100,20 @@ export default function Reels() {
   useEffect(() => {
     const observer = new IntersectionObserver(handleIntersection, { threshold: 0.8 });
     document.querySelectorAll('.reel-video-container').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
+
+    // REAL-TIME AURA SYNC: Listen for aura_count updates on the posts table
+    const channel = supabase.channel('reels_sync')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload: any) => {
+        setReels(prev => prev.map(r =>
+          r.id === payload.new.id ? { ...r, aura_count: payload.new.aura_count } : r
+        ));
+      })
+      .subscribe();
+
+    return () => {
+      observer.disconnect();
+      supabase.removeChannel(channel);
+    };
   }, [reels, isMuted, isPaused]);
 
   const handleAura = async (reelId: string, x?: number, y?: number) => {

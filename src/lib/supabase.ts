@@ -437,9 +437,25 @@ export async function toggleAura(userId: string, postId: string) {
 
   if (existing) {
     const { error: delError } = await supabase.from("auras").delete().eq("id", existing.id);
+    if (!delError) {
+      await supabase.rpc('decrement_aura_count', { post_id: postId });
+      // Fallback if RPC doesn't exist
+      const { data: post } = await supabase.from('posts').select('aura_count').eq('id', postId).single();
+      if (post) {
+        await supabase.from('posts').update({ aura_count: Math.max(0, (post.aura_count || 1) - 1) }).eq('id', postId);
+      }
+    }
     return { action: "removed", error: delError };
   } else {
     const { error: insError } = await supabase.from("auras").insert([{ user_id: userId, post_id: postId }]);
+    if (!insError) {
+      await supabase.rpc('increment_aura_count', { post_id: postId });
+      // Fallback if RPC doesn't exist
+      const { data: post } = await supabase.from('posts').select('aura_count').eq('id', postId).single();
+      if (post) {
+        await supabase.from('posts').update({ aura_count: (post.aura_count || 0) + 1 }).eq('id', postId);
+      }
+    }
     return { action: "added", error: insError };
   }
 }
