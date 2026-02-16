@@ -124,16 +124,15 @@ export async function uploadFile(
     // Force resource_type to auto for best compatibility
     formData.append('resource_type', 'auto');
 
-    console.log(`[Storage] Uploading to [${CLOUD_NAME}] Type: ${file.type} (isVideo: ${isVideo})...`);
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
+    console.log(`[Storage] Sending request to: ${uploadUrl}`);
+    console.log(`[Storage] Using Preset: ${UPLOAD_PRESET}, File: ${file.name}, Type: ${file.type}`);
 
-    // 3. Upload to Cloudinary (using 'auto' endpoint for maximum compatibility)
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
+    // 3. Upload to Cloudinary
+    const response = await fetch(uploadUrl, {
+      method: 'POST',
+      body: formData,
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
