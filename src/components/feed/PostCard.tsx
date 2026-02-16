@@ -68,11 +68,19 @@ function CustomVideoPlayer({ src }: { src: string }) {
   };
 
   return (
-    <div ref={containerRef} className="relative group w-full bg-black flex items-center justify-center cursor-pointer" onClick={togglePlay}>
+    <div ref={containerRef} className="relative group w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden aspect-video" onClick={togglePlay}>
+      {/* Dynamic Blurred Backdrop for aspect ratio filling */}
+      <video
+        src={src}
+        className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 grayscale"
+        muted
+        playsInline
+      />
+
       <video
         ref={videoRef}
         src={src}
-        className="w-full max-h-[500px] object-contain"
+        className="relative z-10 w-full h-full object-contain max-h-[500px]"
         playsInline
         muted={isMuted}
         loop

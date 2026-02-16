@@ -40,7 +40,7 @@ export default function SecretRoom() {
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun';
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'koki';
 
   const fetchConfessions = useCallback(async () => {
     // SECURITY FIX: Fetch from 'secure_confessions' view instead of raw table
@@ -180,13 +180,25 @@ export default function SecretRoom() {
     if (!isAdmin || !deletingId) return;
 
     try {
-      const { error } = await supabase.from('confessions').delete().eq('id', deletingId);
+      // Use .select() to verify if the deletion actually happened
+      const { data, error } = await supabase
+        .from('confessions')
+        .delete()
+        .eq('id', deletingId)
+        .select();
+
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        throw new Error("Security Lock: Database blocked deletion. Row still exists. Run the SQL Panic Fix.");
+      }
+
       setConfessions(prev => prev.filter(c => c.id !== deletingId));
-      toast.success("Confession deleted successfully");
+      toast.success("Signal permanently purged from database");
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete confession");
+      console.error("Delete Error:", error);
+      toast.error(error.message || "Failed to delete confession. Check DB permissions.");
+      fetchConfessions(); // Re-fetch to restore UI state
     } finally {
       setDeletingId(null);
     }

@@ -189,16 +189,29 @@ export default function Reels() {
       <div ref={scrollRef} className="h-full w-full max-w-md snap-y snap-mandatory overflow-y-scroll scrollbar-hide bg-zinc-900">
         {reels.map((reel) => (
           <div key={reel.id} id={`reel-${reel.id}`} className="reel-video-container h-full w-full relative snap-start snap-always">
-            <video
-              ref={(el) => el && videoRefs.current.set(reel.id, el)}
-              src={reel.video_url}
-              className="h-full w-full object-cover"
-              loop
-              playsInline
-              muted={isMuted}
-              onClick={() => setIsPaused(!isPaused)}
-              onDoubleClick={(e) => handleAura(reel.id, e.clientX, e.clientY)}
-            />
+            {/* Premium Video Display: Blurred Backdrop + Contained Video */}
+            <div className="absolute inset-0 bg-black flex items-center justify-center overflow-hidden">
+              {/* Blurred Background Layer (Shadow/Fill) */}
+              <video
+                src={reel.video_url}
+                className="absolute inset-0 h-full w-full object-cover blur-3xl opacity-40 scale-150 rotate-3 grayscale"
+                muted
+                playsInline
+                loop
+              />
+
+              {/* Primary Video Layer (No Cut) */}
+              <video
+                ref={(el) => el && videoRefs.current.set(reel.id, el)}
+                src={reel.video_url}
+                className="relative z-10 w-full h-full object-contain"
+                loop
+                playsInline
+                muted={isMuted}
+                onClick={() => setIsPaused(!isPaused)}
+                onDoubleClick={(e) => handleAura(reel.id, e.clientX, e.clientY)}
+              />
+            </div>
             {/* Sidebar & Info Logic */}
             <div className="absolute right-4 bottom-24 flex flex-col gap-6 z-40">
               <div className="flex flex-col items-center gap-1">

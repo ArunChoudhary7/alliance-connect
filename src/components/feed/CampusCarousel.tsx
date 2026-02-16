@@ -17,19 +17,21 @@ export function CampusCarousel() {
   const { profile } = useAuth();
   const [menuData, setMenuData] = useState<any>(null);
   const [topUser, setTopUser] = useState<any>(null);
+  const [latestEvent, setLatestEvent] = useState<any>(null);
 
   const [width, setWidth] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadData = async () => {
-      const [menuRes, rankRes] = await Promise.all([
+      const [menuRes, rankRes, eventRes] = await Promise.all([
         supabase.from('mess_menu').select('lunch, breakfast, snacks, dinner').eq('day_name', 'Today').maybeSingle(),
-        // Matches the new 'aura_leaderboard' view we created
-        supabase.from('aura_leaderboard').select('*').limit(1).maybeSingle()
+        supabase.from('aura_leaderboard').select('*').limit(1).maybeSingle(),
+        supabase.from('events').select('carousel_display_url, cover_url').order('event_date', { ascending: true }).gte('event_date', new Date().toISOString()).limit(1).maybeSingle()
       ]);
       if (menuRes.data) setMenuData(menuRes.data);
       if (rankRes.data) setTopUser(rankRes.data);
+      if (eventRes.data) setLatestEvent(eventRes.data);
     };
     loadData();
   }, []);
@@ -38,38 +40,41 @@ export function CampusCarousel() {
     if (carouselRef.current) {
       setWidth(carouselRef.current.scrollWidth - carouselRef.current.offsetWidth);
     }
-  }, [menuData, topUser]);
+  }, [menuData, topUser, latestEvent]);
 
   const cards = [
     {
       id: 'events',
       title: "Events",
       subtitle: "Campus Life",
-      icon: <Calendar className="h-5 w-5 text-pink-500" />,
+      icon: <Calendar className="h-5 w-5 text-white z-10 relative" />,
       color: "from-pink-500/30 via-pink-500/10 to-transparent",
       borderColor: "border-pink-500/30",
       glow: "shadow-[0_0_20px_rgba(236,72,153,0.15)]",
-      path: "/events"
+      path: "/events",
+      bgImage: latestEvent?.carousel_display_url || latestEvent?.cover_url || "/events.png"
     },
     {
       id: 'mess',
       title: "Mess Menu",
       subtitle: "Alliance Food Court",
-      icon: <UtensilsCrossed className="h-5 w-5 text-orange-500" />,
+      icon: <UtensilsCrossed className="h-5 w-5 text-white z-10 relative" />,
       color: "from-orange-500/30 via-orange-500/10 to-transparent",
       borderColor: "border-orange-500/30",
       glow: "shadow-[0_0_20px_rgba(249,115,22,0.15)]",
-      path: "/mess-menu"
+      path: "/mess-menu",
+      bgImage: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800"
     },
     {
       id: 'duel',
       title: "Aura Rank",
       subtitle: "Campus Duel",
-      icon: <Swords className="h-5 w-5 text-yellow-500" />,
+      icon: <Swords className="h-5 w-5 text-white z-10 relative" />,
       color: "from-yellow-500/30 via-yellow-500/10 to-transparent",
       borderColor: "border-yellow-500/30",
       glow: "shadow-[0_0_20px_rgba(234,179,8,0.15)]",
-      path: "/leaderboard"
+      path: "/leaderboard",
+      bgImage: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&q=80&w=800"
     }
   ];
 
@@ -85,21 +90,35 @@ export function CampusCarousel() {
           <motion.div
             key={card.id}
             whileTap={{ scale: 0.97 }}
-            className={`min-w-[280px] md:min-w-[340px] glass-card p-6 rounded-[2rem] border ${card.borderColor} ${card.glow} bg-gradient-to-br ${card.color} relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]`}
+            className={`min-w-[280px] md:min-w-[340px] glass-card p-6 rounded-[2rem] border ${card.borderColor} ${card.glow} relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${!card.bgImage && `bg-gradient-to-br ${card.color}`}`}
+            style={card.bgImage ? {
+              backgroundImage: `url(${card.bgImage})`,
+              backgroundSize: card.id === 'events' ? '125% auto' : 'cover',
+              backgroundPosition: card.id === 'events' ? 'center 20%' : 'center'
+            } : {}}
             onClick={() => navigate(card.path)}
           >
-            <div className="flex justify-between items-start pointer-events-none">
+            {card.bgImage && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30 z-0" />
+            )}
+            <div className="flex justify-between items-start pointer-events-none relative z-10">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-xl bg-background/50">{card.icon}</div>
-                  <h3 className="text-xl font-bold uppercase tracking-tight">{card.title}</h3>
+                  <h3 className={`text-xl font-bold uppercase tracking-tight ${card.bgImage ? "text-white [text-shadow:_0_1px_10px_rgb(0_0_0_/_60%)]" : ""}`}>
+                    {card.title}
+                  </h3>
                 </div>
-                <p className="text-[9px] font-bold uppercase tracking-widest opacity-40">{card.subtitle}</p>
+                <p className={`text-[9px] font-bold uppercase tracking-widest ${card.bgImage ? "opacity-90 text-white [text-shadow:_0_1px_5px_rgb(0_0_0_/_40%)]" : "opacity-40"}`}>
+                  {card.subtitle}
+                </p>
               </div>
-              <div className="bg-white/10 p-2.5 rounded-2xl shadow-lg"><ArrowRight className="h-4 w-4 text-white" /></div>
+              <div className="bg-white/10 p-2.5 rounded-2xl shadow-lg backdrop-blur-md border border-white/10">
+                <ArrowRight className="h-4 w-4 text-white" />
+              </div>
             </div>
 
-            <div className="mt-4 pointer-events-none min-h-[40px]">
+            <div className="mt-4 pointer-events-none min-h-[40px] relative z-10">
               {card.id === 'mess' && (
                 <div className="space-y-2">
                   <p className="text-[8px] font-black uppercase tracking-widest opacity-30">Coming up next:</p>
@@ -119,17 +138,17 @@ export function CampusCarousel() {
 
               {card.id === 'duel' && (
                 <div className="space-y-2">
-                  <div className="flex justify-between text-[9px] font-bold uppercase">
-                    <span className="opacity-40">Gap to #1</span>
-                    <span className="text-yellow-500">
+                  <div className="flex justify-between text-[9px] font-bold uppercase relative z-10">
+                    <span className={`${card.bgImage ? "text-white opacity-80" : "opacity-40"}`}>Gap to #1</span>
+                    <span className="text-yellow-500 [text-shadow:_0_0_10px_rgba(234,179,8,0.5)]">
                       {Math.max(((topUser?.total_aura || 0) - (profile?.total_aura || 0)), 0)}
                     </span>
                   </div>
-                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden relative z-10 backdrop-blur-sm border border-white/5">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(((profile?.total_aura || 0) / (topUser?.total_aura || 1)) * 100, 100)}%` }}
-                      className="h-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]"
+                      className="h-full bg-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]"
                     />
                   </div>
                 </div>
@@ -139,7 +158,7 @@ export function CampusCarousel() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 w-1.5 rounded-full bg-pink-500 animate-pulse" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-pink-500">
+                    <span className={`text-[9px] font-bold uppercase tracking-widest text-pink-500 ${card.bgImage ? "[text-shadow:_0_1px_4px_rgba(0,0,0,0.5)]" : ""}`}>
                       Don't Miss Out
                     </span>
                   </div>

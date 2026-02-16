@@ -20,6 +20,16 @@ import { getInitials } from "@/lib/utils";
 import { validateMarketplaceListing, sanitizeField, marketplaceLimiter, messageLimiter, isRateLimited } from "@/lib/security";
 import { FeaturedProductCarousel } from "@/components/marketplace/FeaturedProductCarousel";
 import { MarketplaceSkeleton } from "@/components/marketplace/MarketplaceSkeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Listing {
   id: string;
@@ -51,7 +61,7 @@ const CATEGORIES = [
 const COMMISSION_RATE = 2;
 
 export default function Marketplace() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +70,8 @@ export default function Marketplace() {
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'koki';
+  const [deletingListingId, setDeletingListingId] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -175,6 +187,34 @@ export default function Marketplace() {
       toast.error(error.message || 'Failed to create listing');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteListing = async () => {
+    if (!deletingListingId) return;
+
+    try {
+      // Use .select() to verify if the deletion actually happened
+      const { data, error } = await supabase
+        .from('marketplace_listings')
+        .delete()
+        .eq('id', deletingListingId)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error("Security Lock: Database blocked deletion. Run the SQL Panic Fix.");
+      }
+
+      toast.success("Listing obliterated from terminal");
+      setShowDetailDialog(false);
+      setDeletingListingId(null);
+      fetchListings(0);
+    } catch (error: any) {
+      console.error("Delete Error:", error);
+      toast.error(error.message || "Deletion Rejected: DB Policy mismatch.");
+      fetchListings(0);
     }
   };
 
@@ -374,6 +414,16 @@ export default function Marketplace() {
                     </div>
                   </div>
 
+                  {(user?.id === selectedListing.seller_id || isAdmin) && (
+                    <Button
+                      onClick={() => setDeletingListingId(selectedListing.id)}
+                      variant="destructive"
+                      className="w-full h-14 rounded-2xl font-black uppercase tracking-widest bg-red-500/10 text-red-500 border-2 border-red-500/20 hover:bg-red-500 hover:text-white transition-all mb-3"
+                    >
+                      DELETE LISTING
+                    </Button>
+                  )}
+
                   {user?.id !== selectedListing.seller_id && (
                     <div className="grid grid-cols-2 gap-3">
                       <Button onClick={() => handleEnquiry(selectedListing)} variant="outline" className="h-14 rounded-2xl font-black uppercase tracking-widest border-2">CHAT</Button>
@@ -385,6 +435,29 @@ export default function Marketplace() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* DELETE CONFIRMATION DIALOG */}
+        <AlertDialog open={!!deletingListingId} onOpenChange={(open) => !open && setDeletingListingId(null)}>
+          <AlertDialogContent className="glass-card border-white/10">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-black italic uppercase tracking-tighter text-red-500">
+                Purge Listing?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action is permanent. The listing and all associated data will be wiped from the campus marketplace.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl font-bold uppercase tracking-widest text-[10px]">Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteListing}
+                className="bg-red-500 hover:bg-red-600 text-white rounded-xl font-black uppercase tracking-widest text-[10px]"
+              >
+                Permanently Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout >
   );

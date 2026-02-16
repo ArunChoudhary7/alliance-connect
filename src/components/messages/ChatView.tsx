@@ -26,7 +26,8 @@ import { getInitials, cn } from "@/lib/utils";
 import { validateMessage, sanitizeField, messageLimiter, isRateLimited } from "@/lib/security";
 
 export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: any) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'koki';
   const navigate = useNavigate();
 
   const [messages, setMessages] = useState<any[]>([]);
@@ -178,12 +179,34 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
     }
   };
 
-  const deleteMessage = async (id: string) => {
-    const { error } = await supabase.from("direct_messages").delete().eq("id", id).eq("sender_id", user?.id);
-    if (!error) {
-      toast.success("Message deleted");
+  const deleteMessage = async (id: string, senderId: string) => {
+    // Only allow deletion if user is sender OR admin
+    if (senderId !== user?.id && !isAdmin) {
+      toast.error("Restricted Authorization: Signal blocked.");
+      return;
+    }
+
+    try {
+      // Use .select() to verify if the deletion actually happened
+      const { data, error } = await supabase
+        .from("direct_messages")
+        .delete()
+        .eq("id", id)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error("Security Lock: Database blocked deletion. Run the SQL Panic Fix.");
+      }
+
+      toast.success("Message purged from terminal");
       setActiveMessageId(null);
       fetchMessages();
+    } catch (error: any) {
+      console.error("Delete Error:", error);
+      toast.error(error.message || "Failed to delete message. Check DB permissions.");
+      fetchMessages(); // Restore UI state
     }
   };
 
@@ -370,12 +393,12 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                     >
                       <Reply className="w-3 h-3" /> Reply
                     </button>
-                    {isOwn && (
+                    {(isOwn || isAdmin) && (
                       <button
-                        onClick={(e) => { e.stopPropagation(); deleteMessage(message.id); }}
+                        onClick={(e) => { e.stopPropagation(); deleteMessage(message.id, message.sender_id); }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-red-500/20 transition-colors"
                       >
-                        <Trash2 className="w-3 h-3" /> Delete
+                        <Trash2 className="w-3 h-3" /> {isAdmin && !isOwn ? "MOD DELETE" : "Delete"}
                       </button>
                     )}
                   </motion.div>
