@@ -64,7 +64,7 @@ export default function Activity() {
     if (data) {
       const getActorId = (notifData: any) => {
         if (!notifData || typeof notifData !== 'object') return null;
-        return notifData.user_id || notifData.follower_id || notifData.requester_id || notifData.sender_id;
+        return notifData.user_id || notifData.follower_id || notifData.requester_id || notifData.sender_id || notifData.author_id || notifData.actor_id;
       };
 
       const actorIds = data
@@ -393,6 +393,7 @@ export default function Activity() {
       case "message": return { icon: MessageSquare, color: "text-orange-500", bg: "bg-orange-500/20" };
       case "circle_invite": return { icon: Users, color: "text-cyan-500", bg: "bg-cyan-500/20" };
       case "circle_join_request": return { icon: UserPlus, color: "text-amber-500", bg: "bg-amber-500/20" };
+      case "story_like": return { icon: Heart, color: "text-pink-500", bg: "bg-pink-500/20" };
       case "request_accepted": return { icon: Check, color: "text-green-500", bg: "bg-green-500/20" };
       case "system": return { icon: Check, color: "text-blue-500", bg: "bg-blue-500/20" };
       default: return { icon: Bell, color: "text-primary", bg: "bg-primary/20" };
@@ -493,12 +494,19 @@ export default function Activity() {
 
                         <div className="flex-1 min-w-0">
                           <p className="text-sm leading-snug">
-                            {notification.type === 'circle_invite' ? (
+                            {notification.type === 'circle_invite' || notification.type === 'circle_join_request' || notification.type === 'system' ? (
                               <span className="font-medium text-foreground">{notification.body}</span>
                             ) : (
                               <>
-                                <span className="font-semibold">{notification.actor_profile?.full_name || "Someone"}</span>{" "}
-                                <span className="text-muted-foreground">{notification.body?.replace(notification.actor_profile?.full_name || "Someone", "").trim()}</span>
+                                <span className="font-semibold">{notification.actor_profile?.full_name || notification.actor_profile?.username || "Someone"}</span>{" "}
+                                <span className="text-muted-foreground">
+                                  {notification.type === 'follow' ? 'started following you' :
+                                    notification.type === 'follow_request' ? 'wants to follow you' :
+                                      notification.type === 'like' ? 'liked your photo' :
+                                        notification.type === 'story_like' ? 'liked your story' :
+                                          notification.type === 'comment' ? 'commented on your photo' :
+                                            notification.body?.replace(notification.actor_profile?.full_name || "", "").replace(notification.actor_profile?.username || "", "").trim() || 'interacted with you'}
+                                </span>
                               </>
                             )}
                           </p>

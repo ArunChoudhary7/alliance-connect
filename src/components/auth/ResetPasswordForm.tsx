@@ -19,26 +19,38 @@ export function ResetPasswordForm() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check if we are in a recovery flow from the URL
-    const isRecovery = window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery');
+  const [isVerifying, setIsVerifying] = useState(true);
 
-    // If auth is done loading and no user is found
-    if (!authLoading) {
-      if (!user) {
-        // If it was supposed to be a recovery but user is null, it's likely expired or invalid
-        if (isRecovery) {
-          setError("Your reset link has expired or is invalid. Please request a new one.");
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      // Check if we are in a recovery flow
+      const isRecovery = window.location.hash.includes('type=recovery') ||
+        window.location.search.includes('type=recovery') ||
+        window.location.hash.includes('access_token=');
+
+      if (!authLoading) {
+        if (user) {
+          setError(null);
+          setIsVerifying(false);
         } else {
-          // If they land here without a recovery link, they shouldn't be able to reset
-          setError("Invalid access. Please use the reset link sent to your email.");
+          // If no user yet, let's wait a second to see if Supabase picks up the session from hash
+          if (isRecovery) {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              setError(null);
+            } else {
+              // Final check: if still no user, it might be expired
+              setError("Your reset link has expired or is invalid. Please request a new one.");
+            }
+          } else {
+            setError("Invalid access. Please use the reset link sent to your email.");
+          }
+          setIsVerifying(false);
         }
-      } else {
-        // User found! Clear any previous errors
-        setError(null);
       }
-    }
+    };
+
+    checkAuthStatus();
   }, [authLoading, user]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -77,6 +89,15 @@ export function ResetPasswordForm() {
       setLoading(false);
     }
   };
+
+  if (isVerifying) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-black/40 backdrop-blur-xl rounded-[2rem] border border-white/5">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-xs font-bold uppercase tracking-widest opacity-50">Synchronizing Signal...</p>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -170,8 +191,8 @@ export function ResetPasswordForm() {
 
           <Button
             type="submit"
-            disabled={loading || !!error}
-            className="w-full h-12 rounded-xl bg-gradient-primary font-semibold"
+            disabled={loading || !!error || isVerifying}
+            className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 font-bold uppercase tracking-widest text-white shadow-lg shadow-orange-500/20"
           >
             {loading ? (
               <Loader2 className="h-5 w-5 animate-spin" />

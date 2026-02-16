@@ -47,10 +47,14 @@ function RecoveryRedirect() {
   const location = useLocation();
 
   useEffect(() => {
-    // If we land on home (or anywhere else) but have a recovery hash, 
-    // redirect to the actual reset-password page.
-    if (window.location.hash.includes('type=recovery') && location.pathname !== '/reset-password') {
-      navigate('/reset-password' + window.location.hash, { replace: true });
+    // Check both hash and search for recovery type
+    const isRecovery = window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery') ||
+      window.location.hash.includes('access_token=');
+
+    if (isRecovery && location.pathname !== '/reset-password') {
+      const recoveryData = window.location.hash || window.location.search;
+      navigate('/reset-password' + recoveryData, { replace: true });
     }
   }, [navigate, location]);
 

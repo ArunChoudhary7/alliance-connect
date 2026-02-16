@@ -74,7 +74,8 @@ export default function CircleDetail() {
     const init = async () => {
       if (user) {
         const { data } = await supabase.from('circle_members').select('role').eq('circle_id', id).eq('user_id', user.id).single();
-        setIsMember(!!data); setUserRole(data?.role || null);
+        setIsMember(!!data);
+        setUserRole(data?.role || null);
       }
       await fetchData();
       setLoading(false);
@@ -180,6 +181,32 @@ export default function CircleDetail() {
   };
 
   if (loading) return <AppLayout><div className="flex justify-center py-20"><Loader2 className="animate-spin" /></div></AppLayout>;
+
+  // Privacy Check: Restricted access to private circles for non-members (unless global admin)
+  const isGlobalAdmin = profile?.role === 'admin' || profile?.role === 'developer';
+  const canAccess = !circle?.is_private || isMember || isGlobalAdmin;
+
+  if (!canAccess) {
+    return (
+      <AppLayout>
+        <div className="max-w-md mx-auto flex flex-col items-center justify-center h-[70vh] text-center px-6">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+            <Lock className="h-10 w-10 text-primary" />
+          </div>
+          <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-2">Private Circle</h2>
+          <p className="text-muted-foreground text-sm font-medium mb-8">
+            This circle is protected. You must be a member to see the messages and media shared here.
+          </p>
+          <Button
+            onClick={() => navigate('/circles')}
+            className="rounded-full px-8 bg-primary text-black font-black uppercase tracking-wider hover:scale-105 transition-all"
+          >
+            Back to Discovery
+          </Button>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

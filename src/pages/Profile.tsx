@@ -264,9 +264,32 @@ export default function Profile() {
         navigate("/auth");
       } else {
         fetchData();
+
+        // Realtime subscription for the target profile
+        if (profile?.user_id) {
+          const channel = supabase
+            .channel(`profile_changes_${profile.user_id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'profiles',
+                filter: `user_id=eq.${profile.user_id}`
+              },
+              (payload) => {
+                setProfile((prev: any) => ({ ...prev, ...payload.new }));
+              }
+            )
+            .subscribe();
+
+          return () => {
+            supabase.removeChannel(channel);
+          };
+        }
       }
     }
-  }, [user, authLoading, username, currentUserProfile]);
+  }, [user, authLoading, username, currentUserProfile, profile?.user_id]);
 
   if (loading || authLoading) return <AppLayout><ProfileSkeleton /></AppLayout>;
   if (!profile || isBlockedByThem) return <AppLayout><div className="flex flex-col items-center justify-center min-h-[60vh] text-center py-20"><ShieldOff className="h-16 w-16 mb-4 opacity-10" /><p className="uppercase font-black italic opacity-20">User Not Found</p></div></AppLayout>;
@@ -401,7 +424,7 @@ export default function Profile() {
                         }
 
                         toast.success(newStatus ? "User Verified" : "Verification Removed");
-                        fetchData();
+                        // fetchData(); // Subscription will handle the state sync reliably now
                       }}
                       className={cn("rounded-2xl h-11 w-11 text-white border border-white/10", profile.is_verified ? "bg-red-500/20 text-red-500" : "bg-emerald-500/20 text-emerald-500")}
                     >

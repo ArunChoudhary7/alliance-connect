@@ -1,17 +1,8 @@
 import { BadgeCheck, GraduationCap, Medal, Star, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type BadgeType = "developer" | "professor" | "scholar" | "verified" | "none";
-
-// Mock implementation - Replace with DB query or role check later
-const SPECIAL_ROLES: Record<string, BadgeType> = {
-    // Add specific User IDs or usernames here
-    "shlok": "developer",
-    "ateef": "developer",
-    "kartikaygour": "developer",
-    "areef": "developer", // Fallback for the user mention
-    "koki": "developer",
-};
+// Roles for display logic
+const DEV_ROLES = ['admin', 'developer', 'staff', 'mod', 'moderator'];
 
 interface UserBadgeProps {
     userId?: string;
@@ -22,6 +13,8 @@ interface UserBadgeProps {
     verificationExpiry?: string;
     className?: string;
 }
+
+export type BadgeType = "developer" | "professor" | "scholar" | "verified" | "none";
 
 export function UserBadge({ userId, username, role, isVerified, verifiedTitle, verificationExpiry, className }: UserBadgeProps) {
     // Determine badge type
@@ -34,16 +27,12 @@ export function UserBadge({ userId, username, role, isVerified, verifiedTitle, v
     if (isVerificationValid) {
         badgeType = "verified";
         badgeTitleStr = verifiedTitle || "Verified";
-    } else if (role === "admin" || role === "developer") {
+    } else if (role && DEV_ROLES.includes(role.toLowerCase())) {
         badgeType = "developer";
     } else if (role === "professor") {
         badgeType = "professor";
     } else if (role === "special_student" || role === "scholar") {
         badgeType = "scholar";
-    } else if (userId && SPECIAL_ROLES[userId]) {
-        badgeType = SPECIAL_ROLES[userId];
-    } else if (username && SPECIAL_ROLES[username.toLowerCase()]) {
-        badgeType = SPECIAL_ROLES[username.toLowerCase()];
     }
 
     if (badgeType === "none") return null;

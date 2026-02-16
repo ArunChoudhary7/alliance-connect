@@ -46,7 +46,9 @@ export function CampusCarousel() {
       title: "Events",
       subtitle: "Campus Life",
       icon: <Calendar className="h-5 w-5 text-pink-500" />,
-      color: "from-pink-500/20 to-pink-500/5",
+      color: "from-pink-500/30 via-pink-500/10 to-transparent",
+      borderColor: "border-pink-500/30",
+      glow: "shadow-[0_0_20px_rgba(236,72,153,0.15)]",
       path: "/events"
     },
     {
@@ -54,7 +56,9 @@ export function CampusCarousel() {
       title: "Mess Menu",
       subtitle: "Alliance Food Court",
       icon: <UtensilsCrossed className="h-5 w-5 text-orange-500" />,
-      color: "from-orange-500/20 to-orange-500/5",
+      color: "from-orange-500/30 via-orange-500/10 to-transparent",
+      borderColor: "border-orange-500/30",
+      glow: "shadow-[0_0_20px_rgba(249,115,22,0.15)]",
       path: "/mess-menu"
     },
     {
@@ -62,7 +66,9 @@ export function CampusCarousel() {
       title: "Aura Rank",
       subtitle: "Campus Duel",
       icon: <Swords className="h-5 w-5 text-yellow-500" />,
-      color: "from-yellow-500/20 to-yellow-500/5",
+      color: "from-yellow-500/30 via-yellow-500/10 to-transparent",
+      borderColor: "border-yellow-500/30",
+      glow: "shadow-[0_0_20px_rgba(234,179,8,0.15)]",
       path: "/leaderboard"
     }
   ];
@@ -79,7 +85,7 @@ export function CampusCarousel() {
           <motion.div
             key={card.id}
             whileTap={{ scale: 0.97 }}
-            className={`min-w-[280px] md:min-w-[340px] glass-card p-6 rounded-[2rem] border-none shadow-xl bg-gradient-to-br ${card.color} relative overflow-hidden`}
+            className={`min-w-[280px] md:min-w-[340px] glass-card p-6 rounded-[2rem] border ${card.borderColor} ${card.glow} bg-gradient-to-br ${card.color} relative overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]`}
             onClick={() => navigate(card.path)}
           >
             <div className="flex justify-between items-start pointer-events-none">

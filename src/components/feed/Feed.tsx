@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Loader2, AlertCircle, RefreshCw, Sparkles } from "lucide-react";
 import { getPosts, supabase } from "@/lib/supabase";
 import { PostCard } from "./PostCard";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from "framer-motion";
 export function Feed() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedPostId = searchParams.get("post");
 
@@ -67,12 +68,29 @@ export function Feed() {
       )}
 
       {posts.length === 0 ? (
-        <div className="text-center py-12 glass-card rounded-[2rem] border border-white/5">
-          <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-          <p className="text-muted-foreground font-medium">No posts found</p>
-          <Button variant="link" onClick={fetchFeed} className="mt-2 theme-text font-bold uppercase text-[10px] tracking-widest">
-            <RefreshCw className="mr-2 h-4 w-4" /> Refresh Feed
-          </Button>
+        <div className="text-center py-16 px-6 glass-card rounded-[3rem] border border-white/5 bg-gradient-to-b from-white/[0.02] to-transparent">
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="h-10 w-10 text-primary animate-pulse" />
+          </div>
+          <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-2">Welcome to the Network</h2>
+          <p className="text-muted-foreground text-sm font-medium mb-8 max-w-xs mx-auto">
+            Your feed is looking a bit quiet. Start by setting up your profile or follow some users to see what's happening.
+          </p>
+          <div className="flex flex-col gap-3 max-w-xs mx-auto">
+            <Button
+              onClick={() => navigate('/profile?edit=true')}
+              className="rounded-full h-12 bg-primary text-black font-black uppercase tracking-wider hover:scale-105 transition-all shadow-[0_0_20px_rgba(var(--primary),0.3)]"
+            >
+              Setup Your Profile
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={fetchFeed}
+              className="rounded-full h-12 text-muted-foreground font-bold uppercase text-[10px] tracking-widest hover:bg-white/5"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh Feed
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col">

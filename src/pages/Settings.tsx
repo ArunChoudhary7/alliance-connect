@@ -145,10 +145,10 @@ export default function Settings() {
   };
 
   const developers = [
-    "Arun Choudhary",
     "Ateef Ameer Shaikh",
     "Kartikay Gour",
-    "Shlok SB"
+    "Shlok SB",
+    "Arun Choudhary"
   ];
 
   const [reportText, setReportText] = useState("");
