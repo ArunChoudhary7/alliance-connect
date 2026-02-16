@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Flag, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, Flag, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 
@@ -17,6 +17,8 @@ interface ConfessionCardProps {
   onToggleAura: (id: string) => void;
   onComment: (id: string) => void;
   onReport: (id: string) => void;
+  onDelete?: (id: string) => void;
+  isAdmin?: boolean;
 }
 
 export function ConfessionCard({
@@ -24,7 +26,9 @@ export function ConfessionCard({
   hasAura,
   onToggleAura,
   onComment,
-  onReport
+  onReport,
+  onDelete,
+  isAdmin
 }: ConfessionCardProps) {
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -38,11 +42,10 @@ export function ConfessionCard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative p-4 rounded-2xl ${
-        confession.is_highlighted
-          ? 'bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 border border-primary/30'
-          : 'glass-card'
-      }`}
+      className={`relative p-4 rounded-2xl ${confession.is_highlighted
+        ? 'bg-gradient-to-br from-primary/20 via-accent/20 to-secondary/20 border border-primary/30'
+        : 'glass-card'
+        }`}
     >
       {confession.is_highlighted && (
         <div className="absolute -top-3 left-4 px-3 py-1 rounded-full bg-gradient-primary text-primary-foreground text-xs font-medium flex items-center gap-1">
@@ -77,11 +80,10 @@ export function ConfessionCard({
           >
             <motion.div
               animate={isAnimating ? { scale: [1, 1.3, 1] } : {}}
-              className={`p-1.5 rounded-full transition-colors ${
-                hasAura 
-                  ? 'bg-pink-500/20 text-pink-500' 
-                  : 'bg-secondary/50 text-muted-foreground group-hover:text-pink-500'
-              }`}
+              className={`p-1.5 rounded-full transition-colors ${hasAura
+                ? 'bg-pink-500/20 text-pink-500'
+                : 'bg-secondary/50 text-muted-foreground group-hover:text-pink-500'
+                }`}
             >
               <Heart className={`h-4 w-4 ${hasAura ? 'fill-current' : ''}`} />
             </motion.div>
@@ -101,14 +103,27 @@ export function ConfessionCard({
           </button>
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onReport(confession.id)}
-          className="text-muted-foreground hover:text-destructive"
-        >
-          <Flag className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onReport(confession.id)}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Flag className="h-4 w-4" />
+          </Button>
+
+          {isAdmin && onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(confession.id)}
+              className="text-muted-foreground hover:text-red-500"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
     </motion.div>
   );

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getSiteUrl } from "@/lib/supabase";
 
 
 interface PostOptionsMenuProps {
@@ -63,7 +64,7 @@ export function PostOptionsMenu({
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/post/${postId}`;
+    const url = `${getSiteUrl()}/post/${postId}`;
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Link copied to clipboard!");

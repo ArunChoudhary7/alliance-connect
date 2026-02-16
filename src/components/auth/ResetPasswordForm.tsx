@@ -20,9 +20,24 @@ export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // If auth is done loading and no user is found, it's likely an invalid link
-    if (!authLoading && !user) {
-      setError("Invalid or expired reset link. Please request a new one.");
+    // Check if we are in a recovery flow from the URL
+    const isRecovery = window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery');
+
+    // If auth is done loading and no user is found
+    if (!authLoading) {
+      if (!user) {
+        // If it was supposed to be a recovery but user is null, it's likely expired or invalid
+        if (isRecovery) {
+          setError("Your reset link has expired or is invalid. Please request a new one.");
+        } else {
+          // If they land here without a recovery link, they shouldn't be able to reset
+          setError("Invalid access. Please use the reset link sent to your email.");
+        }
+      } else {
+        // User found! Clear any previous errors
+        setError(null);
+      }
     }
   }, [authLoading, user]);
 

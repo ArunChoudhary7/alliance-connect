@@ -25,6 +25,13 @@ export function isValidAllianceEmail(email: string): boolean {
   return email.toLowerCase().endsWith(ALLOWED_DOMAIN) || email.toLowerCase() === "arunc0799@gmail.com";
 }
 
+// Helper to get the correct site URL for redirects (production vs local)
+export function getSiteUrl() {
+  const siteUrl = import.meta.env.VITE_SITE_URL;
+  if (siteUrl) return siteUrl.endsWith('/') ? siteUrl.slice(0, -1) : siteUrl;
+  return window.location.origin;
+}
+
 // ============================================================
 // AUTH FUNCTIONS (Rate limited + Validated)
 // ============================================================
@@ -48,7 +55,7 @@ export async function signUp(email: string, password: string) {
     return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
   }
 
-  const redirectUrl = `${window.location.origin}/verify-email`;
+  const redirectUrl = `${getSiteUrl()}/verify-email`;
   const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,

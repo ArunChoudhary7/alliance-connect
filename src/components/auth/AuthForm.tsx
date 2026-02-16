@@ -50,6 +50,8 @@ export function AuthForm() {
             setError("Invalid email or password");
           } else if (error.message.includes("Email not confirmed")) {
             setError("Please verify your email before signing in");
+          } else if (error.message.includes("rate limit")) {
+            setError("Too many attempts. Please wait 1 hour before trying again.");
           } else {
             setError(error.message);
           }
@@ -61,6 +63,8 @@ export function AuthForm() {
         if (error) {
           if (error.message.includes("already registered")) {
             setError("This email is already registered. Try logging in.");
+          } else if (error.message.includes("rate limit")) {
+            setError("Email rate limit exceeded. Please wait 1 hour before trying again.");
           } else {
             setError(error.message);
           }

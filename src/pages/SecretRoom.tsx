@@ -31,19 +31,22 @@ interface Confession {
 }
 
 export default function SecretRoom() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [userAuras, setUserAuras] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedConfessionId, setSelectedConfessionId] = useState<string | null>(null);
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun';
 
   const fetchConfessions = useCallback(async () => {
     // SECURITY FIX: Fetch from 'secure_confessions' view instead of raw table
     // This ensures user_id is NULL for anonymous posts at the database level
     const { data, error } = await supabase
-      .from('secure_confessions') 
+      .from('secure_confessions')
       .select('id, content, aura_count, comments_count, is_highlighted, created_at, user_id')
       .order('created_at', { ascending: false });
 
@@ -173,6 +176,22 @@ export default function SecretRoom() {
     toast.success("Confession posted anonymously!");
   };
 
+  const handleDeleteConfession = async () => {
+    if (!isAdmin || !deletingId) return;
+
+    try {
+      const { error } = await supabase.from('confessions').delete().eq('id', deletingId);
+      if (error) throw error;
+
+      setConfessions(prev => prev.filter(c => c.id !== deletingId));
+      toast.success("Confession deleted successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete confession");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -238,6 +257,8 @@ export default function SecretRoom() {
                   onToggleAura={() => handleToggleAura(confession.id)}
                   onComment={() => setSelectedConfessionId(confession.id)}
                   onReport={() => setReportingId(confession.id)}
+                  onDelete={() => setDeletingId(confession.id)}
+                  isAdmin={isAdmin}
                 />
               </motion.div>
             ))
@@ -269,6 +290,27 @@ export default function SecretRoom() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleReport} className="bg-destructive text-destructive-foreground">
               Report
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete dialog */}
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <AlertDialogContent className="glass-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-500">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Confession
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete this confession? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfession} className="bg-red-500 text-white hover:bg-red-600">
+              Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

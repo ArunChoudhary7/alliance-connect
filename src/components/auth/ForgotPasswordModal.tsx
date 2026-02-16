@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { ALLOWED_DOMAIN, isValidAllianceEmail } from "@/lib/supabase";
+import { ALLOWED_DOMAIN, isValidAllianceEmail, getSiteUrl } from "@/lib/supabase";
 import { toast } from "sonner";
 
 interface ForgotPasswordModalProps {
@@ -42,13 +42,19 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${getSiteUrl()}/reset-password`,
       });
 
-      if (error) throw error;
-
-      setStep("sent");
-      toast.success("Password reset email sent!");
+      if (error) {
+        if (error.message.includes("rate limit")) {
+          setError("Email rate limit exceeded. Please wait 1 hour before trying again.");
+        } else {
+          throw error;
+        }
+      } else {
+        setStep("sent");
+        toast.success("Password reset email sent!");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to send reset email");
     } finally {
