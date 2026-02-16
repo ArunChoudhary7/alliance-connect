@@ -9,6 +9,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { SettingsProvider } from "@/hooks/useSettings";
 import { ThemeProvider } from "@/theme/themeProvider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Lazy Loaded Pages for Production Performance
 const MessMenuPage = lazy(() => import("./pages/MessMenuPage"));
@@ -40,6 +42,21 @@ const PostDetails = lazy(() => import("./pages/PostDetails"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 
+function RecoveryRedirect() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // If we land on home (or anywhere else) but have a recovery hash, 
+    // redirect to the actual reset-password page.
+    if (window.location.hash.includes('type=recovery') && location.pathname !== '/reset-password') {
+      navigate('/reset-password' + window.location.hash, { replace: true });
+    }
+  }, [navigate, location]);
+
+  return null;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -61,6 +78,7 @@ export default function App() {
             <Sonner />
             <BrowserRouter>
               <AuthProvider>
+                <RecoveryRedirect />
                 <SettingsProvider>
                   <Suspense fallback={
                     <div className="min-h-screen w-full flex items-center justify-center">
