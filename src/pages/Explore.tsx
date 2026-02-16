@@ -144,7 +144,7 @@ export default function Explore() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-[2rem] flex items-center gap-4 border border-white/5 shadow-xl transition-colors backdrop-blur-sm ${u.campus_rank <= 3 ? 'bg-primary/5' : 'bg-white/5'} hover:bg-white/10`}>
                   <div className="w-10 flex justify-center">{getRankIcon(u.campus_rank)}</div>
                   <Avatar className="h-12 w-12 border-2 border-background shadow-lg"><AvatarImage src={u.avatar_url} /><AvatarFallback className="font-black bg-white/10 uppercase">{u.username?.[0]}</AvatarFallback></Avatar>
-                  <div className="flex-1"><h4 className="font-black uppercase italic tracking-tighter text-sm text-foreground">{u.full_name}</h4><p className="text-[9px] font-black uppercase theme-text tracking-widest mt-1">{u.department || 'Alliance Student'}</p></div>
+                  <div className="flex-1"><h4 className="font-black uppercase italic tracking-tighter text-sm text-foreground">{u.full_name}</h4><p className="text-[9px] font-black uppercase theme-text tracking-widest mt-1">{u.department || ''}</p></div>
                   <div className="text-right"><div className="flex items-center gap-1 justify-end font-black italic text-lg leading-none text-foreground"><Star className="h-4 w-4 theme-text fill-current" /> {u.total_aura}</div></div>
                 </motion.div>
               </Link>

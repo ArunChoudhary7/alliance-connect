@@ -241,7 +241,7 @@ export default function Marketplace() {
             <DialogContent className="glass-card border-white/10 max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="gradient-text font-black uppercase">Create Listing</DialogTitle>
-                <DialogDescription className="text-xs">2% commission applies on successful sales.</DialogDescription>
+                <DialogDescription className="text-xs">Post your item for sale.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>

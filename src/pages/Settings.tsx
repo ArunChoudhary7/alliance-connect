@@ -145,6 +145,7 @@ export default function Settings() {
   };
 
   const developers = [
+    "Arun Choudhary",
     "Ateef Ameer Shaikh",
     "Kartikay Gour",
     "Shlok SB"
@@ -496,7 +497,7 @@ export default function Settings() {
             </p>
 
             <div className="px-6">
-              <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-6 text-center">Architects</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-primary mb-6 text-center">Developers</h3>
               <div className="space-y-3">
                 {developers.map((dev, i) => (
                   <div key={i} className="p-4 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-4">

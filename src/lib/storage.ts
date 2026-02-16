@@ -125,8 +125,11 @@ export async function uploadFile(
     formData.append('resource_type', 'auto');
 
     const uploadUrl = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`;
-    console.log(`[Storage] Sending request to: ${uploadUrl}`);
-    console.log(`[Storage] Using Preset: ${UPLOAD_PRESET}, File: ${file.name}, Type: ${file.type}`);
+    console.log(`[Storage] ---------------------------------------------------`);
+    console.log(`[Storage] DEBUG: Uploading to Cloud Name: "${CLOUD_NAME}"`);
+    console.log(`[Storage] DEBUG: Using Upload Preset: "${UPLOAD_PRESET}"`);
+    console.log(`[Storage] DEBUG: File: ${file.name}, Type: ${file.type}`);
+    console.log(`[Storage] ---------------------------------------------------`);
 
     // 3. Upload to Cloudinary
     const response = await fetch(uploadUrl, {

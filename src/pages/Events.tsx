@@ -27,7 +27,7 @@ interface Event {
 }
 
 export default function Events() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -194,63 +194,65 @@ export default function Events() {
                 }
               />
 
-              <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                <DialogTrigger asChild>
-                  <Button className="h-12 px-6 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 border-none font-black uppercase tracking-widest shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-1 w-full sm:w-auto">
-                    <Plus className="h-5 w-5 mr-2" />
-                    Host Event
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="glass-card border-white/10 sm:max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter gradient-text">Broadcast Event</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 mt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Event Title</Label>
-                        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="super-input bg-black/40 border-white/10" placeholder="MEGA EVENT 2024" />
-                      </div>
-                      <div className="col-span-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Description</Label>
-                        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="super-input bg-black/40 border-white/10 min-h-[100px]" placeholder="What's happening?" />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Location</Label>
-                        <Input value={location} onChange={(e) => setLocation(e.target.value)} className="super-input bg-black/40 border-white/10" placeholder="Audi 1" />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Date & Time</Label>
-                        <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="super-input bg-black/40 border-white/10" />
-                      </div>
-                      <div className="col-span-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Event Poster (Required)</Label>
-                        <div className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer hover:bg-white/5 transition-colors relative group">
-                          <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
-                          <div className="flex flex-col items-center gap-2">
-                            {file ? (
-                              <>
-                                <span className="text-xs font-bold text-green-400">{file.name}</span>
-                                <div className="h-32 w-full max-w-[200px] overflow-hidden rounded-lg mt-2">
-                                  <img src={URL.createObjectURL(file)} className="h-full w-full object-cover" />
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <Upload className="h-6 w-6 opacity-40 group-hover:scale-110 transition-transform" />
-                                <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Click to Upload Poster</span>
-                              </>
-                            )}
+              {(user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'arun' || profile?.username === 'koki' || profile?.role === 'admin') && (
+                <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                  <DialogTrigger asChild>
+                    <Button className="h-12 px-6 rounded-2xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 border-none font-black uppercase tracking-widest shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:shadow-[0_0_30px_rgba(236,72,153,0.5)] transition-all transform hover:-translate-y-1 w-full sm:w-auto">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Host Event
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="glass-card border-white/10 sm:max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter gradient-text">Broadcast Event</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Event Title</Label>
+                          <Input value={title} onChange={(e) => setTitle(e.target.value)} className="super-input bg-black/40 border-white/10" placeholder="MEGA EVENT 2024" />
+                        </div>
+                        <div className="col-span-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Description</Label>
+                          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="super-input bg-black/40 border-white/10 min-h-[100px]" placeholder="What's happening?" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Location</Label>
+                          <Input value={location} onChange={(e) => setLocation(e.target.value)} className="super-input bg-black/40 border-white/10" placeholder="Audi 1" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Date & Time</Label>
+                          <Input type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="super-input bg-black/40 border-white/10" />
+                        </div>
+                        <div className="col-span-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest opacity-60">Event Poster (Required)</Label>
+                          <div className="border-2 border-dashed border-white/10 rounded-xl p-4 text-center cursor-pointer hover:bg-white/5 transition-colors relative group">
+                            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            <div className="flex flex-col items-center gap-2">
+                              {file ? (
+                                <>
+                                  <span className="text-xs font-bold text-green-400">{file.name}</span>
+                                  <div className="h-32 w-full max-w-[200px] overflow-hidden rounded-lg mt-2">
+                                    <img src={URL.createObjectURL(file)} className="h-full w-full object-cover" />
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-6 w-6 opacity-40 group-hover:scale-110 transition-transform" />
+                                  <span className="text-xs font-bold opacity-40 uppercase tracking-widest">Click to Upload Poster</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
+                      <Button onClick={handleCreate} disabled={creating} className="w-full h-12 rounded-xl font-black uppercase tracking-widest bg-white text-black hover:bg-white/90">
+                        {creating ? "Broadcasting..." : "Launch Event"}
+                      </Button>
                     </div>
-                    <Button onClick={handleCreate} disabled={creating} className="w-full h-12 rounded-xl font-black uppercase tracking-widest bg-white text-black hover:bg-white/90">
-                      {creating ? "Broadcasting..." : "Launch Event"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
 
