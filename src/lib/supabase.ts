@@ -505,4 +505,17 @@ export async function getBlockedUsers(userId: string) {
   return await supabase.from("blocks").select("blocked_id, profiles!blocked_id(*)").eq("blocker_id", userId);
 }
 
+export async function createEvent(event: {
+  title: string;
+  description?: string;
+  location?: string;
+  event_date: string;
+  cover_url: string;
+  created_by: string;
+}) {
+  const { data, error } = await supabase.from('events').insert([event]).select().single();
+  if (error) return { data: null, error: { ...error, message: `[Supabase] ${error.message}` } };
+  return { data, error };
+}
+
 export { supabase };

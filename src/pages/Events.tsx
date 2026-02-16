@@ -4,6 +4,7 @@ import { Plus, Calendar, MapPin, X, Upload, Sparkles, Trash2, Radio } from "luci
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { createEvent } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -105,7 +106,7 @@ export default function Events() {
 
       const uploadToast = toast.loading("Broadcasting Event...");
       // 2. Insert Event (sanitized)
-      const { error: dbError } = await supabase.from('events').insert({
+      const { error: dbError } = await createEvent({
         title: sanitizeField(title.trim(), 200),
         description: sanitizeField(description.trim(), 2000),
         location: sanitizeField(location.trim(), 200),

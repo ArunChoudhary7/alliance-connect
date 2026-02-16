@@ -11,12 +11,16 @@ export type BucketName = 'avatars' | 'covers' | 'posts' | 'stories' | 'marketpla
  * to "unsigned" with strict allowed file types and size limits configured
  * in the Cloudinary dashboard.
  */
+// ⚠️ HARDCODED DEFAULTS: Use these if ENV vars are missing or invalid (dq9kqhji0 / alliance_preset)
+const DEFAULT_CLOUD = "dq9kqhji0";
+const DEFAULT_PRESET = "alliance_preset";
+
 const CLOUD_NAME = (import.meta.env.VITE_CLOUDINARY_CLOUD_NAME && import.meta.env.VITE_CLOUDINARY_CLOUD_NAME !== "undefined")
   ? import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-  : "dq9kqhji0";
+  : DEFAULT_CLOUD;
 const UPLOAD_PRESET = (import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET && import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET !== "undefined")
   ? import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-  : "alliance_preset";
+  : DEFAULT_PRESET;
 
 /** Max file size: 100MB (Support for high-quality videos) */
 const MAX_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
@@ -114,14 +118,17 @@ export async function uploadFile(
     formData.append('upload_preset', UPLOAD_PRESET);
     formData.append('tags', bucket);
 
-    // Explicitly set resource_type for videos (Improved detection for mobile)
+    // Determine if it's a video (Improved detection for mobile)
     const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|quicktime|m4v)$/i.test(file.name);
 
-    console.log(`[Storage] Uploading to Cloudinary [${CLOUD_NAME}] - Bucket: ${bucket}, isVideo: ${isVideo}...`);
+    // Force resource_type to auto for best compatibility
+    formData.append('resource_type', 'auto');
 
-    // 3. Upload to Cloudinary
+    console.log(`[Storage] Uploading to [${CLOUD_NAME}] Type: ${file.type} (isVideo: ${isVideo})...`);
+
+    // 3. Upload to Cloudinary (using 'auto' endpoint for maximum compatibility)
     const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${isVideo ? 'video' : 'image'}/upload`,
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
       {
         method: 'POST',
         body: formData,

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
+import { updateProfile } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Loader2, Palette, Lock, Globe, Image as ImageIcon, Upload, Camera, Link as LinkIcon, RotateCw, ZoomIn, Check, X } from "lucide-react";
 import { uploadFile } from "@/lib/storage";
@@ -122,19 +123,16 @@ export function EditProfileModal({ open, onOpenChange, profile, onProfileUpdated
 
       const theme_config = { accent: accentColor, background: bgStyle, aura: "glow" };
       console.log("[ProfileUpdate] Updating Supabase profile...");
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          username,
-          full_name: fullName,
-          bio,
-          website,
-          is_private: isPrivate,
-          theme_config,
-          avatar_url,
-          cover_url
-        })
-        .eq('user_id', profile.user_id);
+      const { error: updateError } = await updateProfile(profile.user_id, {
+        username,
+        full_name: fullName,
+        bio,
+        website,
+        is_private: isPrivate,
+        theme_config,
+        avatar_url,
+        cover_url
+      });
 
       if (updateError) throw updateError;
 
