@@ -104,8 +104,19 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
 
   const handleCameraCapture = (file: File) => {
     setMediaFile(file);
-    setMediaPreview(URL.createObjectURL(file));
+    const url = URL.createObjectURL(file);
+    setMediaPreview(url);
     setStoryType('media');
+
+    // Auto-detect duration for videos (if camera supports video capture in future)
+    if (file.type.startsWith('video')) {
+      const vid = document.createElement('video');
+      vid.src = url;
+      vid.onloadedmetadata = () => {
+        const dur = Math.min(Math.ceil(vid.duration), 60);
+        setDuration([dur]);
+      };
+    }
   };
 
   const handleSearchUsers = async (query: string) => {
@@ -165,8 +176,21 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
     const file = e.target.files?.[0];
     if (file) {
       setMediaFile(file);
-      setMediaPreview(URL.createObjectURL(file));
+      const url = URL.createObjectURL(file);
+      setMediaPreview(url);
       setStoryType('media');
+
+      // Auto-detect duration for videos
+      if (file.type.startsWith('video')) {
+        const vid = document.createElement('video');
+        vid.src = url;
+        vid.onloadedmetadata = () => {
+          const dur = Math.min(Math.ceil(vid.duration), 60); // Cap at 60s as per request
+          setDuration([dur]);
+        };
+      } else {
+        setDuration([10]); // Default 10s for images
+      }
     }
   };
 
@@ -256,10 +280,10 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
 
             <motion.div
               drag
-              dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
+              dragMomentum={false} // Stops it from sliding after let go
               style={{ scale: scale[0] }}
               className={cn(
-                "relative flex items-center justify-center bg-transparent transition-all duration-500",
+                "relative flex items-center justify-center bg-transparent", // Removed transition-all to prevent lag/drift
                 isReshare ? "w-[85%] h-[60%] rounded-[28px] overflow-hidden border border-white/10 shadow-2xl" : "w-full h-full"
               )}
             >
@@ -339,7 +363,22 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
       {(storyType === 'media' || isReshare) && !showMentionSearch && (
         <div className="absolute bottom-24 left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-2xl p-4 space-y-4 border border-white/10 animate-in slide-in-from-bottom-10">
           <div className="flex items-center gap-4"><ZoomIn className="text-white h-5 w-5" /><Slider value={scale} onValueChange={setScale} min={0.5} max={1.5} step={0.05} className="flex-1 py-4" /></div>
-          {!isVideo && <div className="flex items-center gap-4"><Clock className="text-white h-5 w-5" /><Slider value={duration} onValueChange={setDuration} min={3} max={15} step={1} className="flex-1 py-4" /><span className="text-white text-xs font-bold w-8">{duration}s</span></div>}
+          <div className="flex items-center gap-4"><ZoomIn className="text-white h-5 w-5" /><Slider value={scale} onValueChange={setScale} min={0.5} max={1.5} step={0.05} className="flex-1 py-4" /></div>
+
+          <div className="flex items-center gap-4">
+            <Clock className="text-white h-5 w-5" />
+            {isVideo ? (
+              <div className="flex-1 py-4 flex items-center gap-2">
+                <div className="h-1.5 flex-1 bg-white/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-white/50 w-full" />
+                </div>
+                <span className="text-white text-[10px] opacity-70 italic whitespace-nowrap">Auto-detected</span>
+              </div>
+            ) : (
+              <Slider value={duration} onValueChange={setDuration} min={3} max={30} step={1} className="flex-1 py-4" />
+            )}
+            <span className="text-white text-xs font-bold w-8 text-right">{duration}s</span>
+          </div>
         </div>
       )}
 

@@ -86,36 +86,41 @@ export default function Explore() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto px-4 py-4 pb-24 relative">
-        <div className="relative mb-6 z-50">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 opacity-30" />
-          <Input placeholder="Search campus..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-12 h-14 rounded-2xl bg-white/5 border-none font-bold placeholder:opacity-30 focus-visible:ring-1 ring-primary/40 backdrop-blur-xl" />
+      <div className="w-full max-w-4xl mx-auto px-4 py-4 pb-24 relative">
+        <div className="relative mb-8 z-50">
+          <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-6 w-6 opacity-30" />
+          <Input
+            placeholder="Search campus..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-16 h-16 text-lg rounded-[24px] bg-white/5 border-none font-bold placeholder:opacity-30 focus-visible:ring-1 ring-primary/40 backdrop-blur-xl transition-all hover:bg-white/10"
+          />
           <AnimatePresence>
             {searchQuery.length > 0 && (
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-16 left-0 right-0 p-2 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-2xl space-y-1 max-h-[400px] overflow-y-auto scrollbar-hide">
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-20 left-0 right-0 p-2 bg-black/90 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-2xl space-y-1 max-h-[400px] overflow-y-auto scrollbar-hide z-[100]">
                 {isSearching ? <div className="p-8 flex justify-center"><Loader2 className="animate-spin theme-text" /></div> : searchResults.length > 0 ? searchResults.map((user) => (
-                  <Link key={user.user_id} to={`/profile/${user.username}`} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
-                    <div className="flex items-center gap-3">
+                  <Link key={user.user_id} to={`/profile/${user.username}`} className="flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all group">
+                    <div className="flex items-center gap-4">
                       <UserAvatar
                         src={user.avatar_url}
-                        name={user.full_name}
-                        className="h-10 w-10 border border-white/10"
+                        name={user.full_name || user.username}
+                        className="h-12 w-12 border border-white/10"
                       />
-                      <div className="flex flex-col"><span className="text-sm font-black italic uppercase tracking-tighter leading-none">{user.full_name}</span><span className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1">@{user.username}</span></div>
+                      <div className="flex flex-col"><span className="text-base font-black italic uppercase tracking-tighter leading-none">{user.full_name || user.username}</span><span className="text-xs font-bold opacity-40 uppercase tracking-widest mt-1">@{user.username}</span></div>
                     </div>
-                    <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 theme-text transition-all" />
+                    <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 theme-text transition-all" />
                   </Link>
-                )) : <div className="p-8 text-center"><p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 italic">No signals found</p></div>}
+                )) : <div className="p-12 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] opacity-30 italic">No signals found</p></div>}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 bg-white/5 h-12 p-1 rounded-2xl mb-6 backdrop-blur-md">
-            <TabsTrigger value="posts" className="rounded-xl font-black uppercase text-[10px] tracking-widest transition-all data-[state=active]:bg-white/10">Feed</TabsTrigger>
-            <TabsTrigger value="reels" className="rounded-xl font-black uppercase text-[10px] tracking-widest transition-all data-[state=active]:bg-white/10">Reels</TabsTrigger>
-            <TabsTrigger value="stars" className="rounded-xl font-black uppercase text-[10px] tracking-widest transition-all data-[state=active]:bg-white/10">Stars</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-white/5 h-16 p-1.5 rounded-[24px] mb-8 backdrop-blur-md">
+            <TabsTrigger value="posts" className="rounded-2xl font-black uppercase text-xs tracking-widest transition-all data-[state=active]:bg-white/10 h-full">Feed</TabsTrigger>
+            <TabsTrigger value="reels" className="rounded-2xl font-black uppercase text-xs tracking-widest transition-all data-[state=active]:bg-white/10 h-full">Reels</TabsTrigger>
+            <TabsTrigger value="stars" className="rounded-2xl font-black uppercase text-xs tracking-widest transition-all data-[state=active]:bg-white/10 h-full">Stars</TabsTrigger>
           </TabsList>
 
           <TabsContent value="posts">

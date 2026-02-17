@@ -311,7 +311,7 @@ export function PostCard({ post, onDeleted }: any) {
             )}>
               <UserAvatar
                 src={author.avatar_url}
-                name={author.full_name}
+                name={author.full_name || author.username}
                 className="h-10 w-10 border-2 border-black"
               />
             </div>
@@ -319,7 +319,7 @@ export function PostCard({ post, onDeleted }: any) {
               {/* ENHANCED: Username Pops with drop-shadow for heavy themes */}
               <div className="flex items-center gap-1.5">
                 <p className="font-black text-[15px] text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] group-hover:underline leading-none">
-                  {author.full_name}
+                  {author.full_name || author.username}
                 </p>
                 <UserBadge
                   role={author.role}

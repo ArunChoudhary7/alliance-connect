@@ -355,7 +355,7 @@ export default function Profile() {
               <div className="absolute p-1 rounded-full overflow-hidden">
                 <UserAvatar
                   src={profile.avatar_url}
-                  name={profile.full_name}
+                  name={profile.full_name || profile.username}
                   className="h-32 w-32 border-[4px] border-black shadow-2xl transition-transform duration-500 group-hover:scale-95"
                   fallbackClassName="text-foreground text-3xl font-black italic uppercase theme-bg"
                 />

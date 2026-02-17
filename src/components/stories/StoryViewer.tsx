@@ -394,10 +394,10 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
         >
           {isTextStory ? (
             <div
-              className="w-[85%] h-[60%] rounded-[28px] border border-white/10 flex items-center justify-center px-6 text-center"
+              className="w-full h-full flex items-center justify-center px-6 text-center"
               style={{ background: currentStory.background_color || '#000000' }}
             >
-              <p className="text-white text-3xl md:text-4xl font-bold leading-relaxed break-words">
+              <p className="text-white text-3xl md:text-4xl font-bold leading-relaxed break-words max-w-[90%]">
                 {currentStory.content}
               </p>
             </div>
@@ -603,7 +603,7 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
           )}
         </AnimatePresence>
       </div>
-    </motion.div>,
+    </motion.div >,
     document.body
   );
 }

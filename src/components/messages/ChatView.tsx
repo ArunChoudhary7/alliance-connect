@@ -274,7 +274,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                 <motion.div
                   onClick={(e) => { e.stopPropagation(); handleDoubleTap(message); }}
                   className={cn(
-                    "relative rounded-[22px] transition-all active:scale-[0.98] shadow-lg overflow-hidden",
+                    "relative rounded-[22px] transition-all active:scale-[0.98] shadow-lg overflow-visible", // Changed overflow-hidden to visible so heart can pop out
                     isOwn ? "bg-primary text-black rounded-tr-none" : "bg-zinc-900 text-white rounded-tl-none border border-white/5",
                     isPostShare ? "p-0.5 bg-zinc-800 border-white/10" : "px-4 py-2.5",
                     isTapped && "ring-2 ring-white/50" // Highlights when tapped
@@ -374,9 +374,13 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                     <p className="text-[15px] font-medium leading-snug break-words">{message.content}</p>
                   )}
 
+                  {/* Like Heart - Now properly positioned relative to the bubble */}
                   {message.is_liked && (
-                    <div className={`absolute -bottom-2 ${isOwn ? "-left-2" : "-right-2"} bg-zinc-900 rounded-full p-1 border border-white/10 shadow-lg`}>
-                      <Heart className="h-3 w-3 fill-red-500 text-red-500" />
+                    <div className={cn(
+                      "absolute -bottom-2 z-20 bg-zinc-900 rounded-full p-1 border border-white/10 shadow-lg transform scale-100 animate-in zoom-in duration-200",
+                      isOwn ? "-left-2" : "-right-2"
+                    )}>
+                      <Heart className="h-3.5 w-3.5 fill-red-500 text-red-500" />
                     </div>
                   )}
                 </motion.div>
