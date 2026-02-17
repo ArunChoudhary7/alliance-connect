@@ -14,6 +14,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ProfessionalCamera } from "@/components/camera/ProfessionalCamera";
 import { cn } from "@/lib/utils";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -59,8 +60,8 @@ export default function LostFound() {
   const [contactInfo, setContactInfo] = useState('');
   const [selectedFile, setSelectedFile] = useState<{ file: File, preview: string } | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const fetchItems = useCallback(async () => {
     try {
@@ -193,7 +194,6 @@ export default function LostFound() {
                   </div>
                 </RadioGroup>
                 {/* HIDDEN FILE INPUTS */}
-                <input type="file" ref={cameraInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" capture="environment" />
                 <input type="file" ref={fileInputRef} onChange={handleFileSelect} className="hidden" accept="image/*" />
 
                 {selectedFile ? (
@@ -205,7 +205,7 @@ export default function LostFound() {
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
-                      onClick={() => cameraInputRef.current?.click()}
+                      onClick={() => setShowCamera(true)}
                       className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 border-dashed border-border/50 bg-secondary/10 hover:bg-secondary/20 hover:border-primary/30 transition-all cursor-pointer"
                     >
                       <div className="bg-primary/10 p-3 rounded-full">
@@ -231,6 +231,15 @@ export default function LostFound() {
                   <Input value={contactInfo} onChange={(e) => setContactInfo(e.target.value)} placeholder="Phone or Email" className="bg-secondary/30 rounded-xl h-12" />
                   <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Special details?" className="bg-secondary/30 rounded-xl resize-none h-24" />
                 </div>
+                {showCamera && (
+                  <ProfessionalCamera
+                    onCapture={(file) => {
+                      setSelectedFile({ file, preview: URL.createObjectURL(file) });
+                      setShowCamera(false);
+                    }}
+                    onClose={() => setShowCamera(false)}
+                  />
+                )}
                 <Button onClick={handleCreate} disabled={creating || !title.trim()} className="w-full bg-gradient-primary rounded-xl h-12 text-md font-bold">
                   {creating ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "POST REPORT"}
                 </Button>
@@ -281,7 +290,7 @@ export default function LostFound() {
                   {/* FIXED: Using object-contain and aspect-video to preserve ratio */}
                   <img
                     src={item.images[0]}
-                    className="w-full aspect-video object-contain bg-black/5"
+                    className="w-full aspect-video object-contain bg-black"
                     alt="Item"
                   />
                   <div className="absolute top-4 right-4">

@@ -361,7 +361,7 @@ export function PostCard({ post, onDeleted }: any) {
                   <CarouselContent>
                     {post.thread_items.map((item: any, idx: number) => (
                       <CarouselItem key={idx}>
-                        {item.type === 'video' ? <CustomVideoPlayer src={item.url} /> : <img src={item.url} alt="Thread item" className="w-full object-cover max-h-[500px]" />}
+                        {item.type === 'video' ? <CustomVideoPlayer src={item.url} /> : <img src={item.url} alt="Thread item" className="w-full object-contain max-h-[500px] bg-black/40" />}
                       </CarouselItem>
                     ))}
                   </CarouselContent>
@@ -370,7 +370,7 @@ export function PostCard({ post, onDeleted }: any) {
               ) : post.video_url ? (
                 <CustomVideoPlayer src={post.video_url} />
               ) : (
-                <img src={post.images[0]} alt="Post content" className="w-full object-cover max-h-[500px]" loading="lazy" />
+                <img src={post.images[0]} alt="Post content" className="w-full object-contain max-h-[550px] bg-black/40" loading="lazy" />
               )}
             </div>
           ) : null}

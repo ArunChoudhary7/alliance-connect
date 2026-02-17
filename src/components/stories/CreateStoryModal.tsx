@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { uploadFile } from "@/lib/storage";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ProfessionalCamera } from "@/components/camera/ProfessionalCamera";
 import { cn } from "@/lib/utils";
 
 interface CreateStoryModalProps {
@@ -97,30 +98,14 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
 
   useEffect(() => { if (!open) stopCamera(); }, [open, stopCamera]);
 
-  const startCamera = async () => {
-    try {
-      stopCamera(); setStoryType('camera');
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 } }, audio: false });
-      streamRef.current = stream;
-      setTimeout(() => { if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.setAttribute("playsinline", "true"); videoRef.current.muted = true; videoRef.current.play().catch(console.error); } }, 200);
-    } catch (error) { toast.error("Camera access denied."); }
+  const startCamera = () => {
+    setStoryType('camera');
   };
 
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext('2d')?.drawImage(video, 0, 0);
-      canvas.toBlob((blob) => {
-        if (blob) {
-          setMediaFile(new File([blob], "capture.jpg", { type: "image/jpeg" }));
-          setMediaPreview(URL.createObjectURL(blob));
-          stopCamera(); setStoryType('media');
-        }
-      }, 'image/jpeg', 0.9);
-    }
+  const handleCameraCapture = (file: File) => {
+    setMediaFile(file);
+    setMediaPreview(URL.createObjectURL(file));
+    setStoryType('media');
   };
 
   const handleSearchUsers = async (query: string) => {
@@ -284,9 +269,9 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
 
               {mediaPreview ? (
                 isVideo ? (
-                  <video src={mediaPreview} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+                  <video src={mediaPreview} className="w-full h-full object-contain" autoPlay loop muted playsInline />
                 ) : (
-                  <img src={mediaPreview} className="w-full h-full object-cover" alt="Preview" />
+                  <img src={mediaPreview} className="w-full h-full object-contain" alt="Preview" />
                 )
               ) : (
                 /* TEXT-ONLY RESHARE CARD */
@@ -324,11 +309,10 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
 
         {/* CAMERA MODE */}
         {storyType === 'camera' && (
-          <div className="relative w-full h-full bg-black">
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1]" />
-            <canvas ref={canvasRef} className="hidden" />
-            <button onClick={capturePhoto} className="absolute bottom-12 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full border-4 border-white bg-white/20 active:scale-90 transition-transform z-20" />
-          </div>
+          <ProfessionalCamera
+            onCapture={handleCameraCapture}
+            onClose={() => setStoryType('text')}
+          />
         )}
 
         {/* DRAGGABLE MENTIONS */}
