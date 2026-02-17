@@ -134,9 +134,9 @@ export function MenuDrawer() {
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/50 sticky top-0 bg-background">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary-foreground">AU</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl border border-white/10 overflow-hidden bg-white/5 p-1.5 shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+                  <img src="/aulogo.png" className="w-full h-full object-contain" alt="Logo" />
                 </div>
                 <span className="text-xl font-bold gradient-text italic">AUConnect</span>
               </div>

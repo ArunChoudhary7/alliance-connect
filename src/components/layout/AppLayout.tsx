@@ -104,7 +104,8 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
           'aateefbtech23@ced.alliance.edu.in',
           'sshlokbtech23@ced.alliance.edu.in',
           'aateef@ced.alliance.edu.in',
-          'sshlok@ced.alliance.edu.in'
+          'sshlok@ced.alliance.edu.in',
+          'arunchoudhary@alliance.edu.in'
         ].includes(user?.email || '') ||
         profile?.role === 'developer' ||
         profile?.role === 'admin'
@@ -134,8 +135,8 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
               <SheetContent side="left" className={`w-[85%] p-6 border-none rounded-r-[3rem] backdrop-blur-3xl ${isLight ? 'bg-white/95 text-black' : 'bg-black/90 text-white'}`}>
                 <SheetHeader className="text-left mb-8">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 p-1">
-                      <img src="/aulogo.png" className="w-full h-full object-contain rounded-full" alt="Logo" />
+                    <div className="w-11 h-11 rounded-xl border border-white/10 overflow-hidden bg-white/5 p-1.5 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                      <img src="/aulogo.png" className="w-full h-full object-contain" alt="Logo" />
                     </div>
                     <SheetTitle className="text-2xl font-black italic uppercase theme-text tracking-tighter">AUConnect</SheetTitle>
                   </div>
@@ -184,8 +185,8 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
       {showNav && (
         <aside className={`hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 border-r backdrop-blur-3xl p-4 z-50 bg-black/40 border-white/10`}>
           <div className="flex items-center gap-4 mb-10 px-4">
-            <div className="w-12 h-12 rounded-full border border-white/10 overflow-hidden bg-white/5 p-1.5 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
-              <img src="/aulogo.png" className="w-full h-full object-contain rounded-full" alt="Logo" />
+            <div className="w-14 h-14 rounded-xl border border-white/10 overflow-hidden bg-white/5 p-2 shadow-[0_0_30px_rgba(var(--primary-rgb),0.15)]">
+              <img src="/aulogo.png" className="w-full h-full object-contain" alt="Logo" />
             </div>
             <div className="text-2xl font-black italic uppercase theme-text tracking-tighter">AUConnect</div>
           </div>
