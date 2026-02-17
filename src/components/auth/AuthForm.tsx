@@ -69,7 +69,7 @@ export function AuthForm() {
             setError(error.message);
           }
         } else if (data?.user) {
-          setSuccess("Auconnect sent you verification link! Please check your email.");
+          setSuccess("AUConnect sent you verification link! Please check your email.");
         }
       }
     } catch (err) {
@@ -100,15 +100,15 @@ export function AuthForm() {
               <div className="w-40 h-40 mx-auto relative flex items-center justify-center bg-white rounded-full p-1 shadow-[0_0_30px_rgba(255,255,255,0.15)] ring-4 ring-white/5">
                 <div className="absolute inset-0 bg-gradient-to-tr from-red-500 via-yellow-400 to-blue-600 rounded-full opacity-0 group-hover:opacity-20 transition-opacity blur-xl" />
                 <img
-                  src="/festival_logo.png"
+                  src="/aulogo.png"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
                     // Fallback to text logo if image missing
                     e.currentTarget.parentElement?.classList.remove('bg-white'); // Remove white bg if fallback text is shown
                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                   }}
-                  className="relative w-full h-full object-contain rounded-full z-10"
-                  alt="Lit Fest 2026"
+                  className="relative w-full h-full object-contain rounded-full z-10 p-2"
+                  alt="AU Logo"
                 />
                 <div className="hidden flex flex-col items-center justify-center text-center">
                   <span className="text-4xl font-black tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500">LIT FEST</span>

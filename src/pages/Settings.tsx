@@ -311,7 +311,7 @@ export default function Settings() {
           </div>
 
           <div className="py-12 flex flex-col items-center justify-center opacity-30 pointer-events-none grayscale">
-            <img src="/auconnect.png" className="w-12 h-12 mb-2" onError={(e) => e.currentTarget.style.display = 'none'} alt="AUConnect" />
+            <img src="/aulogo.png" className="w-12 h-12 mb-2 rounded-full object-cover border border-white/10" onError={(e) => e.currentTarget.style.display = 'none'} alt="AUConnect" />
             <p className="text-[10px] font-black uppercase tracking-[0.3em]">Alliance Connect</p>
             <p className="text-[9px] font-medium tracking-widest mt-1">v1.2.0 Beta</p>
           </div>
@@ -483,8 +483,8 @@ export default function Settings() {
             <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6 mt-2" />
 
             <div className="flex flex-col items-center text-center mb-10">
-              <div className="w-20 h-20 rounded-[2rem] bg-gradient-to-tr from-primary to-purple-600 shadow-[0_0_30px_rgba(124,58,237,0.3)] flex items-center justify-center mb-6">
-                <span className="text-3xl font-black text-white italic">Au</span>
+              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-primary to-purple-600 shadow-[0_0_30px_rgba(124,58,237,0.3)] flex items-center justify-center mb-6 overflow-hidden border-2 border-white/10">
+                <img src="/aulogo.png" className="w-full h-full object-cover" alt="AU Logo" />
               </div>
               <h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none mb-2">Alliance Connect</h2>
               <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-50">Campus Neural Network</p>

@@ -117,7 +117,14 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               <SheetTrigger asChild><Button variant="ghost" size="icon" className="rounded-2xl bg-current/5"><Menu className="h-5 w-5" /></Button></SheetTrigger>
               <SheetContent side="left" className={`w-[85%] p-6 border-none rounded-r-[3rem] backdrop-blur-3xl ${isLight ? 'bg-white/95 text-black' : 'bg-black/90 text-white'}`}>
-                <SheetHeader className="text-left mb-8"><SheetTitle className="text-3xl font-black italic uppercase theme-text">Alliance</SheetTitle></SheetHeader>
+                <SheetHeader className="text-left mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 p-1">
+                      <img src="/aulogo.png" className="w-full h-full object-contain rounded-full" alt="Logo" />
+                    </div>
+                    <SheetTitle className="text-2xl font-black italic uppercase theme-text tracking-tighter">Alliance</SheetTitle>
+                  </div>
+                </SheetHeader>
                 <nav className="flex flex-col gap-2 overflow-y-auto max-h-[70vh] no-scrollbar">
                   {desktopNavItems.map((item, idx) => (
                     <Link key={idx} to={item.path!} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-current/5 transition-all">
@@ -161,7 +168,12 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
       {/* DESKTOP SIDEBAR */}
       {showNav && (
         <aside className={`hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 border-r backdrop-blur-3xl p-4 z-50 bg-black/40 border-white/10`}>
-          <div className="text-2xl font-black mb-10 px-4 italic uppercase theme-text">Alliance</div>
+          <div className="flex items-center gap-4 mb-10 px-4">
+            <div className="w-12 h-12 rounded-full border border-white/10 overflow-hidden bg-white/5 p-1.5 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
+              <img src="/aulogo.png" className="w-full h-full object-contain rounded-full" alt="Logo" />
+            </div>
+            <div className="text-2xl font-black italic uppercase theme-text tracking-tighter">Alliance</div>
+          </div>
 
           <div className="flex items-center gap-2 mb-8 px-2">
             <PulseBeacon />

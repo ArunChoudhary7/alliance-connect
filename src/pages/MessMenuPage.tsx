@@ -98,7 +98,7 @@ export default function MessMenuPage() {
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-1 drop-shadow-md">Campus Canteen</p>
                 <h3 className="text-xl font-black uppercase tracking-tighter text-white drop-shadow-lg leading-none italic">
-                  {menu?.image_url ? "Today's Visual Signal" : "No Menu Signal Detected"}
+                  {menu?.image_url ? "Click here to view full menu" : "No Menu Signal Detected"}
                 </h3>
               </div>
               {menu?.image_url && (
