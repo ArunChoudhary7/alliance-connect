@@ -213,7 +213,7 @@ export default function Events() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen pb-20 relative overflow-hidden">
+      <div className="w-full min-h-screen pb-20 relative overflow-hidden">
         {/* Background Ambient */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px]" />
@@ -371,7 +371,7 @@ export default function Events() {
           )}
 
           {/* Events Gallery - Masonry / Grid - Responsive Fix */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-24">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 pb-24">
             <AnimatePresence>
               {events.map((event, index) => (
                 <motion.div

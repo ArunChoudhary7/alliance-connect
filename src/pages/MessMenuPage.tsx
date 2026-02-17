@@ -133,11 +133,11 @@ export default function MessMenuPage() {
               </div>
               <div className="flex flex-col gap-2">
                 {section.items && section.items.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-2 w-full">
+                  <div className="flex flex-wrap gap-2">
                     {section.items.map((item: string, i: number) => (
-                      <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center gap-3">
-                        <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
-                        <span className="text-xs font-bold text-white/90 uppercase tracking-wide">{item}</span>
+                      <div key={i} className="bg-white/5 border border-white/10 rounded-3xl px-4 py-2 flex items-center gap-2 backdrop-blur-md hover:bg-white/10 transition-colors">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_currentColor]" />
+                        <span className="text-[11px] font-bold text-white/90 uppercase tracking-wide">{item}</span>
                       </div>
                     ))}
                   </div>
