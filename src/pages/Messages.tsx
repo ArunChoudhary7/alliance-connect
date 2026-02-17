@@ -97,9 +97,8 @@ export default function Messages() {
   };
 
   return (
-    <AppLayout>
-      {/* FIXED: Removed 'fixed inset-0'. Now uses standard height so your bottom nav stays visible. */}
-      <div className="w-full h-[calc(100vh-5rem)] md:h-[calc(100vh-4rem)] flex overflow-hidden bg-background">
+    <AppLayout disableScroll>
+      <div className="w-full h-full flex overflow-hidden theme-bg backdrop-blur-3xl">
 
         {(!isMobile || !selectedConversation) && (
           <div className={`${isMobile ? 'w-full' : 'w-96'} border-r border-white/5 flex flex-col bg-background h-full`}>

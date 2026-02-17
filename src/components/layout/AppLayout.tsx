@@ -13,7 +13,7 @@ import { signOut, supabase } from "@/lib/supabase";
 import { CreatePostModal } from "@/components/feed/CreatePostModal";
 import { PulseBeacon } from "./PulseBeacon";
 
-export function AppLayout({ children, showNav = true }: { children: React.ReactNode; showNav?: boolean }) {
+export function AppLayout({ children, showNav = true, disableScroll = false }: { children: React.ReactNode; showNav?: boolean; disableScroll?: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile } = useAuth();
@@ -207,8 +207,8 @@ export function AppLayout({ children, showNav = true }: { children: React.ReactN
         </aside>
       )}
 
-      <main id="main-scroll-area" className={`flex-1 ${showNav ? 'md:pl-64 pt-16 md:pt-0 pb-20 md:pb-0' : ''} overflow-y-auto scroll-smooth scrollbar-hide`}>
-        <div className="px-2 pt-4 pb-8 relative z-10">
+      <main id="main-scroll-area" className={`flex-1 ${showNav ? 'md:pl-64 pt-16 md:pt-0 pb-20 md:pb-0' : ''} ${disableScroll ? 'h-full overflow-hidden' : 'overflow-y-auto'} scroll-smooth scrollbar-hide`}>
+        <div className={`${disableScroll ? 'h-full p-0' : 'px-2 pt-4 pb-8'} relative z-10`}>
           {children}
         </div>
       </main>

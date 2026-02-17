@@ -55,35 +55,41 @@ export default function MessMenuPage() {
         </div>
 
         {/* TODAY SUMMARY + IMAGE PREVIEW */}
-        <div className="grid gap-4 mb-8 md:grid-cols-[minmax(0,2fr)_minmax(0,1.4fr)]">
+        <div className="grid gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => menu?.image_url && setShowFullMenu(true)}
+            className={`relative w-full h-48 rounded-[2.5rem] overflow-hidden group border border-white/10 ${menu?.image_url ? 'cursor-pointer' : ''}`}
+          >
+            <img
+              src={menu?.image_url || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop"}
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              alt="Menu Backdrop"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-
-          {menu?.image_url ? (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              onClick={() => setShowFullMenu(true)}
-              className="w-full flex items-center justify-between p-4 rounded-[2rem] bg-secondary/20 border border-secondary/40 cursor-pointer shadow-md"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-secondary/40 rounded-2xl">
+            <div className="absolute bottom-6 left-8 right-8 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/50 mb-1 drop-shadow-md">Campus Canteen</p>
+                <h3 className="text-xl font-black uppercase tracking-tighter text-white drop-shadow-lg leading-none italic">
+                  {menu?.image_url ? "Today's Visual Signal" : "No Menu Signal Detected"}
+                </h3>
+              </div>
+              {menu?.image_url && (
+                <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 text-white animate-pulse">
                   <Maximize2 className="h-5 w-5" />
                 </div>
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Official Menu</p>
-                  <h3 className="text-xs font-bold uppercase tracking-tight">Tap to view full image</h3>
-                </div>
-              </div>
-              <ArrowRight className="h-4 w-4 opacity-50" />
-            </motion.div>
-          ) : (
-            <div className="p-4 rounded-[2rem] bg-secondary/10 border border-white/5 flex items-center gap-3 opacity-80">
-              <AlertTriangle className="h-5 w-5 text-yellow-400" />
-              <span className="text-[11px] font-bold uppercase tracking-widest">
-                No menu uploaded for today
-              </span>
+              )}
             </div>
-          )}
+
+            {!menu?.image_url && (
+              <div className="absolute top-6 right-8 flex items-center gap-2 px-3 py-1.5 bg-yellow-500/20 backdrop-blur-md rounded-full border border-yellow-500/30">
+                <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                <span className="text-[8px] font-black uppercase tracking-widest text-yellow-500">Awaiting Upload</span>
+              </div>
+            )}
+          </motion.div>
         </div>
 
         {/* MEAL SECTIONS */}

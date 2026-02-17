@@ -214,8 +214,8 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
 
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden relative z-[60]">
-      {/* HEADER */}
-      <header className="flex-none flex items-center gap-3 p-4 border-b border-white/5 bg-background/90 backdrop-blur-2xl z-50">
+      {/* HEADER - STRICTLY FIXED */}
+      <header className="flex-none h-[72px] flex items-center gap-3 p-4 border-b border-white/5 bg-background/90 backdrop-blur-2xl z-50">
         <Button variant="ghost" size="icon" onClick={onBack} className="md:hidden -ml-2 text-white">
           <ArrowLeft className="h-6 w-6" />
         </Button>
@@ -416,7 +416,7 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
         <div ref={messagesEndRef} />
       </div >
 
-      <footer className="flex-none p-4 bg-background border-t border-white/5 relative">
+      <footer className="flex-none p-4 bg-background border-t border-white/10 relative z-50">
         {/* RESTORED "REPLYING TO..." PREVIEW BAR */}
         <AnimatePresence>
           {replyingTo && (

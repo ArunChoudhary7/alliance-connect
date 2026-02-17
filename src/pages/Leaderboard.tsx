@@ -16,7 +16,7 @@ export default function Leaderboard() {
       .select('id, username, avatar_url, total_aura, department')
       .order('total_aura', { ascending: false })
       .limit(50);
-      
+
     if (data) setTopUsers(data);
   };
 
@@ -48,21 +48,32 @@ export default function Leaderboard() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto px-4 pb-24">
-        {/* Header */}
-        <div className="flex flex-col items-center justify-center mb-10 mt-6 text-center">
-          <div className="p-4 bg-gradient-to-br from-yellow-500/20 to-orange-500/20 rounded-full mb-4 border border-yellow-500/30 relative">
-            <Swords className="h-8 w-8 text-yellow-500" />
-            <div className="absolute -top-1 -right-1">
-              <span className="flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
+        {/* Header Section with Background */}
+        <div className="relative w-full h-48 rounded-[3rem] overflow-hidden mb-12 mt-6 border border-white/10 group shadow-2xl">
+          <img
+            src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070&auto=format&fit=crop"
+            className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-1000 group-hover:scale-110"
+            alt="Leaderboard Backdrop"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+            <div className="p-3 bg-yellow-500/20 backdrop-blur-xl rounded-full mb-3 border border-yellow-500/30 relative">
+              <Swords className="h-6 w-6 text-yellow-500" />
+              <div className="absolute -top-1 -right-1">
+                <span className="flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+              </div>
             </div>
+            <h1 className="text-4xl font-black italic uppercase tracking-tighter text-white drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] leading-none">
+              Campus Clash
+            </h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-yellow-500 mt-3 drop-shadow-md brightness-150">
+              Season Reset: {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()} Days
+            </p>
           </div>
-          <h1 className="text-4xl font-black uppercase tracking-tighter gradient-text leading-none">Campus Clash</h1>
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-40 mt-2">
-            Resets in {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()} Days
-          </p>
         </div>
 
         {/* Podium Section */}
@@ -127,11 +138,11 @@ export default function Leaderboard() {
         <div className="space-y-3">
           <AnimatePresence>
             {list.map((user, idx) => (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                key={user.id} 
+                key={user.id}
                 className={`flex items-center justify-between p-4 rounded-[1.5rem] border border-white/5 ${user.id === profile?.id ? 'bg-primary/10 border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.1)]' : 'bg-secondary/20'}`}
               >
                 <div className="flex items-center gap-4">
@@ -140,8 +151,8 @@ export default function Leaderboard() {
                     <img src={user.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold uppercase tracking-tight">{user.username}</p>
-                    <p className="text-[8px] font-black opacity-40 uppercase tracking-widest">{user.department || 'Student'}</p>
+                    <p className="text-sm font-black uppercase tracking-tight text-white">{user.username}</p>
+                    <p className="text-[9px] font-black opacity-60 uppercase tracking-widest text-primary">{user.department || 'Elite Student'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 pr-2">
