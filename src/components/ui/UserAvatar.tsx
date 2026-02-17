@@ -13,13 +13,13 @@ export function UserAvatar({ src, name, className, fallbackClassName }: UserAvat
     const avatarUrl = getAvatarUrl(src, name || 'anonymous');
 
     return (
-        <Avatar className={cn("overflow-hidden", className)}>
+        <Avatar className={cn("overflow-hidden shrink-0", className)}>
             <AvatarImage
                 src={avatarUrl}
                 alt={name || "User Avatar"}
                 className="object-cover w-full h-full"
             />
-            <AvatarFallback className={cn("bg-secondary font-bold", fallbackClassName)}>
+            <AvatarFallback className={cn("bg-secondary font-bold text-white uppercase", fallbackClassName)}>
                 {getInitials(name)}
             </AvatarFallback>
         </Avatar>

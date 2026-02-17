@@ -7,7 +7,7 @@ import {
   Search, Code, AlertTriangle, ShieldCheck, Check
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -241,10 +241,11 @@ export default function Settings() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="p-4 flex items-center justify-between relative z-10">
               <div className="flex gap-4 items-center">
-                <Avatar className="w-14 h-14 ring-2 ring-white/10 shadow-xl">
-                  <AvatarImage src={profile?.avatar_url} />
-                  <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={profile?.avatar_url}
+                  name={profile?.full_name}
+                  className="w-14 h-14 ring-2 ring-white/10 shadow-xl"
+                />
                 <div className="flex flex-col">
                   <span className="font-black text-lg tracking-tight">Accounts Center</span>
                   <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Manage your connected experiences</span>
@@ -385,10 +386,12 @@ export default function Settings() {
                   {blockedUsers.map((block: any) => (
                     <div key={block.id} className="flex items-center justify-between p-3 bg-secondary/20 rounded-2xl border border-white/5">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={block.profile?.avatar_url || ''} />
-                          <AvatarFallback className="bg-white/5 text-xs font-bold">{block.profile?.username?.[0]?.toUpperCase() || '?'}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          src={block.profile?.avatar_url}
+                          name={block.profile?.full_name}
+                          className="h-10 w-10"
+                          fallbackClassName="bg-white/5 text-xs font-bold"
+                        />
                         <div>
                           <p className="text-sm font-bold">{block.profile?.full_name || 'Unknown User'}</p>
                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">@{block.profile?.username || 'unknown'}</p>

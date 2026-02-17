@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadFile } from "@/lib/storage";
@@ -228,7 +228,11 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
             {searchResults.length === 0 && mentionQuery.length > 1 && <p className="text-center text-white/30 mt-10">No users found.</p>}
             {searchResults.map(u => (
               <button key={u.user_id} onClick={() => addMention(u)} className="flex items-center gap-4 w-full p-3 hover:bg-white/10 rounded-2xl transition-colors text-left">
-                <Avatar className="h-12 w-12 border border-white/10"><AvatarImage src={u.avatar_url} /><AvatarFallback>{u.username?.[0]}</AvatarFallback></Avatar>
+                <UserAvatar
+                  src={u.avatar_url}
+                  name={u.username}
+                  className="h-12 w-12 border border-white/10"
+                />
                 <div><p className="text-white font-bold text-base">@{u.username}</p><p className="text-white/40 text-xs">Tap to mention</p></div>
               </button>
             ))}
@@ -262,7 +266,11 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
               {/* Attribution badge for reshare */}
               {(isReshare && (reshareUser || resharePost?.profiles)) && (
                 <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/60 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/10 z-[115]">
-                  <Avatar className="h-4 w-4 ring-1 ring-white/20"><AvatarImage src={reshareUser?.avatarUrl || resharePost?.profiles?.avatar_url || ""} /><AvatarFallback>{(reshareUser?.username || resharePost?.profiles?.username || "?")[0]}</AvatarFallback></Avatar>
+                  <UserAvatar
+                    src={reshareUser?.avatarUrl || resharePost?.profiles?.avatar_url}
+                    name={reshareUser?.username || resharePost?.profiles?.username}
+                    className="h-4 w-4 ring-1 ring-white/20"
+                  />
                   <span className="text-[10px] font-black text-white/90 uppercase tracking-widest">@{reshareUser?.username || resharePost?.profiles?.username}</span>
                 </div>
               )}
