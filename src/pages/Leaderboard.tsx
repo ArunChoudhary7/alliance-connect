@@ -23,12 +23,12 @@ export default function Leaderboard() {
   };
 
   const fetchLeaderboard = async () => {
-    // Fetch top 50 users sorted by Aura
+    // Fetch top 100 users sorted by Aura
     const { data } = await supabase
       .from('profiles')
       .select('id, username, avatar_url, total_aura, department')
-      .order('total_aura', { ascending: false })
-      .limit(50);
+      .order('total_aura', { ascending: false, nullsFirst: false })
+      .limit(100);
 
     if (data) setTopUsers(data);
   };

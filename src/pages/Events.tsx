@@ -365,7 +365,7 @@ export default function Events() {
           )}
 
           {/* Events Gallery - Masonry / Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             <AnimatePresence>
               {events.map((event, index) => (
                 <motion.div
@@ -375,75 +375,73 @@ export default function Events() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="group relative aspect-[3/4] rounded-[2rem] overflow-hidden shadow-2xl cursor-pointer"
-                  onClick={() => setActiveEvent(activeEvent === event.id ? null : event.id)}
+                  className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl cursor-pointer bg-zinc-900 border border-white/5 hover:border-white/20 transition-all"
+                  onClick={() => setActiveEvent(event.id)}
                 >
                   {/* Background Image/Poster */}
-                  <div className="absolute inset-0 bg-zinc-900">
+                  <div className="absolute inset-0">
                     {event.cover_url ? (
-                      <img src={event.cover_url} alt={event.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <img
+                        src={event.cover_url}
+                        alt={event.title}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900">
-                        <Calendar className="h-12 w-12 opacity-10" />
+                        <Calendar className="h-8 w-8 opacity-20" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-500" />
                   </div>
 
                   {/* Content */}
-                  <div className="absolute inset-0 p-6 flex flex-col justify-end">
+                  <div className="absolute inset-0 p-4 flex flex-col justify-end">
                     <div className="relative z-20">
-                      {/* Event Info Container with solid backdrop for readability */}
-                      <div className="space-y-3 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
-                        <div className="flex items-center gap-3">
-                          {/* Re-positioned Date Badge */}
-                          <div className="h-10 w-10 shrink-0 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 flex flex-col items-center justify-center">
-                            <span className="text-sm font-black leading-none">{format(new Date(event.event_date), 'd')}</span>
-                            <span className="text-[8px] uppercase font-bold opacity-70 leading-none">{format(new Date(event.event_date), 'MMM')}</span>
+                      <div className="space-y-2 transform translate-y-1 group-hover:translate-y-0 transition-transform duration-500">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 shrink-0 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center">
+                            <span className="text-xs font-black leading-none">{format(new Date(event.event_date), 'd')}</span>
+                            <span className="text-[6px] uppercase font-bold opacity-70 leading-none">{format(new Date(event.event_date), 'MMM')}</span>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="inline-block w-fit px-2 py-0.5 rounded-full bg-pink-500/20 border border-pink-500/30 text-[8px] font-black uppercase tracking-widest text-pink-300">
-                              {event.location || "Campus"}
-                            </span>
-                            <span className="text-[9px] font-bold text-white/60 tracking-wider">
-                              {format(new Date(event.event_date), 'h:mm a')}
+                          <div className="flex flex-col min-w-0">
+                            <h3 className="text-lg font-black italic uppercase tracking-tighter leading-none text-white truncate w-full">
+                              {event.title}
+                            </h3>
+                            <span className="text-[8px] font-bold text-white/60 tracking-wider truncate">
+                              {event.location || "Campus"} • {format(new Date(event.event_date), 'h:mm a')}
                             </span>
                           </div>
                         </div>
 
-                        <h3 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter leading-[0.9] text-white drop-shadow-[0_2px_15px_rgba(0,0,0,1)]">
-                          {event.title}
-                        </h3>
+                        <div className="flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pt-2">
+                          <span className="text-[8px] text-white/60 font-medium line-clamp-1">{event.description}</span>
 
-                        <p className="text-xs text-white/80 line-clamp-2 max-w-[90%] font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 drop-shadow-md">
-                          {event.description}
-                        </p>
-
-                        <div className="flex justify-end pt-2 gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-200">
-                          {(user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'arun' || profile?.username === 'koki' || profile?.role === 'admin') && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 px-3 rounded-full bg-white/10 text-white border-white/20 hover:bg-white hover:text-black text-[10px] font-black uppercase tracking-widest"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEventId(event.id);
-                                setShowThumbnailDialog(true);
-                              }}
-                            >
-                              Add Thumbnail
-                            </Button>
-                          )}
-                          {user?.id === event.created_by && (
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="h-8 w-8 rounded-full bg-red-500/20 text-red-500 border border-red-500/30 hover:bg-red-500 hover:text-white"
-                              onClick={(e) => handleDelete(event.id, e)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
+                          <div className="flex gap-2">
+                            {(user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'arun' || profile?.username === 'koki' || profile?.role === 'admin') && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 rounded-full bg-white/10 hover:bg-white hover:text-black"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEventId(event.id);
+                                  setShowThumbnailDialog(true);
+                                }}
+                              >
+                                <Upload className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {user?.id === event.created_by && (
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="h-6 w-6 rounded-full bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white"
+                                onClick={(e) => handleDelete(event.id, e)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -474,6 +472,27 @@ export default function Events() {
               </div>
             )}
           </div>
+
+          {/* FULL SCREEN POSTER LIGHTBOX */}
+          <Dialog open={!!activeEvent} onOpenChange={(open) => !open && setActiveEvent(null)}>
+            <DialogContent className="max-w-4xl w-[95vw] h-[90vh] bg-black/90 border-none p-0 overflow-hidden flex flex-col items-center justify-center">
+              <div className="relative w-full h-full flex items-center justify-center">
+                <button
+                  onClick={() => setActiveEvent(null)}
+                  className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white/70 hover:text-white backdrop-blur-md"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+                {activeEvent && events.find(e => e.id === activeEvent)?.cover_url && (
+                  <img
+                    src={events.find(e => e.id === activeEvent)?.cover_url || ''}
+                    alt="Full Event Poster"
+                    className="max-w-full max-h-full object-contain shadow-2xl"
+                  />
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* SPOTLIGHT THUMBNAIL DIALOG */}
           <Dialog open={showThumbnailDialog} onOpenChange={setShowThumbnailDialog}>

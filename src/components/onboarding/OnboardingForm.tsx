@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 const departments = [
   "Computer Science",
@@ -112,6 +113,7 @@ export function OnboardingForm() {
       }
 
       await refreshProfile();
+      toast.success("Welcome to Alliance Connect!");
       navigate("/");
     } catch {
       setError("Something went wrong. Please try again.");
