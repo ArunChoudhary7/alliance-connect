@@ -51,8 +51,7 @@ export default function SecretRoom() {
       'aateefbtech23@ced.alliance.edu.in',
       'sshlokbtech23@ced.alliance.edu.in',
       'aateef@ced.alliance.edu.in',
-      'sshlok@ced.alliance.edu.in',
-      'arunchoudhary@alliance.edu.in'
+      'sshlok@ced.alliance.edu.in'
     ].includes(user?.email || '');
 
   const fetchConfessions = useCallback(async () => {

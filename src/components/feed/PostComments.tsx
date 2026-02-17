@@ -135,8 +135,7 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
                         'sshlok@ced.alliance.edu.in',
                         'aateef@ced.alliance.edu.in',
                         'sshlokbtech23@ced.alliance.edu.in',
-                        'aateefbtech23@ced.alliance.edu.in',
-                        'arunchoudhary@alliance.edu.in'
+                        'aateefbtech23@ced.alliance.edu.in'
                       ].includes(user?.email || '')
                     ) && (
                         <DropdownMenu>
