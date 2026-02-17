@@ -5,14 +5,26 @@ import { Badge } from "@/components/ui/badge";
 import { Coffee, Sun, Moon, Pizza, Upload, Maximize2, X, ArrowRight, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AdminMenuUpload } from "@/components/admin/AdminMenuUpload";
+import { AdminThumbnailUpdate } from "@/components/admin/AdminThumbnailUpdate";
 import { useAuth } from "@/hooks/useAuth";
+import { ImageIcon } from "lucide-react";
 
 export default function MessMenuPage() {
   const [menu, setMenu] = useState<any>(null);
+  const [siteSettings, setSiteSettings] = useState<any>({});
   const [showUpload, setShowUpload] = useState(false);
+  const [showThumbUpload, setShowThumbUpload] = useState(false);
   const [showFullMenu, setShowFullMenu] = useState(false);
   const { profile } = useAuth();
-  const isAdmin = profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki';
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('site_settings').select('key, value');
+    if (data) {
+      const settings = data.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+      setSiteSettings(settings);
+    }
+  };
 
   const fetchMenu = async () => {
     const { data } = await supabase
@@ -23,7 +35,10 @@ export default function MessMenuPage() {
     setMenu(data);
   };
 
-  useEffect(() => { fetchMenu(); }, []);
+  useEffect(() => {
+    fetchMenu();
+    fetchSettings();
+  }, []);
 
   const mealSections = [
     { label: "Breakfast", icon: <Coffee className="text-orange-400" />, items: menu?.breakfast || [] },
@@ -43,14 +58,24 @@ export default function MessMenuPage() {
             </p>
           </div>
           {isAdmin && (
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-2xl text-primary text-[10px] font-black uppercase tracking-widest"
-            >
-              <Upload className="h-4 w-4" />
-              Update Menu
-            </motion.button>
+            <div className="flex gap-2">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowThumbUpload(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl text-white/70 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all"
+              >
+                <ImageIcon className="h-4 w-4" />
+                Thumbnail
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowUpload(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-2xl text-primary text-[10px] font-black uppercase tracking-widest border border-primary/20 hover:bg-primary/20 transition-all"
+              >
+                <Upload className="h-4 w-4" />
+                Update Menu
+              </motion.button>
+            </div>
           )}
         </div>
 
@@ -63,7 +88,7 @@ export default function MessMenuPage() {
             className={`relative w-full h-48 rounded-[2.5rem] overflow-hidden group border border-white/10 ${menu?.image_url ? 'cursor-pointer' : ''}`}
           >
             <img
-              src={menu?.image_url || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop"}
+              src={siteSettings.mess_menu_thumbnail || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop"}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               alt="Menu Backdrop"
             />
@@ -137,6 +162,13 @@ export default function MessMenuPage() {
       </AnimatePresence>
 
       <AdminMenuUpload isOpen={showUpload} onClose={() => setShowUpload(false)} onSuccess={fetchMenu} />
+      <AdminThumbnailUpdate
+        isOpen={showThumbUpload}
+        onClose={() => setShowThumbUpload(false)}
+        onSuccess={fetchSettings}
+        settingKey="mess_menu_thumbnail"
+        title="Mess Menu"
+      />
     </AppLayout>
   );
 }

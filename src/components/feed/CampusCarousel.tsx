@@ -11,6 +11,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { AdminThumbnailUpdate } from "@/components/admin/AdminThumbnailUpdate";
+import { ImageIcon } from "lucide-react";
 
 export function CampusCarousel() {
   const navigate = useNavigate();
@@ -18,15 +20,26 @@ export function CampusCarousel() {
   const [menuData, setMenuData] = useState<any>(null);
   const [topUser, setTopUser] = useState<any>(null);
   const [latestEvent, setLatestEvent] = useState<any>(null);
+  const [siteSettings, setSiteSettings] = useState<any>({});
+  const [showThumbUpload, setShowThumbUpload] = useState<string | null>(null);
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki';
 
   const [width, setWidth] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('site_settings').select('key, value');
+    if (data) {
+      const settings = data.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+      setSiteSettings(settings);
+    }
+  };
 
   useEffect(() => {
     const loadData = async () => {
       const [menuRes, rankRes, eventRes] = await Promise.all([
         supabase.from('mess_menu').select('lunch, breakfast, snacks, dinner').eq('day_name', 'Today').maybeSingle(),
-        supabase.from('aura_leaderboard').select('*').limit(1).maybeSingle(),
+        supabase.from('profiles').select('id, username, total_aura').order('total_aura', { ascending: false }).limit(1).maybeSingle(),
         supabase.from('events').select('carousel_display_url, cover_url').order('event_date', { ascending: true }).gte('event_date', new Date().toISOString()).limit(1).maybeSingle()
       ]);
       if (menuRes.data) setMenuData(menuRes.data);
@@ -34,6 +47,7 @@ export function CampusCarousel() {
       if (eventRes.data) setLatestEvent(eventRes.data);
     };
     loadData();
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -63,7 +77,8 @@ export function CampusCarousel() {
       borderColor: "border-orange-500/30",
       glow: "shadow-[0_0_20px_rgba(249,115,22,0.15)]",
       path: "/mess-menu",
-      bgImage: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800"
+      bgImage: siteSettings.mess_menu_thumbnail || "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800",
+      settingKey: "mess_menu_thumbnail"
     },
     {
       id: 'duel',
@@ -74,7 +89,8 @@ export function CampusCarousel() {
       borderColor: "border-yellow-500/30",
       glow: "shadow-[0_0_20px_rgba(234,179,8,0.15)]",
       path: "/leaderboard",
-      bgImage: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&q=80&w=800"
+      bgImage: siteSettings.leaderboard_thumbnail || "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?auto=format&fit=crop&q=80&w=800",
+      settingKey: "leaderboard_thumbnail"
     }
   ];
 
@@ -113,8 +129,21 @@ export function CampusCarousel() {
                   {card.subtitle}
                 </p>
               </div>
-              <div className="bg-white/10 p-2.5 rounded-2xl shadow-lg backdrop-blur-md border border-white/10">
-                <ArrowRight className="h-4 w-4 text-white" />
+              <div className="flex gap-2 relative z-20">
+                {isAdmin && card.settingKey && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowThumbUpload(card.settingKey as string);
+                    }}
+                    className="bg-white/10 p-2.5 rounded-2xl shadow-lg backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all"
+                  >
+                    <ImageIcon className="h-4 w-4 text-white" />
+                  </button>
+                )}
+                <div className="bg-white/10 p-2.5 rounded-2xl shadow-lg backdrop-blur-md border border-white/10">
+                  <ArrowRight className="h-4 w-4 text-white" />
+                </div>
               </div>
             </div>
 
@@ -179,6 +208,16 @@ export function CampusCarousel() {
         ))}
         <div className="min-w-[20px]" />
       </motion.div>
+
+      {showThumbUpload && (
+        <AdminThumbnailUpdate
+          isOpen={!!showThumbUpload}
+          onClose={() => setShowThumbUpload(null)}
+          onSuccess={fetchSettings}
+          settingKey={showThumbUpload as any}
+          title={showThumbUpload.includes('mess') ? "Mess Menu" : "Aura Rank"}
+        />
+      )}
     </div>
   );
 }

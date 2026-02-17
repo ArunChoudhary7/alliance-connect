@@ -4,10 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Swords, Crown, Star, Flame } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { AdminThumbnailUpdate } from "@/components/admin/AdminThumbnailUpdate";
+import { ImageIcon } from "lucide-react";
 
 export default function Leaderboard() {
   const [topUsers, setTopUsers] = useState<any[]>([]);
+  const [siteSettings, setSiteSettings] = useState<any>({});
+  const [showThumbUpload, setShowThumbUpload] = useState(false);
   const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki';
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('site_settings').select('key, value');
+    if (data) {
+      const settings = data.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+      setSiteSettings(settings);
+    }
+  };
 
   const fetchLeaderboard = async () => {
     // Fetch top 50 users sorted by Aura
@@ -22,6 +35,7 @@ export default function Leaderboard() {
 
   useEffect(() => {
     fetchLeaderboard();
+    fetchSettings();
 
     // REAL-TIME SUBSCRIPTION
     // This listens for any changes to the 'profiles' table
@@ -48,10 +62,22 @@ export default function Leaderboard() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto px-4 pb-24">
+        {isAdmin && (
+          <div className="flex justify-end mb-4 mt-2">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowThumbUpload(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl text-white/70 text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/10 transition-all"
+            >
+              <ImageIcon className="h-4 w-4" />
+              Update Backdrop
+            </motion.button>
+          </div>
+        )}
         {/* Header Section with Background */}
         <div className="relative w-full h-48 rounded-[3rem] overflow-hidden mb-12 mt-6 border border-white/10 group shadow-2xl">
           <img
-            src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070&auto=format&fit=crop"
+            src={siteSettings.leaderboard_thumbnail || "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=2070&auto=format&fit=crop"}
             className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-1000 group-hover:scale-110"
             alt="Leaderboard Backdrop"
           />
@@ -164,6 +190,13 @@ export default function Leaderboard() {
           </AnimatePresence>
         </div>
       </div>
+      <AdminThumbnailUpdate
+        isOpen={showThumbUpload}
+        onClose={() => setShowThumbUpload(false)}
+        onSuccess={fetchSettings}
+        settingKey="leaderboard_thumbnail"
+        title="Leaderboard"
+      />
     </AppLayout>
   );
 }
