@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Search, Zap, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -92,10 +92,12 @@ export function ShareModal({ post, open, onOpenChange }: any) {
               {filteredUsers.map((u) => (
                 <div key={u.user_id} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-2xl transition-colors group">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-11 w-11 border border-white/10">
-                      <AvatarImage src={u.avatar_url} />
-                      <AvatarFallback className="bg-zinc-800 text-[10px] font-bold text-white">{getInitials(u.full_name)}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      src={u.avatar_url}
+                      name={u.full_name}
+                      className="h-11 w-11 border border-white/10"
+                      fallbackClassName="bg-zinc-800 text-[10px] font-bold text-white"
+                    />
                     <div className="flex flex-col">
                       <span className="text-sm font-black text-white">{u.full_name}</span>
                       <span className="text-[10px] font-bold opacity-40 uppercase tracking-tight text-white/60">@{u.username}</span>

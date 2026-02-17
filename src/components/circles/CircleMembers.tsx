@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Shield, ShieldCheck, User, MoreVertical, UserMinus, Crown } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -167,12 +167,11 @@ export function CircleMembers({ circleId, isAdmin, currentUserRole }: CircleMemb
             className="flex items-center gap-3 cursor-pointer flex-1"
             onClick={() => member.profile?.username && navigate(`/profile/${member.profile.username}`)}
           >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={member.profile?.avatar_url || undefined} />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {member.profile?.username?.slice(0, 2).toUpperCase() || '??'}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              src={member.profile?.avatar_url}
+              name={member.profile?.full_name || member.profile?.username}
+              className="h-10 w-10"
+            />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="font-medium text-sm truncate">

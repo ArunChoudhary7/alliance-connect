@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, UserPlus, Check, Clock, Loader2, Lock } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -264,12 +264,12 @@ export function FollowersModal({
           className="flex items-center gap-3 flex-1 cursor-pointer"
           onClick={() => handleUserClick(userItem)}
         >
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={userItem.avatar_url || ""} />
-            <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-              {getInitials(userItem.full_name)}
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            src={userItem.avatar_url}
+            name={userItem.full_name}
+            className="h-12 w-12"
+            fallbackClassName="bg-gradient-primary text-primary-foreground"
+          />
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-sm truncate">
               {userItem.username || "Unknown"}

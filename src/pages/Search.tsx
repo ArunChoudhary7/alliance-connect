@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search as SearchIcon, Loader2, Users, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -107,12 +107,11 @@ export default function Search() {
                 to={`/profile/${user.username}`}
                 className="flex items-center gap-4 p-4 rounded-[1.5rem] bg-secondary/20 border border-white/5 hover:bg-secondary/40 transition-all group"
               >
-                <Avatar className="h-12 w-12 border border-white/10 group-hover:scale-105 transition-transform">
-                  <AvatarImage src={user.avatar_url || ""} />
-                  <AvatarFallback className="bg-primary/20 text-primary font-bold">
-                    {getInitials(user.full_name || user.username)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={user.avatar_url}
+                  name={user.full_name || user.username}
+                  className="h-12 w-12 border border-white/10 group-hover:scale-105 transition-transform"
+                />
 
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate text-sm uppercase tracking-tight">

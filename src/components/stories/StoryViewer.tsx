@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { X, Trash2, Heart, Eye, ChevronRight, Send, Loader2, Volume2, VolumeX } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -354,7 +354,11 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
         {/* HEADER AREA */}
         <div className="absolute top-0 inset-x-0 p-4 pt-14 z-[60] flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
           <div className="flex items-center gap-3 pointer-events-auto cursor-pointer" onClick={() => { onClose(); navigate(`/profile/${currentUser.username}`); }}>
-            <Avatar className="h-9 w-9 border border-white/20"><AvatarImage src={currentUser.avatarUrl} /><AvatarFallback>{currentUser.username[0]}</AvatarFallback></Avatar>
+            <UserAvatar
+              src={currentUser.avatarUrl}
+              name={currentUser.username}
+              className="h-9 w-9 border border-white/20"
+            />
             <span className="text-white font-bold text-sm drop-shadow-md">{currentUser.username}</span>
           </div>
           <div className="flex items-center gap-2 pointer-events-auto">
@@ -401,10 +405,11 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
             <div className={cn("relative flex items-center justify-center transition-all duration-500 overflow-hidden", isBeam ? "w-[85%] h-[60%] rounded-[28px] border border-white/10" : "w-full h-full")}>
               {isBeam && post?.profiles?.username && (
                 <div className="absolute top-4 left-4 z-[70] flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
-                  <Avatar className="h-5 w-5 border border-white/20">
-                    <AvatarImage src={post.profiles.avatar_url || ""} />
-                    <AvatarFallback>{post.profiles.username?.[0] || "U"}</AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    src={post.profiles.avatar_url}
+                    name={post.profiles.username}
+                    className="h-5 w-5 border border-white/20"
+                  />
                   <span className="text-[10px] font-semibold text-white">@{post.profiles.username}</span>
                 </div>
               )}
@@ -534,12 +539,11 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
                   viewers.map((viewer) => (
                     <div key={viewer.id} className="flex items-center justify-between py-1.5">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7">
-                          <AvatarImage src={viewer.profile?.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {viewer.profile?.username?.[0] || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          src={viewer.profile?.avatar_url}
+                          name={viewer.profile?.username}
+                          className="h-7 w-7"
+                        />
                         <div className="flex flex-col">
                           <span className="text-sm text-white">
                             {viewer.profile?.username || 'Unknown'}

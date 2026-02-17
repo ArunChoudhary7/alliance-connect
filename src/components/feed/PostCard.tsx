@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Heart, Trash2, MoreVertical, MessageCircle, Slash, AlertTriangle, Send, Play, Pause, Volume2, VolumeX, Sparkles, Timer, Pin } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -309,10 +309,11 @@ export function PostCard({ post, onDeleted }: any) {
               "p-0.5 rounded-full bg-gradient-to-tr from-accent to-primary",
               isElite && "shadow-[0_0_15px_rgba(var(--primary),0.3)]"
             )}>
-              <Avatar className="h-10 w-10 border-2 border-black">
-                <AvatarImage src={author.avatar_url} />
-                <AvatarFallback>{getInitials(author.full_name)}</AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                src={author.avatar_url}
+                name={author.full_name}
+                className="h-10 w-10 border-2 border-black"
+              />
             </div>
             <div>
               {/* ENHANCED: Username Pops with drop-shadow for heavy themes */}

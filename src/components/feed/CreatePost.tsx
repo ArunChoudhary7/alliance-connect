@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Image, X, Send, Loader2, Sparkles, Ghost, Timer, ChevronDown, Play } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,10 +96,11 @@ export function CreatePost({ onPostCreated }: { onPostCreated: () => void }) {
       </div>
 
       <div className="flex gap-3 md:gap-4">
-        <Avatar className="h-10 w-10 md:h-12 md:w-12 border-2 border-white/10 shrink-0">
-          <AvatarImage src={profile.avatar_url || ""} />
-          <AvatarFallback>{getInitials(profile.full_name)}</AvatarFallback>
-        </Avatar>
+        <UserAvatar
+          src={profile.avatar_url}
+          name={profile.full_name}
+          className="h-10 w-10 md:h-12 md:w-12 border-2 border-white/10 shrink-0"
+        />
 
         <div className="flex-1 space-y-4">
           <Input

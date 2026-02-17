@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Image, Loader2, Send, Heart, MessageCircle, MoreHorizontal, Trash2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -117,7 +117,7 @@ export function CircleFeed({ circleId, isMember, isAdmin }: CircleFeedProps) {
         table: 'circle_posts',
         filter: `circle_id=eq.${circleId}`
       }, () => {
-        fetchPosts(0); 
+        fetchPosts(0);
       })
       .subscribe();
 
@@ -206,7 +206,7 @@ export function CircleFeed({ circleId, isMember, isAdmin }: CircleFeedProps) {
             className="bg-secondary/30 resize-none"
             rows={3}
           />
-          
+
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label className="cursor-pointer">
@@ -223,7 +223,7 @@ export function CircleFeed({ circleId, isMember, isAdmin }: CircleFeedProps) {
                 </div>
               </label>
             </div>
-            
+
             <Button
               onClick={handlePost}
               disabled={posting || (!content.trim() && images.length === 0)}
@@ -255,12 +255,11 @@ export function CircleFeed({ circleId, isMember, isAdmin }: CircleFeedProps) {
               {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={post.profile?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(post.profile?.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    src={post.profile?.avatar_url}
+                    name={post.profile?.full_name || post.profile?.username}
+                    className="h-10 w-10"
+                  />
                   <div>
                     <p className="font-medium text-sm">
                       {post.profile?.full_name || post.profile?.username || 'Unknown'}
@@ -298,9 +297,8 @@ export function CircleFeed({ circleId, isMember, isAdmin }: CircleFeedProps) {
 
               {/* Images - FIX 2: Instagram Style (Square + Cover) */}
               {post.images && post.images.length > 0 && (
-                <div className={`grid gap-1 mb-3 rounded-lg overflow-hidden ${
-                  post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
-                }`}>
+                <div className={`grid gap-1 mb-3 rounded-lg overflow-hidden ${post.images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+                  }`}>
                   {post.images.map((img, i) => (
                     <div key={i} className="aspect-square relative bg-secondary/20">
                       <img

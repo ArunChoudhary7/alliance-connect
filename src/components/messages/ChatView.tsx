@@ -5,7 +5,7 @@ import {
   Check, CheckCheck, X, Trash2, Reply, Ban, Copy, Heart,
   User, Flag, PlayCircle
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -220,10 +220,12 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
           <ArrowLeft className="h-6 w-6" />
         </Button>
         <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => navigate(`/profile/${otherUser.username}`)}>
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-            <AvatarImage src={otherUser.avatar_url || ""} />
-            <AvatarFallback className="theme-bg font-bold">{getInitials(otherUser.full_name)}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            src={otherUser.avatar_url}
+            name={otherUser.full_name}
+            className="h-10 w-10 ring-2 ring-primary/20"
+            fallbackClassName="theme-bg font-bold"
+          />
           <div className="flex flex-col text-white">
             <span className="font-bold text-sm leading-none">{otherUser.full_name}</span>
             <span className="text-[10px] text-green-500 font-medium mt-1 uppercase tracking-tighter italic">Active Now</span>
@@ -289,10 +291,12 @@ export function ChatView({ conversationId, otherUser, onBack, onMessageRead }: a
                     >
                       {/* Insta-style Header */}
                       <div className="flex items-center gap-2 p-3 bg-zinc-900">
-                        <Avatar className="h-6 w-6 ring-1 ring-white/10">
-                          <AvatarImage src={message.shared_post.profiles?.avatar_url} />
-                          <AvatarFallback className="text-[8px] bg-zinc-800">{getInitials(message.shared_post.profiles?.full_name)}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          src={message.shared_post.profiles?.avatar_url}
+                          name={message.shared_post.profiles?.full_name}
+                          className="h-6 w-6 ring-1 ring-white/10"
+                          fallbackClassName="text-[8px] bg-zinc-800"
+                        />
                         <span className="text-[11px] font-black text-white/90 tracking-tight">
                           {message.shared_post.profiles?.username}
                         </span>

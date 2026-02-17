@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { MessageCircle, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { MenuDrawer } from "./MenuDrawer";
-import { PulseBeacon } from "./PulseBeacon"; 
+import { PulseBeacon } from "./PulseBeacon";
 import { supabase } from "@/integrations/supabase/client";
 import { getInitials } from "@/lib/utils";
 
@@ -51,10 +51,12 @@ export function Header() {
             <MessageCircle className="h-5 w-5" />
           </Button>
           <Link to="/profile">
-            <Avatar className="h-9 w-9 border border-white/10">
-              <AvatarImage src={profile?.avatar_url || ""} />
-              <AvatarFallback className="theme-bg font-black text-[10px]">{getInitials(profile?.full_name)}</AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              src={profile?.avatar_url}
+              name={profile?.full_name}
+              className="h-9 w-9 border border-white/10"
+              fallbackClassName="theme-bg font-black text-[10px]"
+            />
           </Link>
         </div>
       </div>

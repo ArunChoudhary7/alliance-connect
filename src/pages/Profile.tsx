@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Settings, Edit2, Sparkles, Grid, Lock, MessageCircle, Check, Link as LinkIcon, ShieldOff, MoreVertical, Building2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -353,12 +353,12 @@ export default function Profile() {
             <div className="relative flex items-center justify-center group z-20">
               <AuraProgressRing aura={profile.total_aura || 0} size={152} stroke={6} />
               <div className="absolute p-1 rounded-full overflow-hidden">
-                <Avatar className="h-32 w-32 border-[4px] border-black shadow-2xl transition-transform duration-500 group-hover:scale-95">
-                  <AvatarImage src={profile.avatar_url || ""} className="object-cover" />
-                  <AvatarFallback className="text-foreground text-3xl font-black italic uppercase theme-bg">
-                    {getInitials(profile.full_name)}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={profile.avatar_url}
+                  name={profile.full_name}
+                  className="h-32 w-32 border-[4px] border-black shadow-2xl transition-transform duration-500 group-hover:scale-95"
+                  fallbackClassName="text-foreground text-3xl font-black italic uppercase theme-bg"
+                />
               </div>
             </div>
 
@@ -493,7 +493,14 @@ export default function Profile() {
             {!isOwnProfile && mutuals.length > 0 && (
               <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
                 <div className="flex -space-x-2">
-                  {mutuals.slice(0, 3).map(m => <Avatar key={m.user_id} className="w-5 h-5 border border-background"><AvatarImage src={m.avatar_url} /></Avatar>)}
+                  {mutuals.slice(0, 3).map(m => (
+                    <UserAvatar
+                      key={m.user_id}
+                      src={m.avatar_url}
+                      name={m.full_name}
+                      className="w-5 h-5 border border-background"
+                    />
+                  ))}
                 </div>
                 <span>Followed by <span className="text-foreground font-bold">{mutuals[0].username}</span> {mutuals.length > 1 && `and others`}</span>
               </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { getInitials } from "@/lib/utils";
@@ -111,10 +111,12 @@ export function ConversationList({ onSelectConversation, selectedId }: any) {
                         className={`w-full p-4 flex gap-3 hover:bg-white/5 border-b border-white/5 transition-all relative ${selectedId === c.id ? 'bg-white/5' : ''}`}
                     >
                         <div className="relative">
-                            <Avatar className="h-12 w-12 ring-2 ring-primary/10">
-                                <AvatarImage src={c.other_user.avatar_url} />
-                                <AvatarFallback className="theme-bg font-bold">{getInitials(c.other_user.full_name)}</AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                                src={c.other_user.avatar_url}
+                                name={c.other_user.full_name}
+                                className="h-12 w-12 ring-2 ring-primary/10"
+                                fallbackClassName="theme-bg font-bold"
+                            />
                             {c.other_user.show_activity && (
                                 <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
                             )}

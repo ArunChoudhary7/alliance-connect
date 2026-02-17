@@ -7,7 +7,7 @@ import {
   Download, Plus, VolumeX, Trash2, FileUp, Music, Film, Layers, Paperclip, Upload, X
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -219,10 +219,12 @@ export default function CircleDetail() {
           <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); navigate('/circles'); }} className="hover:bg-primary/20 rounded-full">
             <ArrowLeft />
           </Button>
-          <Avatar className="h-10 w-10 ring-2 ring-primary/30 shadow-[0_0_15px_rgba(124,58,237,0.3)]">
-            <AvatarImage src={circle?.cover_url} />
-            <AvatarFallback className="font-black bg-gradient-to-br from-primary via-purple-500 to-pink-500 text-white">{circle?.name?.[0]}</AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            src={circle?.cover_url}
+            name={circle?.name}
+            className="h-10 w-10 ring-2 ring-primary/30 shadow-[0_0_15px_rgba(124,58,237,0.3)]"
+            fallbackClassName="font-black bg-gradient-to-br from-primary via-purple-500 to-pink-500 text-white"
+          />
           <div className="flex-1 min-w-0">
             <h2 className="font-black uppercase italic tracking-tighter text-lg truncate leading-none">{circle?.name}</h2>
             <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] opacity-80 mt-1">{realMemberCount} Members • Tap for info</p>
@@ -265,10 +267,11 @@ export default function CircleDetail() {
                     <div key={m.id} className={`flex gap-3 ${m.user_id === user?.id ? 'flex-row-reverse' : ''} group`}>
                       {m.user_id !== user?.id && (
                         <Link to={`/profile/${m.profiles?.username}`}>
-                          <Avatar className="h-8 w-8 ring-1 ring-white/10 mt-1">
-                            <AvatarImage src={m.profiles?.avatar_url} />
-                            <AvatarFallback className="text-[10px] bg-white/10">{m.profiles?.username?.[0]}</AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            src={m.profiles?.avatar_url}
+                            name={m.profiles?.username}
+                            className="h-8 w-8 ring-1 ring-white/10 mt-1"
+                          />
                         </Link>
                       )}
 
@@ -459,7 +462,11 @@ export default function CircleDetail() {
                   {allUsers.map(u => (
                     <div key={u.user_id} className="flex items-center justify-between p-3 bg-secondary/10 rounded-2xl border border-white/5 hover:bg-secondary/20 transition-colors">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8"><AvatarImage src={u.avatar_url} /><AvatarFallback className="bg-white/5 text-[10px]">{u.username?.[0]}</AvatarFallback></Avatar>
+                        <UserAvatar
+                          src={u.avatar_url}
+                          name={u.username}
+                          className="h-8 w-8"
+                        />
                         <span className="text-xs font-bold uppercase tracking-tight">@{u.username}</span>
                       </div>
                       <Button

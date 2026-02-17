@@ -4,7 +4,7 @@ import { Plus, ShoppingBag, Loader2, MessageCircle, X, AlertCircle, IndianRupee,
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -367,7 +367,12 @@ export default function Marketplace() {
                 <div className="p-4">
                   <h3 className="font-bold text-sm line-clamp-1 uppercase tracking-tight">{listing.title}</h3>
                   <div className="flex items-center gap-2 mt-2">
-                    <Avatar className="h-4 w-4"><AvatarImage src={listing.seller?.avatar_url || undefined} /><AvatarFallback className="text-[6px]">{getInitials(listing.seller?.full_name)}</AvatarFallback></Avatar>
+                    <UserAvatar
+                      src={listing.seller?.avatar_url}
+                      name={listing.seller?.full_name}
+                      className="h-4 w-4"
+                      fallbackClassName="text-[6px]"
+                    />
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">@{listing.seller?.username}</span>
                   </div>
                 </div>
@@ -407,7 +412,12 @@ export default function Marketplace() {
                   <p className="text-sm text-muted-foreground font-medium leading-relaxed">{selectedListing.description || "No description provided."}</p>
 
                   <div className="flex items-center gap-3 p-4 bg-secondary/20 rounded-2xl">
-                    <Avatar className="h-10 w-10 border-2 border-primary/20"><AvatarImage src={selectedListing.seller?.avatar_url || undefined} /><AvatarFallback className="font-black">{getInitials(selectedListing.seller?.full_name)}</AvatarFallback></Avatar>
+                    <UserAvatar
+                      src={selectedListing.seller?.avatar_url}
+                      name={selectedListing.seller?.full_name}
+                      className="h-10 w-10 border-2 border-primary/20"
+                      fallbackClassName="font-black"
+                    />
                     <div className="flex-1">
                       <p className="font-black text-sm uppercase tracking-tight">@{selectedListing.seller?.username}</p>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Verified Student Seller</p>

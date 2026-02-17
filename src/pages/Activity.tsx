@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, UserPlus, Users, Check, X, Loader2, Bell, RefreshCw, MessageSquare } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -486,10 +486,11 @@ export default function Activity() {
                     >
                       <div className="flex items-center gap-3">
                         <Link to={`/profile/${notification.actor_profile?.username}`} onClick={(e) => e.stopPropagation()}>
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={notification.actor_profile?.avatar_url || ""} />
-                            <AvatarFallback className="bg-gradient-primary text-primary-foreground">{getInitials(notification.actor_profile?.full_name)}</AvatarFallback>
-                          </Avatar>
+                          <UserAvatar
+                            src={notification.actor_profile?.avatar_url}
+                            name={notification.actor_profile?.full_name || notification.actor_profile?.username}
+                            className="h-12 w-12"
+                          />
                         </Link>
 
                         <div className="flex-1 min-w-0">
@@ -603,10 +604,11 @@ export default function Activity() {
                 {followRequests.map((request, index) => (
                   <motion.div key={request.id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ delay: index * 0.05 }} className="flex items-center gap-3 p-3 rounded-xl glass-card">
                     <Link to={`/profile/${request.requester_profile?.username}`}>
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={request.requester_profile?.avatar_url || ""} />
-                        <AvatarFallback className="bg-gradient-primary text-primary-foreground">{getInitials(request.requester_profile?.full_name)}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        src={request.requester_profile?.avatar_url}
+                        name={request.requester_profile?.full_name || request.requester_profile?.username}
+                        className="h-12 w-12"
+                      />
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link to={`/profile/${request.requester_profile?.username}`} className="font-semibold text-sm hover:underline">{request.requester_profile?.full_name}</Link>

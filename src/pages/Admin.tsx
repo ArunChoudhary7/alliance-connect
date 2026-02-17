@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Check, X, ShieldAlert, Loader2, FileText, UserCheck } from "lucide-react";
 import { getInitials } from "@/lib/utils";
@@ -177,10 +177,11 @@ export default function Admin() {
                 {requests.map(req => (
                   <div key={req.user_id} className="p-4 rounded-2xl bg-secondary/20 border border-white/5 flex items-center justify-between group hover:border-white/10 transition-colors">
                     <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12 ring-2 ring-white/10">
-                        <AvatarImage src={req.avatar_url} />
-                        <AvatarFallback>{getInitials(req.full_name)}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        src={req.avatar_url}
+                        name={req.full_name}
+                        className="w-12 h-12 ring-2 ring-white/10"
+                      />
                       <div>
                         <p className="font-bold text-sm">{req.full_name}</p>
                         <p className="text-xs text-muted-foreground font-mono">@{req.username}</p>
@@ -227,10 +228,11 @@ export default function Admin() {
                   <div key={ticket.id} className="p-4 rounded-2xl bg-secondary/20 border border-white/5 group hover:border-white/10 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8 ring-1 ring-white/10">
-                          <AvatarImage src={ticket.profiles?.avatar_url} />
-                          <AvatarFallback>{getInitials(ticket.profiles?.full_name)}</AvatarFallback>
-                        </Avatar>
+                        <UserAvatar
+                          src={ticket.profiles?.avatar_url}
+                          name={ticket.profiles?.full_name}
+                          className="w-8 h-8 ring-1 ring-white/10"
+                        />
                         <div>
                           <p className="text-sm font-bold">{ticket.profiles?.full_name || 'Unknown'}</p>
                           <p className="text-xs text-muted-foreground">@{ticket.profiles?.username}</p>

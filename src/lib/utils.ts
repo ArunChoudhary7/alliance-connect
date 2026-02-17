@@ -28,3 +28,9 @@ export function censorText(text: string): string {
   });
   return censored;
 }
+
+export function getAvatarUrl(avatarUrl: string | null | undefined, seed: string) {
+  if (avatarUrl && avatarUrl.trim() !== '') return avatarUrl;
+  // Use a cool, modern avatar style from DiceBear
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+}

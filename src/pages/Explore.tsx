@@ -4,7 +4,7 @@ import { Search, Loader2, Star, Medal, ArrowUpRight, ArrowRight } from "lucide-r
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -96,7 +96,11 @@ export default function Explore() {
                 {isSearching ? <div className="p-8 flex justify-center"><Loader2 className="animate-spin theme-text" /></div> : searchResults.length > 0 ? searchResults.map((user) => (
                   <Link key={user.user_id} to={`/profile/${user.username}`} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 border border-white/10"><AvatarImage src={user.avatar_url} /><AvatarFallback>{getInitials(user.full_name)}</AvatarFallback></Avatar>
+                      <UserAvatar
+                        src={user.avatar_url}
+                        name={user.full_name}
+                        className="h-10 w-10 border border-white/10"
+                      />
                       <div className="flex flex-col"><span className="text-sm font-black italic uppercase tracking-tighter leading-none">{user.full_name}</span><span className="text-[10px] font-bold opacity-40 uppercase tracking-widest mt-1">@{user.username}</span></div>
                     </div>
                     <ArrowRight className="h-4 w-4 opacity-0 group-hover:opacity-100 theme-text transition-all" />
@@ -153,7 +157,12 @@ export default function Explore() {
               <Link key={u.user_id || i} to={`/profile/${u.username}`} className="block">
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-[2rem] flex items-center gap-4 border border-white/5 shadow-xl transition-colors backdrop-blur-sm ${u.campus_rank <= 3 ? 'bg-primary/5' : 'bg-white/5'} hover:bg-white/10`}>
                   <div className="w-10 flex justify-center">{getRankIcon(u.campus_rank)}</div>
-                  <Avatar className="h-12 w-12 border-2 border-background shadow-lg"><AvatarImage src={u.avatar_url} /><AvatarFallback className="font-black bg-white/10 uppercase">{u.username?.[0]}</AvatarFallback></Avatar>
+                  <UserAvatar
+                    src={u.avatar_url}
+                    name={u.full_name}
+                    className="h-12 w-12 border-2 border-background shadow-lg"
+                    fallbackClassName="font-black bg-white/10 uppercase"
+                  />
                   <div className="flex-1"><h4 className="font-black uppercase italic tracking-tighter text-sm text-foreground">{u.full_name}</h4><p className="text-[9px] font-black uppercase theme-text tracking-widest mt-1">{u.department || ''}</p></div>
                   <div className="text-right"><div className="flex items-center gap-1 justify-end font-black italic text-lg leading-none text-foreground"><Star className="h-4 w-4 theme-text fill-current" /> {u.total_aura}</div></div>
                 </motion.div>

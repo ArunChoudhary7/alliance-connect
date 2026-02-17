@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Send, Loader2, X, SmilePlus, Reply as ReplyIcon, Trash2, MoreHorizontal } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -126,10 +126,12 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
           ) : (
             comments.map((c) => (
               <div key={c.id} className={cn("flex gap-4 group", c.parent_id && "ml-10 border-l border-white/5 pl-4")}>
-                <Avatar className="h-9 w-9 border border-white/10">
-                  <AvatarImage src={c.profiles?.avatar_url} />
-                  <AvatarFallback className="theme-bg">{getInitials(c.profiles?.full_name)}</AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={c.profiles?.avatar_url}
+                  name={c.profiles?.full_name}
+                  className="h-9 w-9 border border-white/10"
+                  fallbackClassName="theme-bg"
+                />
                 <div className="flex-1 space-y-1">
                   <div className="flex items-start justify-between bg-white/5 p-4 rounded-3xl rounded-tl-none border border-white/5">
                     <div className="flex-1">

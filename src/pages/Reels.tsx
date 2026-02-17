@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Send, VolumeX, Volume2, Play, ArrowLeft, Loader2, Trash2, Ghost } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toggleAura } from "@/lib/supabase";
@@ -235,7 +235,11 @@ export default function Reels() {
             </div>
             <div className="absolute bottom-8 left-4 right-16 z-40">
               <div className="flex items-center gap-3 mb-4">
-                <Avatar className="h-10 w-10 border-2 border-white/30"><AvatarImage src={reel.profiles?.avatar_url} /><AvatarFallback>{getInitials(reel.profiles?.full_name)}</AvatarFallback></Avatar>
+                <UserAvatar
+                  src={reel.profiles?.avatar_url}
+                  name={reel.profiles?.full_name}
+                  className="h-10 w-10 border-2 border-white/30"
+                />
                 <span className="text-white font-black uppercase italic tracking-tighter">@{reel.profiles?.username}</span>
               </div>
               <p className="text-white/90 text-sm font-medium line-clamp-2">{reel.content}</p>
