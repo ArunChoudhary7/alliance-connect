@@ -238,7 +238,7 @@ export function OnboardingForm() {
                   <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-border/50">
                     <SelectValue placeholder="Select your department" />
                   </SelectTrigger>
-                  <SelectContent className="max-h-[200px]">
+                  <SelectContent className="max-h-[200px] bg-popover border-border shadow-2xl">
                     {departments.map((dept) => (
                       <SelectItem key={dept} value={dept}>
                         {dept}
@@ -260,7 +260,7 @@ export function OnboardingForm() {
                   <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-border/50">
                     <SelectValue placeholder="Select your year" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[200px] bg-popover border-border shadow-2xl">
                     {years.map((year) => (
                       <SelectItem key={year} value={year}>
                         {year}

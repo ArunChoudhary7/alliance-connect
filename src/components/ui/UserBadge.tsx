@@ -24,11 +24,11 @@ export function UserBadge({ userId, username, role, isVerified, verifiedTitle, v
     // Check verification validity date if provided
     const isVerificationValid = isVerified && (!verificationExpiry || new Date(verificationExpiry) > new Date());
 
-    if (isVerificationValid) {
+    if (role && DEV_ROLES.includes(role.toLowerCase())) {
+        badgeType = "developer";
+    } else if (isVerificationValid) {
         badgeType = "verified";
         badgeTitleStr = verifiedTitle || "Verified";
-    } else if (role && DEV_ROLES.includes(role.toLowerCase())) {
-        badgeType = "developer";
     } else if (role === "professor") {
         badgeType = "professor";
     } else if (role === "special_student" || role === "scholar") {
