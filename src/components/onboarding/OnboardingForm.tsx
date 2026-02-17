@@ -130,8 +130,7 @@ export function OnboardingForm() {
         formData.username.length >= 3 &&
         usernameAvailable === true &&
         formData.full_name.trim().length >= 2 &&
-        formData.department &&
-        formData.year
+        formData.department
       );
     }
     if (step === 2) {
@@ -226,48 +225,50 @@ export function OnboardingForm() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="department" className="text-sm font-medium flex items-center gap-2">
-                <Building2 className="h-4 w-4" />
-                Department
-              </Label>
-              <Select
-                value={formData.department}
-                onValueChange={(value) => setFormData({ ...formData, department: value })}
-              >
-                <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-border/50">
-                  <SelectValue placeholder="Select your department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept} value={dept}>
-                      {dept}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="department" className="text-sm font-medium flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Department <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-border/50">
+                    <SelectValue placeholder="Select your department" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[200px]">
+                    {departments.map((dept) => (
+                      <SelectItem key={dept} value={dept}>
+                        {dept}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="year" className="text-sm font-medium flex items-center gap-2">
-                <GraduationCap className="h-4 w-4" />
-                Year
-              </Label>
-              <Select
-                value={formData.year}
-                onValueChange={(value) => setFormData({ ...formData, year: value })}
-              >
-                <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-border/50">
-                  <SelectValue placeholder="Select your year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="year" className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                  <GraduationCap className="h-4 w-4" />
+                  Year <span className="text-xs opacity-50">(Optional)</span>
+                </Label>
+                <Select
+                  value={formData.year}
+                  onValueChange={(value) => setFormData({ ...formData, year: value })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl bg-secondary/50 border-border/50">
+                    <SelectValue placeholder="Select your year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((year) => (
+                      <SelectItem key={year} value={year}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </motion.div>
         )}
