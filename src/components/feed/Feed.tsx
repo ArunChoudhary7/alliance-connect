@@ -114,7 +114,7 @@ export function Feed() {
               animate={{ opacity: 1, y: 0 }}
               className="px-2 pb-4"
             >
-              <MilestoneRewards aura={profile.total_aura || 0} />
+              <MilestoneRewards aura={profile.total_aura || 0} variant="compact" />
             </motion.div>
           )}
           <CreatePost onPostCreated={fetchFeed} />

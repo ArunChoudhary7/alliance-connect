@@ -1,149 +1,132 @@
 import { motion } from "framer-motion";
-import { Gift, Shirt, CupSoda, Trophy, Sparkles, Lock, ArrowRight, Zap, Target, Star } from "lucide-react";
+import { Gift, ArrowRight, Zap, Star, Sparkles, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MilestoneRewardsProps {
     aura: number;
+    variant?: "compact" | "full";
 }
 
-export function MilestoneRewards({ aura }: MilestoneRewardsProps) {
+export function MilestoneRewards({ aura, variant = "full" }: MilestoneRewardsProps) {
     const isEligible = aura >= 300;
     const progress = Math.min(100, (aura / 300) * 100);
+    const isCompact = variant === "compact";
+
+    if (isCompact) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="px-2 pb-2"
+            >
+                <div className="bg-rose-500/10 border-2 border-rose-400 rounded-3xl p-4 shadow-[0_8px_20px_-10px_rgba(244,63,94,0.3)]">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-500 italic flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3" />
+                            {isEligible ? "Special Gift Ready!" : "Keep posting and unlock gifts"}
+                        </p>
+                        <span className="text-[10px] font-black text-rose-500 tabular-nums bg-white/10 px-2 py-0.5 rounded-full ring-1 ring-rose-500/20">
+                            {Math.floor(progress)}%
+                        </span>
+                    </div>
+                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-rose-500/10 p-[1px]">
+                        <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            className="h-full bg-rose-500 rounded-full shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+                        />
+                    </div>
+                    <p className="text-[9px] font-bold text-rose-400 mt-2 uppercase tracking-tight text-center leading-tight">
+                        Reach 300 Aura to unlock a <span className="text-white">T-Shirt</span> and <span className="text-white">Diet Coke</span>
+                    </p>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             className={cn(
-                "relative overflow-hidden rounded-[2.5rem] p-8 transition-all duration-700 group",
-                "bg-[#0a0a0c] border border-white/5 shadow-2xl",
+                "relative overflow-hidden rounded-[2rem] p-4 md:p-6 transition-all duration-500 max-w-sm mx-auto",
+                "bg-rose-500/5 border-2",
                 isEligible
-                    ? "ring-1 ring-yellow-500/30 shadow-[0_20px_60px_-15px_rgba(234,179,8,0.2)]"
-                    : "hover:border-white/10"
+                    ? "border-rose-400 shadow-[20px_20px_60px_rgba(244,63,94,0.1)] bg-rose-500/10"
+                    : "border-rose-500/30 shadow-lg"
             )}
         >
-            {/* MOVING LIQUID BACKGROUND EFFECT */}
-            <motion.div
-                animate={{
-                    backgroundPosition: ["0% 0%", "100% 100%", "0% 100%", "100% 0%", "0% 0%"],
-                    scale: [1, 1.1, 1],
-                }}
-                transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                }}
-                className="absolute inset-0 opacity-40 pointer-events-none"
-                style={{
-                    background: "radial-gradient(circle at 10% 20%, rgba(var(--theme-accent), 0.2) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.2) 0%, transparent 40%), radial-gradient(circle at 50% 15%, rgba(168, 85, 247, 0.15) 0%, transparent 50%), radial-gradient(circle at 85% 10%, rgba(236, 72, 153, 0.1) 0%, transparent 40%)",
-                    backgroundSize: "300% 300%",
-                    filter: "blur(40px)",
-                }}
-            />
+            {/* CUTE DECORATIVE ELEMENTS */}
+            <div className="absolute top-0 right-0 p-3 opacity-10 blur-sm pointer-events-none">
+                <Heart className="w-12 h-12 text-rose-400 rotate-12" />
+            </div>
 
-            {/* PREVIOUS COLOR GLOWS */}
-            <div className={cn(
-                "absolute -top-32 -right-32 w-64 h-64 rounded-full blur-[100px] opacity-20 pointer-events-none transition-colors duration-1000",
-                isEligible ? "bg-yellow-400" : "bg-blue-600"
-            )} />
-            <div className={cn(
-                "absolute -bottom-32 -left-32 w-64 h-64 rounded-full blur-[100px] opacity-10 pointer-events-none transition-colors duration-1000",
-                isEligible ? "bg-orange-600" : "bg-purple-600"
-            )} />
-
-            {/* CARBON FIBRE OVERLAY FOR TEMPTATION */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-
-            <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                {/* HERO ICON SECTION */}
-                <div className="relative shrink-0">
+            <div className="relative z-10 flex flex-col items-center text-center gap-2">
+                {/* THE CUTE GIFT BOX ICON - EVEN SMALLER */}
+                <div className="relative">
                     <motion.div
                         animate={isEligible ? {
-                            rotate: [0, -5, 5, -5, 5, 0],
-                            scale: [1, 1.05, 1]
+                            y: [0, -6, 0],
+                            rotate: [0, -5, 5, 0]
                         } : {}}
-                        transition={{ repeat: Infinity, duration: 4 }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                         className={cn(
-                            "w-28 h-28 rounded-[2.2rem] flex items-center justify-center relative overflow-hidden transition-all duration-700",
+                            "w-12 h-12 rounded-2xl flex items-center justify-center relative shadow-xl transition-all duration-700",
                             isEligible
-                                ? "bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 shadow-[0_0_40px_rgba(234,179,8,0.4)]"
-                                : "bg-white/5 border border-white/10"
+                                ? "bg-rose-500 text-white ring-2 ring-rose-400/30"
+                                : "bg-rose-500/20 text-rose-500/60 border border-rose-500/20"
                         )}
                     >
-                        <Gift className={cn("w-12 h-12 transition-colors duration-500", isEligible ? "text-black" : "text-white/20")} />
-
-                        {/* LASER SCAN EFFECT */}
-                        <motion.div
-                            animate={{ y: [-60, 60] }}
-                            transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-                            className="absolute inset-x-0 h-[3px] bg-white/40 blur-[2px] pointer-events-none"
-                        />
+                        <Gift className="w-6 h-6 drop-shadow-lg" />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-full bg-white/10" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-white/10" />
                     </motion.div>
 
                     {isEligible && (
                         <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className="absolute -top-4 -right-4 bg-white text-black p-2 rounded-2xl shadow-2xl flex items-center justify-center"
+                            animate={{ scale: [1, 1.2, 1], rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 3 }}
+                            className="absolute -top-1 -right-1 bg-yellow-400 text-black p-0.5 rounded-lg shadow-xl border border-white"
                         >
-                            <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 animate-[spin_8s_linear_infinite]" />
+                            <Star className="w-2.5 h-2.5 fill-current" />
                         </motion.div>
                     )}
                 </div>
 
-                {/* CONTENT & ACTION SECTION */}
-                <div className="flex-1 text-center md:text-left min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                        <div className={cn(
-                            "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] inline-flex items-center gap-2 mx-auto md:mx-0",
-                            isEligible ? "bg-yellow-400/20 text-yellow-400 border border-yellow-400/30" : "bg-white/5 text-white/40 border border-white/10"
-                        )}>
-                            {isEligible ? <Zap className="w-3 h-3 fill-current" /> : <Target className="w-3 h-3" />}
-                            {isEligible ? "Legendary Bundle Ready" : "Aura Milestone"}
-                        </div>
-                        {isEligible && (
-                            <div className="flex items-center gap-1">
-                                <Sparkles className="w-3 h-3 text-yellow-400 animate-pulse" />
-                                <span className="text-[10px] font-black text-yellow-400/60 tracking-widest uppercase">Verified Elite</span>
-                            </div>
-                        )}
-                    </div>
-
-                    <h4 className="text-3xl font-black uppercase italic tracking-tighter text-white mb-3 drop-shadow-2xl">
-                        Elite Starter Pack
+                <div className="space-y-0.5">
+                    <h4 className="text-sm font-black uppercase italic tracking-tighter text-rose-500 leading-none">
+                        {isEligible ? "Gift Unlocked!" : "Keep posting and unlock gifts"}
                     </h4>
-
-                    <p className="text-sm font-medium text-white/40 mb-8 max-w-md leading-relaxed">
-                        Reach <span className="text-white">Level 3 (300 Aura)</span> to secure your exclusive offline bundle. Includes our limited-edition <span className="text-white italic">Premium T-Shirt</span> and a chilled <span className="text-white italic font-bold">Diet Coke</span>.
+                    <p className="text-[10px] font-bold text-rose-400/60 max-w-[150px] leading-tight">
+                        {isEligible
+                            ? "T-Shirt & Coke Bundle is yours!"
+                            : "300 Aura = Exclusive Gear."}
                     </p>
-
-                    {isEligible ? (
-                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                            <Button className="w-full md:w-auto h-14 px-10 rounded-2xl bg-white text-black font-black uppercase text-xs tracking-[0.2em] hover:scale-105 transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)] group/btn">
-                                Claim Your Status <ArrowRight className="ml-2 w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                            </Button>
-                        </motion.div>
-                    ) : (
-                        <div className="space-y-4 px-1">
-                            <div className="flex justify-between items-end mb-2">
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">Syncing Aura Progress...</p>
-                                <p className="text-xs font-black theme-text italic tabular-nums">{Math.floor(progress)}%</p>
-                            </div>
-                            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    className="h-full bg-gradient-to-r from-yellow-500 via-orange-500 to-red-600 rounded-full relative"
-                                >
-                                    <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:15px_15px] animate-[progress-stripe_1s_linear_infinite]" />
-                                    <div className="absolute inset-0 shadow-[0_0_20px_rgba(234,179,8,0.5)] blur-[5px]" />
-                                </motion.div>
-                            </div>
-                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.3em] text-center md:text-left">{aura} / 300 Aura Transmitted</p>
-                        </div>
-                    )}
                 </div>
+
+                {/* PROGRESS SECTION */}
+                {!isEligible ? (
+                    <div className="w-full space-y-2 mt-1">
+                        <div className="flex justify-between items-end px-1">
+                            <span className="text-[7px] font-black uppercase tracking-widest text-rose-500/40">Broadcasting...</span>
+                            <span className="text-[9px] font-black text-rose-500 italic">{Math.floor(progress)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-black/20 rounded-full overflow-hidden border border-white/5 p-0.5">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                className="h-full bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.3)] relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:10px_10px] animate-[progress-stripe_1s_linear_infinite]" />
+                            </motion.div>
+                        </div>
+                    </div>
+                ) : (
+                    <Button className="w-full h-9 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black uppercase text-[8px] tracking-widest shadow-lg group transition-all">
+                        Claim Gear <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                )}
             </div>
         </motion.div>
     );
