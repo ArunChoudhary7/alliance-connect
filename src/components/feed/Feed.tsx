@@ -108,16 +108,16 @@ export function Feed() {
 
       {!highlightedPostId && (
         <>
-          <CreatePost onPostCreated={fetchFeed} />
           {profile && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="px-2 pb-2"
+              className="px-2 pb-4"
             >
               <MilestoneRewards aura={profile.total_aura || 0} />
             </motion.div>
           )}
+          <CreatePost onPostCreated={fetchFeed} />
         </>
       )}
 

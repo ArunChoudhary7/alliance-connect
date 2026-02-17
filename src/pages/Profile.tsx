@@ -535,7 +535,7 @@ export default function Profile() {
         </div>
 
         {isOwnProfile && (
-          <div className="px-6">
+          <div className="px-6 mb-6">
             <MilestoneRewards aura={profile.total_aura || 0} />
           </div>
         )}
