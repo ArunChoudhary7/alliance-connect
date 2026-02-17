@@ -14,6 +14,7 @@ interface Comment {
   id: string;
   content: string;
   created_at: string;
+  user_id?: string;
 }
 
 interface ConfessionCommentsProps {
@@ -42,7 +43,7 @@ export function ConfessionComments({ confessionId, onClose, isAdmin }: Confessio
     try {
       const { data, error } = await supabase
         .from('confession_comments')
-        .select('id, content, created_at')
+        .select('id, content, created_at, user_id')
         .eq('confession_id', confessionId)
         .order('created_at', { ascending: true });
 
@@ -153,7 +154,7 @@ export function ConfessionComments({ confessionId, onClose, isAdmin }: Confessio
                         {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                       </span>
                     </div>
-                    {isAdmin && (
+                    {(isAdmin || user?.id === comment.user_id) && (
                       <button
                         onClick={() => handleDeleteComment(comment.id)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:scale-110 active:scale-95"

@@ -127,6 +127,7 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
                     </div>
                     {/* DELETE/OPTIONS (INSTA STYLE) */}
                     {(
+                      user?.id === c.user_id ||
                       profile?.role === 'admin' ||
                       profile?.role === 'developer' ||
                       [

@@ -499,8 +499,13 @@ export default function Profile() {
             )}
             {profile.bio && <p className="mt-3 text-sm font-medium leading-relaxed max-w-md text-foreground/80">{profile.bio}</p>}
             {profile.website && (
-              <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 mt-2 theme-text hover:underline text-sm font-bold w-fit">
-                <LinkIcon className="h-3 w-3" /> {new URL(profile.website).hostname}
+              <a
+                href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 mt-2 theme-text hover:underline text-sm font-bold w-fit"
+              >
+                <LinkIcon className="h-3 w-3" /> {profile.website}
               </a>
             )}
           </div>
