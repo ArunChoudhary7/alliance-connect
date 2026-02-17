@@ -6,8 +6,11 @@ import { PostCard } from "./PostCard";
 import { Button } from "@/components/ui/button";
 import { CreatePost } from "./CreatePost";
 import { AnimatePresence, motion } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
+import { MilestoneRewards } from "@/components/profile/MilestoneRewards";
 
 export function Feed() {
+  const { profile } = useAuth();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -104,7 +107,18 @@ export function Feed() {
       </div>
 
       {!highlightedPostId && (
-        <CreatePost onPostCreated={fetchFeed} />
+        <>
+          <CreatePost onPostCreated={fetchFeed} />
+          {profile && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="px-2 pb-2"
+            >
+              <MilestoneRewards aura={profile.total_aura || 0} />
+            </motion.div>
+          )}
+        </>
       )}
 
       {posts.length === 0 ? (

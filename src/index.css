@@ -251,6 +251,16 @@
   }
 }
 
+@keyframes progress-stripe {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(20px);
+  }
+}
+
 @keyframes slow-breath {
   0% {
     background-position: 0% 50%;

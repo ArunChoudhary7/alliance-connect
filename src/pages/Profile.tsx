@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { getInitials, cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { UserBadge } from "@/components/ui/UserBadge";
+import { MilestoneRewards } from "@/components/profile/MilestoneRewards";
 
 // --- AURA RING COMPONENT ---
 const AuraProgressRing = ({ aura, size = 152, stroke = 6 }: { aura: number, size?: number, stroke?: number }) => {
@@ -532,6 +533,12 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {isOwnProfile && (
+          <div className="px-6">
+            <MilestoneRewards aura={profile.total_aura || 0} />
+          </div>
+        )}
 
         {/* {!isPrivateLocked && <MomentHighlights userId={profile.user_id} isOwnProfile={isOwnProfile} />} */}
 
