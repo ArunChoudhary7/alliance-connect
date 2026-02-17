@@ -5,14 +5,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function getInitials(name: string | null) {
-  if (!name) return "AU";
-  return name
+export function getInitials(name: string | null | undefined) {
+  if (!name || name.trim() === '' || name === 'null' || name === 'undefined') return "AU";
+  const initials = name
     .split(" ")
+    .filter(Boolean)
     .map((n) => n[0])
     .join("")
-    .toUpperCase()
-    .slice(0, 2);
+    .toUpperCase();
+  return initials.slice(0, 2) || "AU";
 }
 
 const FORBIDDEN_WORDS = [
@@ -30,7 +31,15 @@ export function censorText(text: string): string {
 }
 
 export function getAvatarUrl(avatarUrl: string | null | undefined, seed: string) {
-  if (avatarUrl && avatarUrl.trim() !== '') return avatarUrl;
-  // Use a cool, modern avatar style from DiceBear
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+  // Handle literal "null" or "undefined" strings that sometimes come from DB/client quirks
+  if (!avatarUrl || avatarUrl === 'null' || avatarUrl === 'undefined' || avatarUrl.trim() === '') {
+    // Force a reliable seed if name is also garbage
+    const cleanSeed = (!seed || seed === 'null' || seed === 'undefined' || seed.trim() === '')
+      ? 'anonymous'
+      : seed.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Use a cool, modern avatar style from DiceBear
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(cleanSeed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+  }
+  return avatarUrl;
 }
