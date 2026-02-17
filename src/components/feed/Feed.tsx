@@ -62,7 +62,7 @@ export function Feed() {
   }
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6 pb-20 w-full max-w-[600px] mx-auto">
       <div className="flex items-center justify-between px-2 pt-2">
         <h1 className="text-xl font-black italic uppercase tracking-tighter text-white/50">Alliance Network</h1>
         <Button

@@ -9,11 +9,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { createComment, getComments } from "@/lib/supabase";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { getInitials, cn } from "@/lib/utils";
+import { getInitials, cn, censorText } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommentAdded }: any) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [comments, setComments] = useState<any[]>([]);
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState<any>(null);
@@ -56,7 +56,7 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
         .insert({
           user_id: user.id,
           post_id: postId,
-          content: txt.trim(),
+          content: censorText(txt.trim()),
           parent_id: replyTo?.id ?? null,
         })
         .select(`
@@ -126,7 +126,7 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
                       <p className="text-sm text-white/90 leading-relaxed font-medium">{c.content}</p>
                     </div>
                     {/* DELETE/OPTIONS (INSTA STYLE) */}
-                    {(user?.id === c.user_id || user?.id === postOwnerId) && (
+                    {(user?.id === c.user_id || user?.id === postOwnerId || profile?.role === 'admin' || profile?.role === 'developer') && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 ml-2">

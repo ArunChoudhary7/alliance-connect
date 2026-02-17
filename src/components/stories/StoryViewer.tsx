@@ -385,6 +385,7 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
 
         {/* MEDIA / TEXT DISPLAY (Z-20 Container) */}
         <div
+          className="w-full h-full flex items-center justify-center bg-zinc-950 relative z-20"
           style={{ background: currentStory.background_color || '#09090b' }}
         >
           {isTextStory ? (

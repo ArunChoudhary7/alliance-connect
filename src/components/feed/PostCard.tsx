@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toggleAura } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { Link } from "react-router-dom";
-import { getInitials, cn } from "@/lib/utils";
+import { getInitials, cn, censorText } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { toast } from "sonner";
 import { PostComments } from "@/components/feed/PostComments";
@@ -329,7 +329,7 @@ export function PostCard({ post, onDeleted }: any) {
               isElite && "font-medium text-base",
               isStealth ? "text-red-500 font-mono italic" : ""
             )}>
-              {post.content}
+              {censorText(post.content)}
             </p>
           )}
 

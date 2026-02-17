@@ -233,7 +233,7 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
       )}
 
       <main id="main-scroll-area" className={`flex-1 ${showNav ? 'md:pl-64 pt-16 md:pt-0 pb-20 md:pb-0' : ''} ${disableScroll ? 'h-full overflow-hidden' : 'overflow-y-auto'} scroll-smooth scrollbar-hide`}>
-        <div className={`${disableScroll ? 'h-full p-0' : 'px-2 pt-4 pb-8'} relative z-10`}>
+        <div className={`${disableScroll ? 'h-full p-0' : 'px-2 pt-4 pb-8'} relative z-10 max-w-screen-2xl mx-auto flex flex-col items-center`}>
           {children}
         </div>
       </main>

@@ -14,3 +14,17 @@ export function getInitials(name: string | null) {
     .toUpperCase()
     .slice(0, 2);
 }
+
+const FORBIDDEN_WORDS = [
+  "fuck", "shit", "bitch", "asshole", "bastard", "dick", "pussy", "cunt",
+  "nigga", "nigger", "faggot", "slut", "whore"
+];
+
+export function censorText(text: string): string {
+  let censored = text;
+  FORBIDDEN_WORDS.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    censored = censored.replace(regex, "****");
+  });
+  return censored;
+}
