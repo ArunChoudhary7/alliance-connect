@@ -102,7 +102,9 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
           'carunbtech23@ced.alliance.edu.in',
           'gkartikaybtech23@ced.alliance.edu.in',
           'aateefbtech23@ced.alliance.edu.in',
-          'sshlokbtech23@ced.alliance.edu.in'
+          'sshlokbtech23@ced.alliance.edu.in',
+          'aateef@ced.alliance.edu.in',
+          'sshlok@ced.alliance.edu.in'
         ].includes(user?.email || '') ||
         profile?.role === 'developer' ||
         profile?.role === 'admin'
@@ -135,7 +137,7 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
                     <div className="w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-white/5 p-1">
                       <img src="/aulogo.png" className="w-full h-full object-contain rounded-full" alt="Logo" />
                     </div>
-                    <SheetTitle className="text-2xl font-black italic uppercase theme-text tracking-tighter">Alliance</SheetTitle>
+                    <SheetTitle className="text-2xl font-black italic uppercase theme-text tracking-tighter">AUConnect</SheetTitle>
                   </div>
                 </SheetHeader>
                 <nav className="flex flex-col gap-2 overflow-y-auto max-h-[70vh] no-scrollbar">
@@ -185,7 +187,7 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
             <div className="w-12 h-12 rounded-full border border-white/10 overflow-hidden bg-white/5 p-1.5 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
               <img src="/aulogo.png" className="w-full h-full object-contain rounded-full" alt="Logo" />
             </div>
-            <div className="text-2xl font-black italic uppercase theme-text tracking-tighter">Alliance</div>
+            <div className="text-2xl font-black italic uppercase theme-text tracking-tighter">AUConnect</div>
           </div>
 
           <div className="flex items-center gap-2 mb-8 px-2">

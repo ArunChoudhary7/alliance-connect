@@ -60,12 +60,22 @@ export function MenuDrawer() {
   const menuSections = [
     ...baseMenuSections,
     // Add Admin Section if user is authorized
-    ...(profile?.username === 'arun' || profile?.role === 'admin' ? [{
-      title: "Command Center",
-      items: [
-        { icon: ShieldCheck, label: "Admin Dashboard", path: "/admin" }
-      ]
-    }] : [])
+    ...(profile?.role === 'admin' ||
+      profile?.role === 'developer' ||
+      profile?.username === 'arun' ||
+      [
+        'carunbtech23@ced.alliance.edu.in',
+        'gkartikaybtech23@ced.alliance.edu.in',
+        'aateefbtech23@ced.alliance.edu.in',
+        'sshlokbtech23@ced.alliance.edu.in',
+        'aateef@ced.alliance.edu.in',
+        'sshlok@ced.alliance.edu.in'
+      ].includes(profile?.email || '') ? [{
+        title: "Command Center",
+        items: [
+          { icon: ShieldCheck, label: "Admin Dashboard", path: "/admin" }
+        ]
+      }] : [])
   ];
 
   // Close on ESC key
@@ -128,7 +138,7 @@ export function MenuDrawer() {
                 <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
                   <span className="text-lg font-bold text-primary-foreground">AU</span>
                 </div>
-                <span className="text-xl font-bold gradient-text">AUConnect</span>
+                <span className="text-xl font-bold gradient-text italic">AUConnect</span>
               </div>
               <Button
                 variant="ghost"

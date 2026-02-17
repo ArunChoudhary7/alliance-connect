@@ -22,7 +22,7 @@ import {
 // ============================================================
 export const ALLOWED_DOMAIN = ".alliance.edu.in";
 export function isValidAllianceEmail(email: string): boolean {
-  return email.toLowerCase().endsWith(ALLOWED_DOMAIN) || email.toLowerCase() === "auconnex@gmail.com";
+  return email.toLowerCase().endsWith(ALLOWED_DOMAIN) || email.toLowerCase() === "auconnecx@gmail.com";
 }
 
 // Helper to get the correct site URL for redirects (production vs local)
@@ -452,7 +452,12 @@ export async function toggleAura(userId: string, postId: string) {
 
 export async function getAuraLeaderboard(limit = 10) {
   const safeLimit = Math.min(Math.max(1, limit), 50);
-  return await supabase.from("profiles").select("username, full_name, avatar_url, total_aura, department").order("total_aura", { ascending: false }).limit(safeLimit);
+  return await supabase
+    .from("profiles")
+    .select("username, full_name, avatar_url, total_aura, department")
+    .neq("username", "auconnect")
+    .order("total_aura", { ascending: false })
+    .limit(safeLimit);
 }
 
 // ============================================================

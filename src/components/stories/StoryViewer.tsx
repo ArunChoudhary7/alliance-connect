@@ -450,7 +450,7 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
         </div>
 
         {/* 🔥 FIX: VISIT POST BUTTON MOVED OUTSIDE THE Z-20 CONTAINER 🔥 */}
-        {isBeam && (
+        {isBeam && !showViewers && (
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClose(); navigate(`/post/${currentStory.post_id}`); }}
             className="absolute bottom-36 left-1/2 -translate-x-1/2 bg-white text-black px-8 py-3.5 rounded-full font-black text-[11px] uppercase tracking-widest shadow-2xl active:scale-95 transition-all z-[100] flex items-center gap-2 pointer-events-auto cursor-pointer"
@@ -500,7 +500,7 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
         {/* VIEWERS LIST (Own Story Only) */}
         {isOwnStory && showViewers && (
           <div
-            className="absolute inset-0 bg-black/60 z-[80] flex items-end md:items-center justify-center"
+            className="absolute inset-0 bg-black/60 z-[110] flex items-end md:items-center justify-center"
             onClick={() => {
               setShowViewers(false);
               setIsPaused(false);

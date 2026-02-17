@@ -438,7 +438,7 @@ export default function Settings() {
                   Urgent Issue?
                 </p>
                 <p className="text-xs font-medium">
-                  Alternatively, you can mail us at <a href="mailto:auconnex@gmail.com" className="text-primary hover:underline">auconnex@gmail.com</a>
+                  Alternatively, you can mail us at <a href="mailto:auconnecx@gmail.com" className="text-primary hover:underline">auconnecx@gmail.com</a>
                 </p>
               </div>
             </div>
@@ -574,12 +574,12 @@ export default function Settings() {
                       </p>
                       <Button
                         onClick={() => {
-                          window.location.href = `mailto:auconnex@gmail.com?subject=Verification Payment Issue: @${profile?.username}&body=I have paid for verification but my status is still pending. My User ID: ${profile?.user_id}`;
+                          window.location.href = `mailto:auconnecx@gmail.com?subject=Verification Payment Issue: @${profile?.username}&body=I have paid for verification but my status is still pending. My User ID: ${profile?.user_id}`;
                         }}
                         variant="outline"
                         className="w-full h-10 rounded-xl text-xs font-bold bg-white/5 hover:bg-white/10 border-white/10"
                       >
-                        Mail us at auconnex@gmail.com
+                        Mail us at auconnecx@gmail.com
                       </Button>
                       <Button onClick={() => setActiveSheet(null)} className="w-full h-12 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold border border-white/10">
                         Close
@@ -610,7 +610,7 @@ export default function Settings() {
                               setIsVerifying(true);
                               await handleVerificationPayment();
                               setTimeout(() => {
-                                window.location.href = `mailto:auconnex@gmail.com?subject=New Verification Request: @${profile?.username}&body=I have paid Rs 49 for verification. My User ID: ${profile?.user_id}. Please verify my badge.`;
+                                window.location.href = `mailto:auconnecx@gmail.com?subject=New Verification Request: @${profile?.username}&body=I have paid Rs 49 for verification. My User ID: ${profile?.user_id}. Please verify my badge.`;
                                 setIsVerifying(false);
                               }, 1000);
                             }}
@@ -658,7 +658,7 @@ export default function Settings() {
                         await handleVerificationPayment();
                         // Open mail client immediately after marking as pending
                         setTimeout(() => {
-                          window.location.href = `mailto:auconnex@gmail.com?subject=New Verification Request: @${profile?.username}&body=I have paid Rs 49 for verification. My User ID: ${profile?.user_id}. Please verify my badge.`;
+                          window.location.href = `mailto:auconnecx@gmail.com?subject=New Verification Request: @${profile?.username}&body=I have paid Rs 49 for verification. My User ID: ${profile?.user_id}. Please verify my badge.`;
                         }, 1000);
                       }}
                       disabled={isVerifying}

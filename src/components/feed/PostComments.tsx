@@ -126,20 +126,33 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
                       <p className="text-sm text-white/90 leading-relaxed font-medium">{c.content}</p>
                     </div>
                     {/* DELETE/OPTIONS (INSTA STYLE) */}
-                    {(user?.id === c.user_id || user?.id === postOwnerId || profile?.role === 'admin' || profile?.role === 'developer') && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 ml-2">
-                            <MoreHorizontal className="h-4 w-4 opacity-50" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-black/95 border-white/10 rounded-xl">
-                          <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-red-500 font-bold uppercase text-[10px]">
-                            <Trash2 className="h-3 w-3 mr-2" /> Delete Comment
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                    {(
+                      user?.id === c.user_id ||
+                      user?.id === postOwnerId ||
+                      profile?.role === 'admin' ||
+                      profile?.role === 'developer' ||
+                      [
+                        'carunbtech23@ced.alliance.edu.in',
+                        'gkartikaybtech23@ced.alliance.edu.in',
+                        'sshlok@ced.alliance.edu.in',
+                        'aateef@ced.alliance.edu.in',
+                        'sshlokbtech23@ced.alliance.edu.in',
+                        'aateefbtech23@ced.alliance.edu.in'
+                      ].includes(user?.email || '')
+                    ) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 ml-2">
+                              <MoreHorizontal className="h-4 w-4 opacity-50" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-black/95 border-white/10 rounded-xl">
+                            <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-red-500 font-bold uppercase text-[10px]">
+                              <Trash2 className="h-3 w-3 mr-2" /> Delete Comment
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                   </div>
                   <div className="flex gap-4 px-2 text-[10px] font-black uppercase tracking-widest opacity-30 mt-1">
                     <span>{formatDistanceToNow(new Date(c.created_at))}</span>

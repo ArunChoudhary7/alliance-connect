@@ -19,9 +19,10 @@ interface Comment {
 interface ConfessionCommentsProps {
   confessionId: string | null;
   onClose: () => void;
+  isAdmin?: boolean;
 }
 
-export function ConfessionComments({ confessionId, onClose }: ConfessionCommentsProps) {
+export function ConfessionComments({ confessionId, onClose, isAdmin }: ConfessionCommentsProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -38,18 +39,28 @@ export function ConfessionComments({ confessionId, onClose }: ConfessionComments
     if (!confessionId) return;
     setLoading(true);
 
-    const { data } = await supabase
-      .from('confession_comments')
-      .select('id, content, created_at')
-      .eq('confession_id', confessionId)
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('confession_comments')
+        .select('id, content, created_at')
+        .eq('confession_id', confessionId)
+        .order('created_at', { ascending: true });
 
-    setComments(data || []);
-    setLoading(false);
+      if (error) throw error;
+      setComments(data || []);
+    } catch (error: any) {
+      console.error("Fetch Comments Error:", error);
+      // Silently handle aborted signals or network glitches
+      if (error.name !== 'AbortError') {
+        toast.error("Network signal interrupted");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   const handleSubmit = async () => {
-    if (!user || !confessionId || !newComment.trim()) return;
+    if (!user || !confessionId || !newComment.trim() || submitting) return;
 
     // SECURITY: Validate comment content
     const validation = validateComment(newComment);
@@ -70,53 +81,88 @@ export function ConfessionComments({ confessionId, onClose }: ConfessionComments
         content: sanitizeField(newComment.trim(), 500)
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('aborted')) {
+          throw new Error("Transmission Aborted: Signal Lost");
+        }
+        throw error;
+      }
 
       setNewComment('');
       fetchComments();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to post comment');
+      console.error("Post Comment Error:", error);
+      toast.error(error.message || 'Transmission failed. Try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from('confession_comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+
+      setComments(prev => prev.filter(c => c.id !== commentId));
+      toast.success("Comment purged by moderator");
+    } catch (error: any) {
+      toast.error("Deletion failed");
+    }
+  };
+
   return (
     <Sheet open={!!confessionId} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="h-[70vh] glass-card border-t border-white/10">
+      <SheetContent side="bottom" className="h-[70vh] glass-card border-t border-white/10 outline-none">
         <SheetHeader className="pb-4 border-b border-white/10">
-          <SheetTitle className="gradient-text">Anonymous Comments</SheetTitle>
+          <SheetTitle className="gradient-text font-black uppercase tracking-tighter italic">Anonymous Signal Threads</SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-3 max-h-[calc(70vh-140px)]">
+        <div className="flex-1 overflow-y-auto py-4 space-y-3 max-h-[calc(70vh-160px)] no-scrollbar">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-primary opacity-50" />
             </div>
           ) : comments.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">
-              No comments yet. Be the first to comment!
-            </p>
+            <div className="text-center opacity-30 py-20 flex flex-col items-center">
+              <span className="text-4xl mb-4">🎭</span>
+              <p className="font-black uppercase text-[10px] tracking-[0.3em]">Zero Signals Detected</p>
+            </div>
           ) : (
             comments.map((comment, index) => (
               <motion.div
                 key={comment.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="flex gap-3"
+                className="flex gap-3 group"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                   <span className="text-xs">🎭</span>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-muted-foreground">Anonymous</span>
-                    <span className="text-xs text-muted-foreground/70">
-                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                    </span>
+                <div className="flex-1 bg-white/5 p-3 rounded-2xl rounded-tl-none border border-white/5 relative">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black theme-text uppercase tracking-widest">Anonymous</span>
+                      <span className="text-[8px] text-white/30 uppercase font-bold">
+                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:scale-110 active:scale-95"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
-                  <p className="text-sm text-foreground">{comment.content}</p>
+                  <p className="text-sm text-white/90 leading-relaxed">{comment.content}</p>
                 </div>
               </motion.div>
             ))
@@ -124,19 +170,19 @@ export function ConfessionComments({ confessionId, onClose }: ConfessionComments
         </div>
 
         {/* Comment input */}
-        <div className="pt-4 border-t border-white/10 flex gap-2">
+        <div className="pt-4 border-t border-white/10 flex gap-2 pb-6">
           <Input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add an anonymous comment..."
-            className="flex-1 bg-secondary/30"
+            placeholder="Add a signal to the thread..."
+            className="flex-1 bg-white/5 border-white/10 rounded-xl h-12 text-sm"
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
+            disabled={submitting}
           />
           <Button
             onClick={handleSubmit}
             disabled={submitting || !newComment.trim()}
-            size="icon"
-            className="bg-gradient-primary"
+            className="h-12 px-6 theme-bg rounded-xl"
           >
             {submitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />

@@ -27,6 +27,8 @@ export default function Leaderboard() {
     const { data } = await supabase
       .from('profiles')
       .select('id, username, avatar_url, total_aura, department')
+      .neq('username', 'auconnect')
+      .neq('username', 'AUCONNECT')
       .order('total_aura', { ascending: false, nullsFirst: false })
       .limit(100);
 

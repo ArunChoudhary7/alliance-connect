@@ -40,7 +40,20 @@ export default function SecretRoom() {
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || user?.email === 'arunchoudhary@alliance.edu.in' || profile?.username === 'koki';
+  const isAdmin =
+    profile?.role === 'admin' ||
+    profile?.role === 'developer' ||
+    profile?.username === 'arun' ||
+    profile?.username === 'koki' ||
+    [
+      'carunbtech23@ced.alliance.edu.in',
+      'gkartikaybtech23@ced.alliance.edu.in',
+      'aateefbtech23@ced.alliance.edu.in',
+      'sshlokbtech23@ced.alliance.edu.in',
+      'aateef@ced.alliance.edu.in',
+      'sshlok@ced.alliance.edu.in',
+      'arunchoudhary@alliance.edu.in'
+    ].includes(user?.email || '');
 
   const fetchConfessions = useCallback(async () => {
     // SECURITY FIX: Fetch from 'secure_confessions' view instead of raw table
@@ -283,6 +296,7 @@ export default function SecretRoom() {
         <ConfessionComments
           confessionId={selectedConfessionId}
           onClose={() => setSelectedConfessionId(null)}
+          isAdmin={isAdmin}
         />
       )}
 
