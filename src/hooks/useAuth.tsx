@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // FORCED BYPASS TO FIX LOADING LOOP
-  const isOnboarded = true; 
+  const isOnboarded = !!(profile?.username && profile?.full_name);
 
   return (
     <AuthContext.Provider value={{ user, session, profile, loading, isOnboarded, refreshProfile }}>

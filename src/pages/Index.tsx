@@ -1,4 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Feed } from "@/components/feed/Feed";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,7 +10,16 @@ import { FeedSkeleton } from "@/components/feed/FeedSkeleton";
 import { TrendingTicker } from "@/components/feed/TrendingTicker";
 
 export default function Index() {
-  const { user, loading } = useAuth();
+  const { user, loading, isOnboarded } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && user && !isOnboarded) {
+      navigate("/onboarding");
+    }
+  }, [user, loading, isOnboarded, navigate]);
+
+  if (loading) return null;
 
   return (
     <AppLayout>
