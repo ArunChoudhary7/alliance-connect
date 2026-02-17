@@ -85,43 +85,42 @@ export function AuthForm() {
       animate={{ opacity: 1, y: 0 }}
       className="w-full max-w-md mx-auto"
     >
-      <div className="glass-card p-8 rounded-2xl">
-        <div className="text-center mb-8 relative">
+      <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-2xl">
+        <div className="text-center mb-6 sm:mb-8 relative">
           {/* FESTIVAL DECORATION */}
-          <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-400 rounded-full blur-[50px] opacity-40 animate-pulse" />
-          <div className="absolute -top-12 -right-12 w-24 h-24 bg-blue-500 rounded-full blur-[50px] opacity-40 animate-pulse delay-700" />
+          <div className="absolute -top-12 -left-12 w-24 h-24 bg-yellow-400 rounded-full blur-[50px] opacity-20 animate-pulse" />
+          <div className="absolute -top-12 -right-12 w-24 h-24 bg-blue-500 rounded-full blur-[50px] opacity-20 animate-pulse delay-700" />
 
           <motion.div
             className="inline-block mb-4"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.02 }}
           >
-            <div className="relative group cursor-pointer">
+            <div className="relative group">
               {/* Festival Logo Placeholder / Drop Zone */}
-              <div className="w-40 h-40 mx-auto relative flex items-center justify-center bg-white rounded-full p-1 shadow-[0_0_30px_rgba(255,255,255,0.15)] ring-4 ring-white/5">
-                <div className="absolute inset-0 bg-gradient-to-tr from-red-500 via-yellow-400 to-blue-600 rounded-full opacity-0 group-hover:opacity-20 transition-opacity blur-xl" />
+              <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto relative flex items-center justify-center bg-white rounded-full p-1 shadow-[0_0_40px_rgba(255,255,255,0.1)] ring-4 ring-white/5 transition-all duration-500 group-hover:shadow-[0_0_60px_rgba(255,255,255,0.2)]">
+                <div className="absolute inset-0 bg-gradient-to-tr from-red-500 via-yellow-400 to-blue-600 rounded-full opacity-0 group-hover:opacity-10 transition-opacity blur-xl" />
                 <img
                   src="/aulogo.png"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    // Fallback to text logo if image missing
-                    e.currentTarget.parentElement?.classList.remove('bg-white'); // Remove white bg if fallback text is shown
+                    e.currentTarget.parentElement?.classList.remove('bg-white');
                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
                   }}
-                  className="relative w-full h-full object-contain rounded-full z-10 p-2"
+                  className="relative w-full h-full object-contain rounded-full z-10 p-2 sm:p-3"
                   alt="AU Logo"
                 />
                 <div className="hidden flex flex-col items-center justify-center text-center">
-                  <span className="text-4xl font-black tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500">LIT FEST</span>
-                  <span className="text-sm font-bold tracking-widest uppercase text-muted-foreground">2026</span>
+                  <span className="text-2xl sm:text-4xl font-black tracking-tighter italic bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500">LIT FEST</span>
+                  <span className="text-[10px] sm:text-sm font-bold tracking-widest uppercase text-muted-foreground">2026</span>
                 </div>
               </div>
             </div>
           </motion.div>
 
-          <h1 className="text-3xl font-black italic tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-blue-600 animate-gradient-x">
+          <h1 className="text-2xl sm:text-3xl font-black italic tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-red-500 via-orange-500 to-blue-600 animate-gradient-x drop-shadow-sm">
             ALLIANCE ONE
           </h1>
-          <p className="text-sm font-bold tracking-widest uppercase text-muted-foreground">Feb 19-21 • The Grand Celebration</p>
+          <p className="text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase text-muted-foreground/80">Feb 19-21 • The Grand Celebration</p>
         </div>
 
         <AnimatePresence mode="wait">

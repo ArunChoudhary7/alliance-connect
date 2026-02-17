@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Send, Loader2, X } from "lucide-react";
+import { Send, Loader2, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,17 +103,23 @@ export function ConfessionComments({ confessionId, onClose, isAdmin }: Confessio
     if (!isAdmin) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('confession_comments')
         .delete()
-        .eq('id', commentId);
+        .eq('id', commentId)
+        .select();
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        throw new Error("Security Lock: Database blocked deletion. Run the SQL Panic Fix.");
+      }
+
       setComments(prev => prev.filter(c => c.id !== commentId));
-      toast.success("Comment purged by moderator");
+      toast.success("Comment purged successfully");
     } catch (error: any) {
-      toast.error("Deletion failed");
+      console.error("Delete Error:", error);
+      toast.error(error.message || "Deletion failed. Check DB permissions.");
     }
   };
 
@@ -157,9 +163,9 @@ export function ConfessionComments({ confessionId, onClose, isAdmin }: Confessio
                     {(isAdmin || user?.id === comment.user_id) && (
                       <button
                         onClick={() => handleDeleteComment(comment.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-500 hover:scale-110 active:scale-95"
+                        className="p-1 text-red-500/50 hover:text-red-500 transition-colors active:scale-95"
                       >
-                        <X className="h-3 w-3" />
+                        <Trash2 className="h-3 w-3" />
                       </button>
                     )}
                   </div>

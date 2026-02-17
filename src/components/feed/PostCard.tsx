@@ -68,11 +68,11 @@ function CustomVideoPlayer({ src }: { src: string }) {
   };
 
   return (
-    <div ref={containerRef} className="relative group w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden aspect-video" onClick={togglePlay}>
+    <div ref={containerRef} className="relative group w-full bg-black flex flex-col items-center justify-center cursor-pointer overflow-hidden shadow-2xl" onClick={togglePlay}>
       {/* Dynamic Blurred Backdrop for aspect ratio filling */}
       <video
         src={src}
-        className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 grayscale"
+        className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-20"
         muted
         playsInline
       />
@@ -80,25 +80,25 @@ function CustomVideoPlayer({ src }: { src: string }) {
       <video
         ref={videoRef}
         src={src}
-        className="relative z-10 w-full h-full object-contain max-h-[500px]"
+        className="relative z-10 w-full h-full max-h-[600px] object-contain shadow-2xl"
         playsInline
         muted={isMuted}
         loop
         onTimeUpdate={handleTimeUpdate}
       />
       {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-none">
-          <div className="p-4 rounded-full bg-black/50 backdrop-blur-sm text-white">
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/10 group-hover:bg-black/30 transition-colors pointer-events-none">
+          <div className="p-4 rounded-full bg-black/40 backdrop-blur-md text-white scale-110">
             <Play className="w-8 h-8 fill-white" />
           </div>
         </div>
       )}
-      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between pointer-events-none">
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between pointer-events-none z-30">
         <button onClick={togglePlay} className="text-white hover:text-white/80 pointer-events-auto">
           {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white" />}
         </button>
-        <div className="flex-1 mx-3 h-1 bg-white/30 rounded-full overflow-hidden">
-          <div className="h-full bg-white transition-all duration-100" style={{ width: `${progress}%` }} />
+        <div className="flex-1 mx-4 h-1 bg-white/20 rounded-full overflow-hidden">
+          <div className="h-full bg-white transition-all duration-100 rounded-full shadow-[0_0_10px_white]" style={{ width: `${progress}%` }} />
         </div>
         <button onClick={toggleMute} className="text-white hover:text-white/80 pointer-events-auto">
           {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -370,7 +370,7 @@ export function PostCard({ post, onDeleted }: any) {
               ) : post.video_url ? (
                 <CustomVideoPlayer src={post.video_url} />
               ) : (
-                <img src={post.images[0]} alt="Post content" className="w-full object-contain max-h-[550px] bg-black/40" loading="lazy" />
+                <img src={post.images[0]} alt="Post content" className="w-full object-contain max-h-[600px] bg-zinc-900/50" loading="lazy" />
               )}
             </div>
           ) : null}

@@ -9,18 +9,18 @@ export default function VerifyEmail() {
     const { user, loading } = useAuth();
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-black">
+        <div className="min-h-[100dvh] relative flex flex-col items-center justify-center p-4 bg-black overflow-x-hidden overflow-y-auto py-12">
             {/* FESTIVAL BACKGROUND */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-600/20 rounded-full blur-[100px] animate-pulse" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] animate-pulse delay-1000" />
-                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[100px] animate-pulse" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[100px] animate-pulse delay-1000" />
+                <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
             </div>
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="relative z-10 w-full max-w-md mx-auto"
+                className="relative z-10 w-full max-w-md mx-auto min-h-full flex items-center justify-center"
             >
                 <div className="glass-card p-8 rounded-2xl text-center">
                     {loading ? (

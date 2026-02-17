@@ -88,12 +88,23 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
 
   const handleDelete = async (commentId: string) => {
     try {
-      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      const { data, error } = await supabase
+        .from("comments")
+        .delete()
+        .eq("id", commentId)
+        .select();
+
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        throw new Error("Security Lock: Database blocked deletion. Row still exists.");
+      }
+
       setComments(prev => prev.filter(c => c.id !== commentId));
       toast.success("Comment Removed");
-    } catch (e) {
-      toast.error("Failed to delete");
+    } catch (e: any) {
+      console.error("Delete Error:", e);
+      toast.error(e.message || "Failed to delete");
     }
   };
 
@@ -139,18 +150,13 @@ export function PostComments({ postId, open, onOpenChange, postOwnerId, onCommen
                         'aateefbtech23@ced.alliance.edu.in'
                       ].includes(user?.email || '')
                     ) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 ml-2">
-                              <MoreHorizontal className="h-4 w-4 opacity-50" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-black/95 border-white/10 rounded-xl">
-                            <DropdownMenuItem onClick={() => handleDelete(c.id)} className="text-red-500 font-bold uppercase text-[10px]">
-                              <Trash2 className="h-3 w-3 mr-2" /> Delete Comment
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          className="p-1 ml-2 opacity-30 hover:opacity-100 hover:text-red-500 transition-all active:scale-90"
+                          title="Delete Comment"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       )}
                   </div>
                   <div className="flex gap-4 px-2 text-[10px] font-black uppercase tracking-widest opacity-30 mt-1">

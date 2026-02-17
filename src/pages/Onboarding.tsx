@@ -34,14 +34,14 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-surface flex items-center justify-center py-8">
+    <div className="min-h-[100dvh] bg-gradient-surface p-4 overflow-x-hidden overflow-y-auto py-12">
       {/* Background decoration */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl opacity-30" />
+        <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl opacity-30" />
       </div>
 
-      <div className="relative z-10 w-full">
+      <div className="relative z-10 w-full flex items-center justify-center min-h-full">
         <OnboardingForm />
       </div>
     </div>

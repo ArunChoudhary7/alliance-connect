@@ -127,15 +127,25 @@ export default function Explore() {
             )}
           </TabsContent>
 
-          <TabsContent value="reels">
-            <div className="grid grid-cols-2 gap-2">
-              {reels.map(r => (
-                <Link key={r.id} to={`/reels?start=${r.id}`} className="aspect-[9/16] relative rounded-2xl overflow-hidden bg-white/5 group">
-                  <video src={r.video_url || ""} className="w-full h-full object-cover opacity-80" muted />
-                  <div className="absolute bottom-3 left-3 flex items-center gap-1 text-white font-black italic text-xs drop-shadow-lg"><Star className="h-3 w-3 fill-primary text-primary" /> {r.aura_count}</div>
-                </Link>
-              ))}
-            </div>
+          <TabsContent value="reels" className="mt-0">
+            {loading ? <div className="flex justify-center py-20"><Loader2 className="animate-spin theme-text" /></div> : (
+              <div className="grid grid-cols-3 gap-1 rounded-2xl overflow-hidden">
+                {reels.map(r => (
+                  <Link key={r.id} to={`/reels?start=${r.id}`} className="aspect-[2/3] sm:aspect-[9/16] relative bg-white/5 active:scale-95 transition-transform group overflow-hidden">
+                    <video
+                      src={r.video_url || ""}
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      muted
+                      playsInline
+                    />
+                    <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-center gap-1 text-white font-black italic text-[9px] drop-shadow-lg">
+                      <Star className="h-2.5 w-2.5 fill-primary text-primary" />
+                      {r.aura_count}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="stars" className="space-y-3">
