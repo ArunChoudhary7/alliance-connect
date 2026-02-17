@@ -20,12 +20,20 @@ export default function Admin() {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Security Check: Only Admin (Arun) can access
+  // Security Check: Only Admin (Arun, Koki, & Devs) can access
   useEffect(() => {
-    if (currentProfile && currentProfile.username !== 'arun' && currentProfile.username !== 'koki' && currentProfile.role !== 'admin') {
+    const allowedEmails = ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'];
+    const isAllowed =
+      currentProfile?.role === 'admin' ||
+      currentProfile?.username === 'arun' ||
+      currentProfile?.username === 'koki' ||
+      (user?.email && allowedEmails.includes(user.email));
+
+    if (currentProfile && !isAllowed) {
       navigate("/");
       toast.error("Unauthorized Access");
     }
-  }, [currentProfile, navigate]);
+  }, [currentProfile, user, navigate]);
 
   const fetchRequests = async () => {
     setLoading(true);

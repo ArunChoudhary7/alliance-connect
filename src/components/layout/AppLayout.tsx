@@ -96,7 +96,15 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
     { icon: PackageSearch, label: "Lost & Found", path: "/lost-found" },
     { icon: User, label: "Profile", path: profile?.username ? `/profile/${profile.username}` : "/profile" },
     { icon: Settings, label: "Settings", path: "/settings" },
-    ...(profile?.username === 'arun' || profile?.role === 'admin' ? [{ icon: Users2, label: "Admin Panel", path: "/admin" }] : []),
+    ...(
+      (
+        profile?.username === 'arun' ||
+        profile?.role === 'admin' ||
+        ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'].includes(user?.email || '')
+      )
+        ? [{ icon: Users2, label: "Admin Panel", path: "/admin" }]
+        : []
+    ),
   ];
 
   const isLight = currentTheme === 'clean-minimal';

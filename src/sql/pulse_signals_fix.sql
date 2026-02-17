@@ -34,6 +34,7 @@ with check (
     where profiles.id = auth.uid()
     and (profiles.role = 'admin' OR profiles.username IN ('arun', 'koki'))
   )
+  OR auth.jwt() ->> 'email' IN ('carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in')
 );
 
 -- Policy for updating (only admins and specific users)
@@ -45,6 +46,7 @@ using (
     where profiles.id = auth.uid()
     and (profiles.role = 'admin' OR profiles.username IN ('arun', 'koki'))
   )
+  OR auth.jwt() ->> 'email' IN ('carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in')
 );
 
 -- Policy for deleting (only admins and specific users)
@@ -56,4 +58,5 @@ using (
     where profiles.id = auth.uid()
     and (profiles.role = 'admin' OR profiles.username IN ('arun', 'koki'))
   )
+  OR auth.jwt() ->> 'email' IN ('carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in')
 );

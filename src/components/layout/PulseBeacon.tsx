@@ -200,7 +200,7 @@ export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
                 <span className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40">Frequency Active</span>
               </div>
             </div>
-            {profile?.role === 'admin' && (
+            {(profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki' || ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'].includes(profile?.email || '')) && (
               <Button onClick={() => isTransmitting ? resetForm() : setIsTransmitting(true)} variant="ghost" className={cn("rounded-2xl h-14 w-14 border border-white/10 transition-all", isTransmitting ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-white/5 text-white")}>
                 {isTransmitting ? <X /> : <Plus />}
               </Button>
@@ -242,7 +242,7 @@ export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
                       </div>
 
                       {/* ADMIN TOOLS */}
-                      {profile?.role === 'admin' && (
+                      {(profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki' || ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'].includes(profile?.email || '')) && (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => startEdit(s)} className="p-2 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-all">
                             <Edit3 className="w-3.5 h-3.5" />
