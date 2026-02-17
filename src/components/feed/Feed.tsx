@@ -63,6 +63,19 @@ export function Feed() {
 
   return (
     <div className="space-y-6 pb-20">
+      <div className="flex items-center justify-between px-2 pt-2">
+        <h1 className="text-xl font-black italic uppercase tracking-tighter text-white/50">Alliance Network</h1>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={fetchFeed}
+          disabled={loading}
+          className="rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-all h-8 w-8 p-0"
+        >
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
+
       {!highlightedPostId && (
         <CreatePost onPostCreated={fetchFeed} />
       )}

@@ -203,7 +203,18 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
               <PopoverTrigger asChild><Button variant="ghost" className="text-white bg-black/40 rounded-full w-10 h-10 p-0 hover:bg-black/60"><Palette className="h-5 w-5" /></Button></PopoverTrigger>
               <PopoverContent className="w-auto p-2 bg-black/90 border-white/20 grid grid-cols-3 gap-2">
                 {BACKGROUND_GRADIENTS.map((bg, i) => (
-                  <button key={i} className="w-8 h-8 rounded-full border-2 border-white/20 hover:border-white" style={{ background: bg }} onClick={() => setBackgroundStyle(bg)} />
+                  <button
+                    key={i}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 transition-all active:scale-95",
+                      backgroundStyle === bg ? "border-white scale-110 shadow-[0_0_10px_white]" : "border-white/20 hover:border-white/60"
+                    )}
+                    style={{ background: bg }}
+                    onClick={() => {
+                      setBackgroundStyle(bg);
+                      setShowColorPicker(false); // Auto-close picker for better UX
+                    }}
+                  />
                 ))}
               </PopoverContent>
             </Popover>
