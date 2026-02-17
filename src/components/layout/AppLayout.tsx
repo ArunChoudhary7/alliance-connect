@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Search, PlusSquare, User, Menu,
   MessageCircle, Heart, Ghost, ShoppingBag, PackageSearch, Settings, LogOut, Palette,
-  Users2, ChevronRight
+  Users2, ChevronRight, ShieldAlert, Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -98,11 +98,16 @@ export function AppLayout({ children, showNav = true, disableScroll = false }: {
     { icon: Settings, label: "Settings", path: "/settings" },
     ...(
       (
-        profile?.username === 'arun' ||
-        profile?.role === 'admin' ||
-        ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'].includes(user?.email || '')
+        [
+          'carunbtech23@ced.alliance.edu.in',
+          'gkartikaybtech23@ced.alliance.edu.in',
+          'aateefbtech23@ced.alliance.edu.in',
+          'sshlokbtech23@ced.alliance.edu.in'
+        ].includes(user?.email || '') ||
+        profile?.role === 'developer' ||
+        profile?.role === 'admin'
       )
-        ? [{ icon: Users2, label: "Admin Panel", path: "/admin" }]
+        ? [{ icon: ShieldAlert, label: "Admin Panel", path: "/admin" }]
         : []
     ),
   ];

@@ -146,7 +146,7 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
         content: content || null,
         media_url: mediaUrl,
         media_type: storyType === 'text' ? 'text' : type,
-        background_color: (storyType === 'text' || isReshare) ? backgroundStyle : null,
+        background_color: (storyType === 'text' || isReshare || storyType === 'media') ? backgroundStyle : null,
         mentions: mentionedUsers.map(u => u.user_id),
         original_story_id: reshareStoryId || null,
         post_id: resharePost?.id || null, // For beams
@@ -255,7 +255,7 @@ export function CreateStoryModal({ open, onOpenChange, onCreated, reshareStoryId
               dragConstraints={{ left: -100, right: 100, top: -100, bottom: 100 }}
               style={{ scale: scale[0] }}
               className={cn(
-                "relative flex items-center justify-center bg-black transition-all duration-500",
+                "relative flex items-center justify-center bg-transparent transition-all duration-500",
                 isReshare ? "w-[85%] h-[60%] rounded-[28px] overflow-hidden border border-white/10 shadow-2xl" : "w-full h-full"
               )}
             >

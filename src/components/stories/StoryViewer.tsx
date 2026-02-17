@@ -385,12 +385,7 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
 
         {/* MEDIA / TEXT DISPLAY (Z-20 Container) */}
         <div
-          className="w-full h-full flex items-center justify-center bg-zinc-950 relative z-20"
-          style={
-            isTextStory && currentStory.background_color
-              ? { background: currentStory.background_color }
-              : undefined
-          }
+          style={{ background: currentStory.background_color || '#09090b' }}
         >
           {isTextStory ? (
             <div
@@ -434,11 +429,11 @@ export function StoryViewer({ users, initialUserIndex, onClose, onRefresh }: Sto
                   playsInline
                   loop
                   muted={isMuted}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                   onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
                 />
               ) : (
-                <img src={storyMedia} className="w-full h-full object-cover" />
+                <img src={storyMedia} className="w-full h-full object-contain" />
               )}
 
               {/* CAPTION OVERLAY FOR MEDIA STORIES */}

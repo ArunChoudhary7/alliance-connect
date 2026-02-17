@@ -9,9 +9,10 @@ import {
   Loader2,
   X,
   MessageCircle,
-  Image as ImageIcon,
+  ImageIcon as ImageIcon,
   Camera,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ProfessionalCamera } from "@/components/camera/ProfessionalCamera";
@@ -150,6 +151,18 @@ export default function LostFound() {
       fetchItems();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update');
+    }
+  };
+
+  const handleForceDelete = async (itemId: string) => {
+    if (!window.confirm("Permanently delete this report?")) return;
+    try {
+      const { error } = await supabase.from('lost_found').delete().eq('id', itemId);
+      if (error) throw error;
+      toast.success('Report deleted');
+      fetchItems();
+    } catch (error: any) {
+      toast.error('Delete failed');
     }
   };
 
@@ -322,9 +335,14 @@ export default function LostFound() {
                     </div>
                   </div>
                   {item.posted_by === user?.id && (
-                    <Button size="sm" variant="outline" onClick={() => handleResolve(item.id)} className="rounded-full bg-secondary/50 border-none text-[10px] font-black h-9 px-4 hover:bg-green-500 hover:text-white transition-all">
-                      <CheckCircle className="h-4 w-4 mr-1.5" /> RESOLVE
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => handleResolve(item.id)} className="rounded-full bg-secondary/50 border-none text-[10px] font-black h-9 px-4 hover:bg-green-500 hover:text-white transition-all">
+                        <CheckCircle className="h-4 w-4 mr-1.5" /> RESOLVE
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleForceDelete(item.id)} className="rounded-full bg-red-500/10 text-red-500 border-none text-[10px] font-black h-9 px-3 hover:bg-red-500 hover:text-white transition-all">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
                 {item.description && <p className="text-sm text-muted-foreground/90 leading-relaxed mb-6 font-medium">{item.description}</p>}

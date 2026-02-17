@@ -137,7 +137,7 @@ export default function Admin() {
     }
   };
 
-  if (!user || (currentProfile?.username !== 'arun' && currentProfile?.username !== 'koki' && currentProfile?.role !== 'admin')) {
+  if (!user || (currentProfile?.username !== 'arun' && currentProfile?.username !== 'koki' && currentProfile?.role !== 'admin' && currentProfile?.role !== 'developer')) {
     return null;
   }
 
