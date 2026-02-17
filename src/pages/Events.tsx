@@ -228,7 +228,7 @@ export default function Events() {
               <motion.h1
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/50"
+                className="text-4xl md:text-8xl font-black italic uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-white/50"
               >
                 Events
               </motion.h1>
@@ -370,8 +370,8 @@ export default function Events() {
             />
           )}
 
-          {/* Events Gallery - Masonry / Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Events Gallery - Masonry / Grid - Responsive Fix */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-24">
             <AnimatePresence>
               {events.map((event, index) => (
                 <motion.div

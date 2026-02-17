@@ -123,21 +123,24 @@ export default function MessMenuPage() {
           </motion.div>
         </div>
 
-        {/* MEAL SECTIONS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* MEAL SECTIONS - Better Mobile Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-8">
           {mealSections.map((section) => (
-            <motion.div key={section.label} className="glass-card p-6 rounded-[2rem] border-none shadow-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 bg-background/50 rounded-xl border border-white/5">{section.icon}</div>
-                <h3 className="font-bold uppercase tracking-widest text-[10px]">{section.label}</h3>
+            <motion.div key={section.label} className="glass-card p-5 rounded-[1.5rem] border border-white/5 shadow-lg bg-zinc-900/50 backdrop-blur-md">
+              <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/5">
+                <div className="p-2 bg-primary/10 rounded-xl text-primary">{section.icon}</div>
+                <h3 className="font-black uppercase tracking-widest text-xs text-white/80">{section.label}</h3>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 {section.items && section.items.length > 0 ? (
-                  section.items.map((item: string, i: number) => (
-                    <Badge key={i} variant="secondary" className="bg-white/5 uppercase text-[9px] font-bold py-1.5 px-3 border-none text-muted-foreground">
-                      {item}
-                    </Badge>
-                  ))
+                  <div className="grid grid-cols-1 gap-2 w-full">
+                    {section.items.map((item: string, i: number) => (
+                      <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center gap-3">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary/50" />
+                        <span className="text-xs font-bold text-white/90 uppercase tracking-wide">{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <span className="text-[9px] opacity-40 uppercase font-bold italic">
                     {menu?.image_url ? "Tap Image for Details" : "Not updated"}
