@@ -31,8 +31,29 @@ export function Feed() {
         setPosts([]);
       }
     } else {
-      const { data } = await getPosts(20, 0);
-      setPosts(data || []);
+      // 1. Fetch Pinned Posts first
+      const { data: pinnedData } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          profiles!user_id (
+            username, full_name, avatar_url, role, is_verified, verified_title, verification_expiry, verification_status, is_private
+          )
+        `)
+        .eq("is_pinned", true)
+        .order("created_at", { ascending: false });
+
+      // 2. Fetch Regular Feed
+      const { data: regularData } = await getPosts(20, 0);
+
+      const pinned = pinnedData || [];
+      const regular = regularData || [];
+
+      // 3. Deduplicate (Regular posts shouldn't repeat pinned ones)
+      const pinnedIds = new Set(pinned.map(p => p.id));
+      const filteredRegular = regular.filter(p => !pinnedIds.has(p.id));
+
+      setPosts([...pinned, ...filteredRegular]);
     }
     setLoading(false);
   };
@@ -47,6 +68,12 @@ export function Feed() {
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
         if (!highlightedPostId) fetchFeed();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+        // If a post is pinned/unpinned, refresh feed
+        if (payload.old.is_pinned !== payload.new.is_pinned) {
+          fetchFeed();
+        }
       })
       .subscribe();
 

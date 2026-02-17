@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Heart, Trash2, MoreVertical, MessageCircle, Slash, AlertTriangle, Send, Play, Pause, Volume2, VolumeX, Sparkles, Timer } from "lucide-react";
+import { Heart, Trash2, MoreVertical, MessageCircle, Slash, AlertTriangle, Send, Play, Pause, Volume2, VolumeX, Sparkles, Timer, Pin } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -109,10 +109,11 @@ function CustomVideoPlayer({ src }: { src: string }) {
 }
 
 export function PostCard({ post, onDeleted }: any) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [hasAura, setHasAura] = useState(!!post.has_aura);
   const [auraCount, setAuraCount] = useState(Number(post.aura_count) || 0);
   const [commentsEnabled, setCommentsEnabled] = useState(post.comments_enabled ?? true);
+  const [isPinned, setIsPinned] = useState(post.is_pinned ?? false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -237,9 +238,31 @@ export function PostCard({ post, onDeleted }: any) {
     toast.success(nextState ? "Comments Enabled" : "Comments Disabled");
   };
 
+  const handleTogglePin = async () => {
+    try {
+      const nextState = !isPinned;
+      const { error } = await supabase
+        .from("posts")
+        .update({ is_pinned: nextState })
+        .eq("id", post.id);
+
+      if (error) throw error;
+      setIsPinned(nextState);
+      toast.success(nextState ? "Post Pinned to Network" : "Post Unpinned");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to update pin status");
+    }
+  };
+
   const author = post.profiles || { username: 'user', full_name: 'AU User', avatar_url: '', total_aura: 0 };
   const isElite = (author.total_aura || 0) >= 500;
   const isStealth = post.is_stealth;
+
+  const canPin = user?.email === 'carunbtech23@ced.alliance.edu.in' ||
+    user?.email === 'auconnecx@gmail.com' ||
+    user?.email === 'gkartikay23@ced.alliance.edu.in' ||
+    user?.email === 'shlok24@ced.alliance.edu.in' ||
+    profile?.role === 'admin';
 
   if (isDeleted) return null;
 
@@ -267,6 +290,15 @@ export function PostCard({ post, onDeleted }: any) {
             <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_red]" />
             <span className="text-[10px] font-black text-red-500 tracking-tighter uppercase tabular-nums">
               BURN IN: {timeLeft}
+            </span>
+          </div>
+        )}
+
+        {isPinned && (
+          <div className="absolute top-16 left-4 flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full z-20 whitespace-nowrap pointer-events-none">
+            <Pin className="h-3 w-3 text-primary fill-primary animate-pulse" />
+            <span className="text-[10px] font-black text-primary tracking-tighter uppercase tabular-nums">
+              PINNED BROADCAST
             </span>
           </div>
         )}
@@ -302,7 +334,7 @@ export function PostCard({ post, onDeleted }: any) {
               </p>
             </div>
           </Link>
-          {user?.id === post.user_id && (
+          {(user?.id === post.user_id || canPin) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-white/10 text-white hover:bg-white/20 hover:scale-105 active:scale-95 transition-all shadow-sm border border-white/5">
@@ -310,9 +342,16 @@ export function PostCard({ post, onDeleted }: any) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-white dark:bg-black/90 backdrop-blur-xl border-black/5 dark:border-white/10 rounded-xl">
-                <DropdownMenuItem onClick={toggleComments} className="text-zinc-900 dark:text-white">
-                  <Slash className="h-4 w-4 mr-2" /> {commentsEnabled ? "Disable Comments" : "Enable Comments"}
-                </DropdownMenuItem>
+                {canPin && (
+                  <DropdownMenuItem onClick={handleTogglePin} className="text-primary focus:text-primary font-bold">
+                    <Pin className="h-4 w-4 mr-2" /> {isPinned ? "Unpin Post" : "Pin to Network"}
+                  </DropdownMenuItem>
+                )}
+                {user?.id === post.user_id && (
+                  <DropdownMenuItem onClick={toggleComments} className="text-zinc-900 dark:text-white">
+                    <Slash className="h-4 w-4 mr-2" /> {commentsEnabled ? "Disable Comments" : "Enable Comments"}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-500 focus:text-red-500">
                   <Trash2 className="h-4 w-4 mr-2" /> Delete
                 </DropdownMenuItem>
