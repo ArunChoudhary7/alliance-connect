@@ -104,7 +104,16 @@ export function TrendingTicker() {
             setTrends(updates);
         };
 
+        const channel = supabase
+            .channel('trending-ticker-pulse')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pulse_signals' }, () => {
+                fetchTrends();
+            })
+            .subscribe();
+
         fetchTrends();
+
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     useEffect(() => {
