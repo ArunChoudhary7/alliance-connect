@@ -48,9 +48,10 @@ function RecoveryRedirect() {
 
   useEffect(() => {
     // Check both hash and search for recovery type
-    const isRecovery = window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery') ||
-      window.location.hash.includes('access_token=');
+    const isRecovery = (window.location.hash.includes('type=recovery') ||
+      window.location.search.includes('type=recovery')) &&
+      !window.location.hash.includes('type=signup') &&
+      !window.location.search.includes('type=signup');
 
     if (isRecovery && location.pathname !== '/reset-password') {
       const recoveryData = window.location.hash || window.location.search;

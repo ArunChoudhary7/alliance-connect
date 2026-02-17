@@ -48,7 +48,7 @@ export default function VerifyEmail() {
                             </p>
 
                             <Button
-                                onClick={() => navigate("/")}
+                                onClick={() => navigate("/onboarding")}
                                 className="w-full h-12 rounded-xl bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500 hover:opacity-90 transition-all font-black uppercase tracking-widest text-white shadow-lg shadow-orange-500/20 group"
                             >
                                 Enter AUConnect
