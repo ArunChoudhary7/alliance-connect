@@ -15,8 +15,14 @@ export default function MessMenuPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [showThumbUpload, setShowThumbUpload] = useState(false);
   const [showFullMenu, setShowFullMenu] = useState(false);
-  const { profile } = useAuth();
-  const isAdmin = profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki';
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin' ||
+    profile?.username === 'arun' ||
+    profile?.username === 'koki' ||
+    profile?.username === 'AUCONNECT' ||
+    profile?.username === 'auconnect' ||
+    user?.email === 'carunbtech23@ced.alliance.edu.in' ||
+    user?.email === 'arunchoudhary@alliance.edu.in';
 
   const fetchSettings = async () => {
     const { data } = await supabase.from('site_settings').select('key, value');

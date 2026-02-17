@@ -53,7 +53,7 @@ const baseMenuSections = [
 ];
 
 export function MenuDrawer() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
 
@@ -63,6 +63,8 @@ export function MenuDrawer() {
     ...(profile?.role === 'admin' ||
       profile?.role === 'developer' ||
       profile?.username === 'arun' ||
+      profile?.username === 'AUCONNECT' ||
+      profile?.username === 'auconnect' ||
       [
         'carunbtech23@ced.alliance.edu.in',
         'gkartikaybtech23@ced.alliance.edu.in',
@@ -70,7 +72,7 @@ export function MenuDrawer() {
         'sshlokbtech23@ced.alliance.edu.in',
         'aateef@ced.alliance.edu.in',
         'sshlok@ced.alliance.edu.in'
-      ].includes(profile?.email || '') ? [{
+      ].includes(user?.email || '') ? [{
         title: "Command Center",
         items: [
           { icon: ShieldCheck, label: "Admin Dashboard", path: "/admin" }

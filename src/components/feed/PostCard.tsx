@@ -262,6 +262,8 @@ export function PostCard({ post, onDeleted }: any) {
     user?.email === 'auconnecx@gmail.com' ||
     user?.email === 'gkartikay23@ced.alliance.edu.in' ||
     user?.email === 'shlok24@ced.alliance.edu.in' ||
+    profile?.username === 'AUCONNECT' ||
+    profile?.username === 'auconnect' ||
     profile?.role === 'admin';
 
   if (isDeleted) return null;
