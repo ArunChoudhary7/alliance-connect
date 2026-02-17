@@ -430,6 +430,7 @@ export async function toggleAura(userId: string, postId: string) {
   const id2 = validateUUID(postId);
   if (!id1.valid || !id2.valid) return { action: "error", error: { message: "Invalid ID" } };
 
+  // 1. Check if aura exists
   const { data: existing, error: checkError } = await supabase
     .from("auras")
     .select("id")
@@ -439,27 +440,12 @@ export async function toggleAura(userId: string, postId: string) {
 
   if (checkError) return { action: "error", error: checkError };
 
+  // 2. Add or Remove (Let DB Trigger update counts)
   if (existing) {
     const { error: delError } = await supabase.from("auras").delete().eq("id", existing.id);
-    if (!delError) {
-      await supabase.rpc('decrement_aura_count', { post_id: postId });
-      // Fallback if RPC doesn't exist
-      const { data: post } = await supabase.from('posts').select('aura_count').eq('id', postId).single();
-      if (post) {
-        await supabase.from('posts').update({ aura_count: Math.max(0, (post.aura_count || 1) - 1) }).eq('id', postId);
-      }
-    }
     return { action: "removed", error: delError };
   } else {
     const { error: insError } = await supabase.from("auras").insert([{ user_id: userId, post_id: postId }]);
-    if (!insError) {
-      await supabase.rpc('increment_aura_count', { post_id: postId });
-      // Fallback if RPC doesn't exist
-      const { data: post } = await supabase.from('posts').select('aura_count').eq('id', postId).single();
-      if (post) {
-        await supabase.from('posts').update({ aura_count: (post.aura_count || 0) + 1 }).eq('id', postId);
-      }
-    }
     return { action: "added", error: insError };
   }
 }
