@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { Sparkles, ArrowRight } from "lucide-react";
 
