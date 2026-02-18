@@ -464,7 +464,8 @@ export default function Settings() {
                   { q: "How do I create a Circle?", a: "Go to the Circles tab and tap the '+' button to start your own community." },
                   { q: "How to leave a Circle?", a: "Inside a Circle, tap the header/settings and select 'Leave Circle'." },
                   { q: "Can I change the app theme?", a: "Yes, go to Profile > Edit Profile > Theme to customize your look." },
-                  { q: "How to invite friends to a Circle?", a: "If you are an admin, open the Circle settings and use the 'Invite Squad' panel." }
+                  { q: "How to invite friends to a Circle?", a: "If you are an admin, open the Circle settings and use the 'Invite Squad' panel." },
+                  { q: "What is 300 Aura = Diet Coke / T-Shirt?", a: "If you reach 300 Aura on a single post, you can claim a free Diet Coke or T-Shirt. RULES: 1. The post MUST be related to Alliance University (campus life, events, news). 2. Likes must be organic (no botting). 3. Once you hit 300, take a screenshot and DM us or visit the AUConnect desk to claim." }
                 ].map((item, i) => (
                   <AccordionItem key={i} value={`item-${i}`} className="border-b border-white/5">
                     <AccordionTrigger className="text-sm font-bold text-left hover:no-underline hover:text-primary transition-colors">

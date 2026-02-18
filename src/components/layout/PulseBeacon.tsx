@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [signals, setSignals] = useState<any[]>([]);
   const [hasUnread, setHasUnread] = useState(false);
   const [isTransmitting, setIsTransmitting] = useState(false);
@@ -200,7 +200,7 @@ export function PulseBeacon({ trigger }: { trigger?: React.ReactNode }) {
                 <span className="text-[9px] font-black uppercase tracking-[0.3em] opacity-40">Frequency Active</span>
               </div>
             </div>
-            {(profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki' || ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'].includes(profile?.email || '')) && (
+            {(profile?.role === 'admin' || profile?.username === 'arun' || profile?.username === 'koki' || ['carunbtech23@ced.alliance.edu.in', 'gkartikay23@ced.alliance.edu.in'].includes(user?.email || '')) && (
               <Button onClick={() => isTransmitting ? resetForm() : setIsTransmitting(true)} variant="ghost" className={cn("rounded-2xl h-14 w-14 border border-white/10 transition-all", isTransmitting ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-white/5 text-white")}>
                 {isTransmitting ? <X /> : <Plus />}
               </Button>

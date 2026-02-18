@@ -11,6 +11,14 @@ export function TrendingTicker() {
     useEffect(() => {
         const fetchTrends = async () => {
             const updates: { label: string; icon: any; color: string }[] = [];
+
+            // STATIC FIRST: 300 Aura Rule
+            updates.push({
+                label: "300 Aura = T-shirt & Diet Coke",
+                icon: Sparkles,
+                color: "text-yellow-400"
+            });
+
             const currentDate = new Date().toISOString();
 
             try {
@@ -19,80 +27,73 @@ export function TrendingTicker() {
                     .from('pulse_signals')
                     .select('title, category')
                     .order('created_at', { ascending: false })
-                    .limit(1);
+                    .limit(5);
 
-                if (pulseSignals?.[0]) {
-                    const s = pulseSignals[0];
-                    updates.push({
-                        label: `Pulse: ${s.title}`,
-                        icon: s.category === 'urgent' ? ShieldAlert : Radio,
-                        color: s.category === 'urgent' ? "text-red-500" : "text-primary"
+                if (pulseSignals) {
+                    pulseSignals.forEach(s => {
+                        updates.push({
+                            label: `Pulse: ${s.title}`,
+                            icon: s.category === 'urgent' ? ShieldAlert : Radio,
+                            color: s.category === 'urgent' ? "text-red-500" : "text-primary"
+                        });
                     });
                 }
 
-                // 2. HOT TOPICS (Recent High-Engagement Posts)
-                const { data: pulses } = await supabase
-                    .from('posts')
-                    .select('content, aura_count')
-                    .order('aura_count', { ascending: false })
-                    .limit(1);
-
-                if (pulses?.[0] && (pulses[0].aura_count || 0) > 2) {
-                    updates.push({
-                        label: `Trending: "${pulses[0].content?.slice(0, 30)}..."`,
-                        icon: Sparkles,
-                        color: "text-violet-400"
-                    });
-                }
+                // 2. HOT TOPICS (REMOVED as requested)
+                // Nothing from posts.
 
                 // 3. LATEST LOST & FOUND
                 const { data: lostItems } = await supabase
                     .from('lost_found_items')
                     .select('title, status')
                     .order('created_at', { ascending: false })
-                    .limit(1);
+                    .limit(5);
 
-                if (lostItems?.[0]) {
-                    const item = lostItems[0];
-                    updates.push({
-                        label: `${item.status === 'lost' ? '🔴 Lost' : '🟢 Found'}: ${item.title}`,
-                        icon: Megaphone,
-                        color: item.status === 'lost' ? "text-rose-400" : "text-emerald-400"
+                if (lostItems) {
+                    lostItems.forEach(item => {
+                        updates.push({
+                            label: `${item.status === 'lost' ? '🔴 Lost' : '🟢 Found'}: ${item.title}`,
+                            icon: Megaphone,
+                            color: item.status === 'lost' ? "text-rose-400" : "text-emerald-400"
+                        });
                     });
                 }
 
-                // 3. LATEST MARKETPLACE
+                // 4. LATEST MARKETPLACE
                 const { data: marketItems } = await supabase
                     .from('marketplace_listings')
                     .select('title, price')
                     .eq('status', 'available')
                     .order('created_at', { ascending: false })
-                    .limit(1);
+                    .limit(5);
 
-                if (marketItems?.[0]) {
-                    updates.push({
-                        label: `Deal: ${marketItems[0].title} - ₹${marketItems[0].price}`,
-                        icon: TrendingUp,
-                        color: "text-amber-400"
+                if (marketItems) {
+                    marketItems.forEach(item => {
+                        updates.push({
+                            label: `Deal: ${item.title} - ₹${item.price}`,
+                            icon: TrendingUp,
+                            color: "text-amber-400"
+                        });
                     });
                 }
 
-                // 4. UPCOMING EVENTS
+                // 5. UPCOMING EVENTS
                 const { data: events } = await supabase
                     .from('events')
                     .select('title')
                     .gte('event_date', currentDate)
                     .order('event_date', { ascending: true })
-                    .limit(1);
+                    .limit(5);
 
-                if (events?.[0]) {
-                    updates.push({
-                        label: `Upcoming: ${events[0].title}`,
-                        icon: Megaphone,
-                        color: "text-sky-400"
+                if (events) {
+                    events.forEach(event => {
+                        updates.push({
+                            label: `Upcoming: ${event.title}`,
+                            icon: Megaphone,
+                            color: "text-sky-400"
+                        });
                     });
                 }
-
             } catch (err) {
                 console.error("Trend fetch error:", err);
             }
@@ -101,14 +102,19 @@ export function TrendingTicker() {
                 updates.push({ label: "Welcome to AUConnect Network", icon: Sparkles, color: "text-primary" });
             }
 
+            // Shuffle the updates slightly so it's not always the same order of categories?
+            // Or keep it ordered by categories? The user asked to grasp all titles.
+            // Let's keep it simple for now.
+
             setTrends(updates);
         };
 
         const channel = supabase
             .channel('trending-ticker-pulse')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'pulse_signals' }, () => {
-                fetchTrends();
-            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pulse_signals' }, fetchTrends)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'lost_found_items' }, fetchTrends)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'marketplace_listings' }, fetchTrends)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, fetchTrends)
             .subscribe();
 
         fetchTrends();
@@ -133,6 +139,7 @@ export function TrendingTicker() {
         <div className="relative group mx-4 mb-6">
             <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-full blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative h-11 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full flex items-center px-4 overflow-hidden">
+
                 <div className={cn("flex items-center justify-center p-1.5 rounded-full mr-3 shrink-0 bg-white/5", currentTrend.color)}>
                     <Icon className="h-3.5 w-3.5 animate-pulse" />
                 </div>
