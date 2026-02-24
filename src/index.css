@@ -212,6 +212,39 @@
     background-color: var(--theme-accent);
     color: white;
   }
+
+  /* --- GRADIENT UTILITIES (used app-wide) --- */
+  .gradient-text {
+    background: linear-gradient(135deg, var(--theme-accent), hsl(from var(--theme-accent) h calc(s - 10) calc(l + 15)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, var(--theme-accent), hsl(from var(--theme-accent) h calc(s - 10) calc(l + 15)));
+  }
+
+  .shadow-glow {
+    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+  }
+
+  /* Fallback for browsers that don't support relative color syntax */
+  @supports not (color: hsl(from red h s l)) {
+    .gradient-text {
+      color: var(--theme-accent);
+      background: none;
+      -webkit-text-fill-color: var(--theme-accent);
+    }
+
+    .bg-gradient-primary {
+      background: var(--theme-accent);
+    }
+
+    .shadow-glow {
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+  }
 }
 
 @keyframes slow-breath {

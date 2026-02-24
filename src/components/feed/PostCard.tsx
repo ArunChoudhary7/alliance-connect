@@ -146,7 +146,7 @@ export function PostCard({ post, onDeleted }: any) {
     return () => clearInterval(interval);
   }, [post.expires_at, post.is_stealth, onDeleted]);
 
-  // Initial Aura Check & Realtime Subscription
+  // Initial Aura Check (only if not pre-fetched)
   useEffect(() => {
     if (!user) return;
 
@@ -166,17 +166,8 @@ export function PostCard({ post, onDeleted }: any) {
           }
         });
     }
-
-    // Subscribe to count updates
-    const channel = supabase.channel(`post_stats:${post.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts', filter: `id=eq.${post.id}` }, (payload: any) => {
-        if (payload.new) {
-          setAuraCount(Number(payload.new.aura_count) || 0);
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    // No per-post realtime channel needed — optimistic updates handle UI instantly,
+    // and opening 20+ channels for each post in the feed destroys performance.
   }, [user, post.id]);
 
   const handleAura = async () => {

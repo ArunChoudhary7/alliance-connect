@@ -1,5 +1,5 @@
 
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -41,6 +41,11 @@ const Leaderboard = lazy(() => import("./pages/Leaderboard"));
 const PostDetails = lazy(() => import("./pages/PostDetails"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
+
+/** Inline error boundary wrapper — page crashes don't nuke the whole app */
+function Safe({ children }: { children: ReactNode }) {
+  return <ErrorBoundary inline>{children}</ErrorBoundary>;
+}
 
 function RecoveryRedirect() {
   const navigate = useNavigate();
@@ -91,34 +96,34 @@ export default function App() {
                     </div>
                   }>
                     <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/onboarding" element={<Onboarding />} />
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/profile/:username" element={<Profile />} />
-                      <Route path="/search" element={<Search />} />
-                      <Route path="/explore" element={<Explore />} />
-                      <Route path="/create" element={<Create />} />
-                      <Route path="/activity" element={<Activity />} />
-                      <Route path="/messages" element={<Messages />} />
-                      <Route path="/mess-menu" element={<MessMenuPage />} />
-                      <Route path="/secret-room" element={<SecretRoom />} />
-                      <Route path="/polls" element={<Polls />} />
-                      <Route path="/lost-found" element={<LostFound />} />
-                      <Route path="/circles" element={<Circles />} />
-                      <Route path="/circles/:id" element={<CircleDetail />} />
-                      <Route path="/events" element={<Events />} />
-                      <Route path="/internships" element={<Internships />} />
-                      <Route path="/marketplace" element={<Marketplace />} />
-                      <Route path="/study-groups" element={<StudyGroups />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/reels" element={<Reels />} />
-                      <Route path="/saved" element={<Saved />} />
-                      <Route path="/leaderboard" element={<Leaderboard />} />
-                      <Route path="/post/:id" element={<PostDetails />} />
-                      <Route path="/reset-password" element={<ResetPassword />} />
-                      <Route path="/verify-email" element={<VerifyEmail />} />
+                      <Route path="/" element={<Safe><Index /></Safe>} />
+                      <Route path="/auth" element={<Safe><Auth /></Safe>} />
+                      <Route path="/onboarding" element={<Safe><Onboarding /></Safe>} />
+                      <Route path="/admin" element={<Safe><Admin /></Safe>} />
+                      <Route path="/profile" element={<Safe><Profile /></Safe>} />
+                      <Route path="/profile/:username" element={<Safe><Profile /></Safe>} />
+                      <Route path="/search" element={<Safe><Search /></Safe>} />
+                      <Route path="/explore" element={<Safe><Explore /></Safe>} />
+                      <Route path="/create" element={<Safe><Create /></Safe>} />
+                      <Route path="/activity" element={<Safe><Activity /></Safe>} />
+                      <Route path="/messages" element={<Safe><Messages /></Safe>} />
+                      <Route path="/mess-menu" element={<Safe><MessMenuPage /></Safe>} />
+                      <Route path="/secret-room" element={<Safe><SecretRoom /></Safe>} />
+                      <Route path="/polls" element={<Safe><Polls /></Safe>} />
+                      <Route path="/lost-found" element={<Safe><LostFound /></Safe>} />
+                      <Route path="/circles" element={<Safe><Circles /></Safe>} />
+                      <Route path="/circles/:id" element={<Safe><CircleDetail /></Safe>} />
+                      <Route path="/events" element={<Safe><Events /></Safe>} />
+                      <Route path="/internships" element={<Safe><Internships /></Safe>} />
+                      <Route path="/marketplace" element={<Safe><Marketplace /></Safe>} />
+                      <Route path="/study-groups" element={<Safe><StudyGroups /></Safe>} />
+                      <Route path="/settings" element={<Safe><Settings /></Safe>} />
+                      <Route path="/reels" element={<Safe><Reels /></Safe>} />
+                      <Route path="/saved" element={<Safe><Saved /></Safe>} />
+                      <Route path="/leaderboard" element={<Safe><Leaderboard /></Safe>} />
+                      <Route path="/post/:id" element={<Safe><PostDetails /></Safe>} />
+                      <Route path="/reset-password" element={<Safe><ResetPassword /></Safe>} />
+                      <Route path="/verify-email" element={<Safe><VerifyEmail /></Safe>} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>

@@ -54,40 +54,44 @@ export default function Activity() {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
+    try {
+      const { data } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
 
-    if (data) {
-      const getActorId = (notifData: any) => {
-        if (!notifData || typeof notifData !== 'object') return null;
-        return notifData.user_id || notifData.follower_id || notifData.requester_id || notifData.sender_id || notifData.author_id || notifData.actor_id;
-      };
+      if (data) {
+        const getActorId = (notifData: any) => {
+          if (!notifData || typeof notifData !== 'object') return null;
+          return notifData.user_id || notifData.follower_id || notifData.requester_id || notifData.sender_id || notifData.author_id || notifData.actor_id;
+        };
 
-      const actorIds = data
-        .map(n => getActorId(n.data))
-        .filter((id): id is string => !!id);
+        const actorIds = data
+          .map(n => getActorId(n.data))
+          .filter((id): id is string => !!id);
 
-      if (actorIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, username, full_name, avatar_url")
-          .in("user_id", actorIds);
+        if (actorIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, username, full_name, avatar_url")
+            .in("user_id", [...new Set(actorIds)]);
 
-        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+          const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
-        const enrichedNotifications = data.map(n => ({
-          ...n,
-          actor_profile: profileMap.get(getActorId(n.data)),
-        }));
+          const enrichedNotifications = data.map(n => ({
+            ...n,
+            actor_profile: profileMap.get(getActorId(n.data)),
+          }));
 
-        setNotifications(enrichedNotifications);
-      } else {
-        setNotifications(data);
+          setNotifications(enrichedNotifications);
+        } else {
+          setNotifications(data);
+        }
       }
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
     }
   }, [user]);
 
@@ -129,6 +133,7 @@ export default function Activity() {
     setLoading(false);
   }, [fetchNotifications, fetchFollowRequests]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
@@ -161,7 +166,7 @@ export default function Activity() {
         supabase.removeChannel(requestChannel);
       };
     }
-  }, [user, authLoading, navigate, loadData, fetchNotifications, fetchFollowRequests]);
+  }, [user, authLoading]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -485,7 +490,7 @@ export default function Activity() {
                       className={`flex flex-col gap-2 p-3 rounded-xl transition-colors cursor-pointer ${notification.is_read ? "bg-secondary/20" : "bg-primary/10 border border-primary/20"}`}
                     >
                       <div className="flex items-center gap-3">
-                        <Link to={`/profile/${notification.actor_profile?.username}`} onClick={(e) => e.stopPropagation()}>
+                        <Link to={notification.actor_profile?.username ? `/profile/${notification.actor_profile.username}` : '#'} onClick={(e) => { e.stopPropagation(); if (!notification.actor_profile?.username) e.preventDefault(); }}>
                           <UserAvatar
                             src={notification.actor_profile?.avatar_url}
                             name={notification.actor_profile?.full_name || notification.actor_profile?.username}
