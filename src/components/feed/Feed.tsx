@@ -73,10 +73,30 @@ export function Feed() {
         if (!highlightedPostId) fetchFeed();
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
-        // If a post is pinned/unpinned, refresh feed
-        if (payload.old.is_pinned !== payload.new.is_pinned) {
+        const newPost = payload.new as any;
+        const oldPost = payload.old as any;
+
+        // Pin/unpin changed → full refresh needed to reorder
+        if (oldPost.is_pinned !== newPost.is_pinned) {
           fetchFeed();
+          return;
         }
+
+        // For ALL other updates (aura_count, comments_count, etc.)
+        // do a SURGICAL in-place update — never reload the whole feed
+        setPosts((current) =>
+          current.map(p =>
+            p.id === newPost.id
+              ? {
+                ...p,
+                aura_count: newPost.aura_count ?? p.aura_count,
+                comments_count: newPost.comments_count ?? p.comments_count,
+                is_pinned: newPost.is_pinned ?? p.is_pinned,
+                comments_enabled: newPost.comments_enabled ?? p.comments_enabled,
+              }
+              : p
+          )
+        );
       })
       .subscribe();
 
