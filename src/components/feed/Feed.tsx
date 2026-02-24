@@ -76,27 +76,12 @@ export function Feed() {
         const newPost = payload.new as any;
         const oldPost = payload.old as any;
 
-        // Pin/unpin changed → full refresh needed to reorder
+        // ONLY react to pin/unpin changes — needs full refresh to reorder
+        // All other updates (aura_count, comments_count, etc.) are handled
+        // by each PostCard's own realtime subscription — do NOT touch state here
         if (oldPost.is_pinned !== newPost.is_pinned) {
           fetchFeed();
-          return;
         }
-
-        // For ALL other updates (aura_count, comments_count, etc.)
-        // do a SURGICAL in-place update — never reload the whole feed
-        setPosts((current) =>
-          current.map(p =>
-            p.id === newPost.id
-              ? {
-                ...p,
-                aura_count: newPost.aura_count ?? p.aura_count,
-                comments_count: newPost.comments_count ?? p.comments_count,
-                is_pinned: newPost.is_pinned ?? p.is_pinned,
-                comments_enabled: newPost.comments_enabled ?? p.comments_enabled,
-              }
-              : p
-          )
-        );
       })
       .subscribe();
 
@@ -168,14 +153,13 @@ export function Feed() {
         </div>
       ) : (
         <div className="flex flex-col">
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence>
             {posts.map((p) => (
               <motion.div
                 key={p.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
               >
                 <PostCard post={p} onDeleted={fetchFeed} />
               </motion.div>
