@@ -64,24 +64,19 @@ export function Feed() {
   useEffect(() => {
     fetchFeed();
 
-    // REAL-TIME: Listen for deletions (Stealth burns or manual deletes)
+    // REAL-TIME: Only listen for INSERT (new posts) and DELETE (removed posts).
+    // We intentionally do NOT listen for UPDATE events because:
+    // 1. Supabase payload.old only contains the primary key (no is_pinned field)
+    //    unless REPLICA IDENTITY FULL is set on the table, so any comparison
+    //    like oldPost.is_pinned !== newPost.is_pinned always triggers (undefined !== false).
+    // 2. PostCard handles its own aura count via optimistic updates.
+    // 3. Pin changes are rare admin actions — manual refresh is fine.
     const channel = supabase.channel('feed-realtime')
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
         setPosts((current) => current.filter(p => p.id !== payload.old.id));
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => {
         if (!highlightedPostId) fetchFeed();
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
-        const newPost = payload.new as any;
-        const oldPost = payload.old as any;
-
-        // ONLY react to pin/unpin changes — needs full refresh to reorder
-        // All other updates (aura_count, comments_count, etc.) are handled
-        // by each PostCard's own realtime subscription — do NOT touch state here
-        if (oldPost.is_pinned !== newPost.is_pinned) {
-          fetchFeed();
-        }
       })
       .subscribe();
 
