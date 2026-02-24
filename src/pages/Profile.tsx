@@ -325,18 +325,18 @@ export default function Profile() {
   return (
     <AppLayout>
       <div
-        className="max-w-2xl mx-auto pb-20 min-h-screen profile-theme-container transition-all duration-700"
+        className="w-full max-w-2xl mx-auto pb-24 md:pb-8 profile-theme-container transition-all duration-700"
         data-theme={activeTheme}
       >
-        {/* HEADER / COVER */}
-        <div className="relative h-48 md:h-64 rounded-b-[3rem] overflow-hidden group border-b border-white/5">
+        {/* HEADER / COVER — top offset on mobile to clear fixed header */}
+        <div className="relative h-40 sm:h-48 md:h-64 rounded-b-[2rem] md:rounded-b-[3rem] overflow-hidden group border-b border-white/5">
           {profile.cover_url ? (
             <img src={profile.cover_url} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700" alt="Cover" />
           ) : (
             <div className="w-full h-full bg-white/5 backdrop-blur-md" />
           )}
           {isOwnProfile && (
-            <div className="absolute top-6 right-6 flex gap-2">
+            <div className="absolute top-4 right-4 flex gap-2">
               <Button size="icon" variant="secondary" className="rounded-full glass-card border-none hover:scale-110 transition-transform" onClick={() => setShowEditModal(true)}>
                 <Edit2 className="h-4 w-4 text-white" />
               </Button>
@@ -348,27 +348,27 @@ export default function Profile() {
         </div>
 
         {/* INFO SECTION */}
-        <div className="px-6 -mt-20 relative z-10">
-          <div className="flex items-end justify-between gap-4">
-            <div className="relative flex items-center justify-center group z-20">
-              <AuraProgressRing aura={profile.total_aura || 0} size={152} stroke={6} />
+        <div className="px-4 sm:px-6 -mt-16 sm:-mt-20 relative z-10">
+          <div className="flex items-end justify-between gap-2 sm:gap-4 flex-wrap">
+            <div className="relative flex items-center justify-center group z-20 flex-shrink-0">
+              <AuraProgressRing aura={profile.total_aura || 0} size={120} stroke={5} />
               <div className="absolute p-1 rounded-full overflow-hidden">
                 <UserAvatar
                   src={profile.avatar_url}
                   name={profile.full_name || profile.username}
-                  className="h-32 w-32 border-[4px] border-black shadow-2xl transition-transform duration-500 group-hover:scale-95"
-                  fallbackClassName="text-foreground text-3xl font-black italic uppercase theme-bg"
+                  className="h-[100px] w-[100px] sm:h-28 sm:w-28 md:h-32 md:w-32 border-[3px] sm:border-[4px] border-black shadow-2xl transition-transform duration-500 group-hover:scale-95"
+                  fallbackClassName="text-foreground text-2xl sm:text-3xl font-black italic uppercase theme-bg"
                 />
               </div>
             </div>
 
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-2 sm:mb-4 flex-wrap">
               {!isOwnProfile && !isBlockedByMe && (
-                <div className="flex gap-2">
-                  <Button className="rounded-2xl font-black uppercase text-[10px] tracking-widest h-11 px-8 shadow-lg theme-bg text-white hover:opacity-90 transition-opacity" onClick={handleFollow}>
+                <div className="flex gap-2 flex-wrap">
+                  <Button className="rounded-2xl font-black uppercase text-[10px] tracking-widest h-10 sm:h-11 px-5 sm:px-8 shadow-lg theme-bg text-white hover:opacity-90 transition-opacity" onClick={handleFollow}>
                     {followStatus === 'following' ? 'Following' : followStatus === 'requested' ? 'Requested' : 'Follow'}
                   </Button>
-                  <Button size="icon" variant="secondary" className="rounded-2xl h-11 w-11 bg-white/10 text-white" onClick={() => navigate(`/messages?chat=${profile.user_id}`)}>
+                  <Button size="icon" variant="secondary" className="rounded-2xl h-10 w-10 sm:h-11 sm:w-11 bg-white/10 text-white" onClick={() => navigate(`/messages?chat=${profile.user_id}`)}>
                     <MessageCircle className="h-5 w-5" />
                   </Button>
 
@@ -572,10 +572,10 @@ export default function Profile() {
             <p className="text-xs font-bold opacity-40 mt-2 uppercase tracking-widest">Follow to see posts and aura</p>
           </div>
         ) : (
-          <div className="px-4 mt-2">
+          <div className="px-2 sm:px-4 mt-2">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-1 bg-black/20 h-12 p-1 rounded-2xl w-full max-w-xs mx-auto border border-white/5">
-                <TabsTrigger value="posts" className="rounded-xl font-black uppercase text-[10px] tracking-widest data-[state=active]:theme-bg data-[state=active]:text-white transition-all">
+              <TabsList className="flex bg-black/20 h-12 p-1 rounded-2xl w-full border border-white/5">
+                <TabsTrigger value="posts" className="flex-1 rounded-xl font-black uppercase text-[10px] tracking-widest data-[state=active]:theme-bg data-[state=active]:text-white transition-all">
                   <Grid className="h-3.5 w-3.5 mr-2" /> Posts
                 </TabsTrigger>
               </TabsList>
