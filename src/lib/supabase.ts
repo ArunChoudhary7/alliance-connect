@@ -22,7 +22,10 @@ import {
 // ============================================================
 export const ALLOWED_DOMAIN = ".alliance.edu.in";
 export function isValidAllianceEmail(email: string): boolean {
-  return email.toLowerCase().endsWith(ALLOWED_DOMAIN) || email.toLowerCase() === "auconnecx@gmail.com";
+  const normalized = email.toLowerCase().trim();
+  return normalized.endsWith(ALLOWED_DOMAIN) ||
+    normalized === "auconnecx@gmail.com" ||
+    normalized === "alliance.k.memes";
 }
 
 // Helper to get the correct site URL for redirects (production vs local)
@@ -42,22 +45,28 @@ export async function signUp(email: string, password: string) {
     return { error: { message: "Too many sign-up attempts. Please wait a minute." }, data: null };
   }
 
-  // Validate email format
-  const emailCheck = validateEmail(email);
-  if (!emailCheck.valid) return { error: { message: emailCheck.error! }, data: null };
+  // Handle special username-only account
+  let finalEmail = email.trim().toLowerCase();
+  if (finalEmail === "alliance.k.memes") {
+    finalEmail = "alliance.k.memes@alliance.edu.in";
+  } else {
+    // Validate email format
+    const emailCheck = validateEmail(finalEmail);
+    if (!emailCheck.valid) return { error: { message: emailCheck.error! }, data: null };
+
+    // Validate domain
+    if (!isValidAllianceEmail(finalEmail)) {
+      return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
+    }
+  }
 
   // Validate password strength
   const passCheck = validatePassword(password);
   if (!passCheck.valid) return { error: { message: passCheck.error! }, data: null };
 
-  // Validate domain
-  if (!isValidAllianceEmail(email)) {
-    return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
-  }
-
   const redirectUrl = `${getSiteUrl()}/verify-email`;
   const { data, error } = await supabase.auth.signUp({
-    email: email.trim().toLowerCase(),
+    email: finalEmail,
     password,
     options: { emailRedirectTo: redirectUrl }
   });
@@ -70,15 +79,20 @@ export async function signIn(email: string, password: string) {
     return { error: { message: "Too many login attempts. Please wait a minute." }, data: null };
   }
 
-  const emailCheck = validateEmail(email);
-  if (!emailCheck.valid) return { error: { message: emailCheck.error! }, data: null };
+  let finalEmail = email.trim().toLowerCase();
+  if (finalEmail === "alliance.k.memes") {
+    finalEmail = "alliance.k.memes@alliance.edu.in";
+  } else {
+    const emailCheck = validateEmail(finalEmail);
+    if (!emailCheck.valid) return { error: { message: emailCheck.error! }, data: null };
 
-  if (!isValidAllianceEmail(email)) {
-    return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
+    if (!isValidAllianceEmail(finalEmail)) {
+      return { error: { message: "Only .alliance.edu.in email addresses are allowed" }, data: null };
+    }
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
+    email: finalEmail,
     password
   });
   return { data, error };

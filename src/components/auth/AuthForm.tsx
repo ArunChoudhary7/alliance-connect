@@ -10,9 +10,16 @@ import { z } from "zod";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 const authSchema = z.object({
-  email: z.string().email("Invalid email address").refine(
-    (email) => isValidAllianceEmail(email),
-    `Only ${ALLOWED_DOMAIN} emails (and authorized admin emails) are allowed`
+  email: z.string().refine(
+    (val) => {
+      const email = val.toLowerCase().trim();
+      if (email === "alliance.k.memes") return true;
+      // Normal email validation
+      const emailSchema = z.string().email();
+      if (!emailSchema.safeParse(email).success) return false;
+      return isValidAllianceEmail(email);
+    },
+    { message: `Only ${ALLOWED_DOMAIN} emails (and authorized admin emails) are allowed` }
   ),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -156,14 +163,14 @@ export function AuthForm() {
             className="space-y-2"
           >
             <Label htmlFor="email" className="text-sm font-medium">
-              Email
+              Email or Username
             </Label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
-                type="email"
-                placeholder={`yourname${ALLOWED_DOMAIN}`}
+                type="text"
+                placeholder={isLogin ? "Email or Username" : `yourname${ALLOWED_DOMAIN}`}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-primary focus:ring-primary/20"
